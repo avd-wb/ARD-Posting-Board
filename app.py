@@ -741,6 +741,18 @@ def download_google_sheets_version():
         filename="WB_ARD_Interactive_Posting_Board_GoogleSheets_Ready.xlsx"
     )
 
+@app.get("/api/download/11-column-master-sheet")
+def download_11_column_master_sheet():
+    from generate_11col_posting_order import build_standalone_and_inject_master
+    file_path = build_standalone_and_inject_master()
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Master sheet not found.")
+    return FileResponse(
+        file_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=os.path.basename(file_path)
+    )
+
 # --- SERVE FRONTEND ---
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
