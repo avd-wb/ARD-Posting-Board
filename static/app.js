@@ -80,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadSimulationHistory();
                 } else if (targetTab === 'tab-displaced') {
                     loadDisplacedPool();
+                } else if (targetTab === 'tab-visual-grid') {
+                    window.renderVisualGrid('visualGridBody', false, null);
                 }
             });
         });
@@ -206,11 +208,26 @@ document.addEventListener('DOMContentLoaded', () => {
                             </span>
                         </td>
                         <td class="py-2.5 px-4">
-                            <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view full personnel dossier">
+                            <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view full personnel dossier">
                                 <span>${c.officer_name}</span>
                                 ${dualBadge}
                             </div>
                             <div class="text-[11px] font-mono text-slate-500">HRMS: ${c.hrms_id || 'N/A'}</div>
+                            ${c.attention_flag || c.is_dual_obliterated ? `
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold animate-pulse">
+                                        <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i>
+                                        <span>${c.attention_reason || 'Obliterated Post Incumbent'}</span>
+                                    </span>
+                                </div>
+                            ` : (c.needs_backfill ? `
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
+                                        <i data-lucide="corner-down-right" class="w-3 h-3 text-amber-700"></i>
+                                        <span>Needs Field Backfill</span>
+                                    </span>
+                                </div>
+                            ` : '')}
                         </td>
                         <td class="py-2.5 px-2 text-slate-700 font-medium">${c.caste}</td>
                         <td class="py-2.5 px-4">
@@ -1121,19 +1138,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- OFFICER PERSONNEL DOSSIER MODAL LOGIC ---
+    // --- OFFICER PERSONNEL DOSSIER & DISTRICT POST VISUALIZER ---
+    window.activeDossierOfficer = null;
+
+    window.switchDossierSubTab = function(tabName) {
+        const tabs = ['profile', 'history', 'family', 'grid'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`dossierSubTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            const sec = document.getElementById(`dossierSec${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            if (btn) {
+                if (t === tabName) {
+                    btn.className = "dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5 transition";
+                } else {
+                    btn.className = "dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition";
+                }
+            }
+            if (sec) {
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                } else {
+                    sec.classList.add('hidden');
+                }
+            }
+        });
+
+        if (tabName === 'grid' && window.activeDossierOfficer) {
+            window.renderVisualGrid('modalVisualGridContainer', true, window.activeDossierOfficer.hrms_id);
+        }
+    };
+
     window.openOfficerDossier = async function(hrmsId) {
         const modal = document.getElementById('officerDossierModal');
         const container = document.getElementById('dossierContent');
         const subtitle = document.getElementById('dossierSubtitle');
         const btnAI = document.getElementById('btnDossierAIAllot');
 
-        container.innerHTML = `<div class="py-12 text-center text-slate-400">Loading personnel dossier for HRMS ${hrmsId}...</div>`;
+        container.innerHTML = `<div class="py-12 text-center text-slate-400">Loading comprehensive personnel dossier for HRMS ${hrmsId}...</div>`;
         modal.classList.remove('hidden');
 
         try {
             const res = await fetch(`/api/officer/${encodeURIComponent(hrmsId)}`);
             if (!res.ok) throw new Error('Officer record not found');
             const d = await res.json();
+            window.activeDossierOfficer = d;
 
             subtitle.innerText = `${d.officer_name} | HRMS: ${d.hrms_id} | ${d.source_category}`;
 
@@ -1147,96 +1194,375 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? prefEntries.map(([k, v]) => `<div class="text-[11px]"><strong class="text-slate-700">${k.replace('_', ' ')}:</strong> ${v}</div>`).join('')
                 : (d.preferences_summary ? `<div class="text-[11px] text-slate-700">${d.preferences_summary}</div>` : `<span class="italic text-slate-400">No preference recorded</span>`);
 
+            // Parse posting history into timeline items
+            const historyRaw = d.posting_history || "Standard service tenure across departmental postings.";
+            const historyItems = historyRaw.split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
+            const historyTimelineHtml = historyItems.length > 0
+                ? historyItems.map(item => `
+                    <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                        <div class="mt-0.5 w-6 h-6 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-[10px] shrink-0">
+                            <i data-lucide="map-pin" class="w-3 h-3 text-wbblue-700"></i>
+                        </div>
+                        <div class="text-xs text-slate-800 font-medium leading-relaxed">${item}</div>
+                    </div>
+                `).join('')
+                : `<div class="p-3 bg-slate-50 rounded border text-slate-600">${historyRaw}</div>`;
+
             container.innerHTML = `
-                <!-- Personal Identity & Statutory Status -->
-                <div class="grid grid-cols-2 gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-                    <div>
-                        <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Officer Full Name</div>
-                        <div class="text-sm font-bold text-slate-900">${d.officer_name}</div>
-                        <div class="text-[11px] font-mono text-wbblue-700 font-bold mt-0.5">HRMS ID: ${d.hrms_id}</div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Caste & 50-Point Roster</div>
-                        <div class="text-xs font-bold text-slate-800">${d.caste} ${d.roster_point !== '—' ? `(Roster Point: ${d.roster_point} - ${d.point_reserved_for})` : ''}</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">Category: ${d.point_reserved_for}</div>
-                    </div>
-                </div>
-
-                <!-- Dates of Service & WBSR Rule 75(a) -->
-                <div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-center">
-                    <div>
-                        <div class="text-[10px] text-blue-700 font-semibold">Date of Birth (DOB)</div>
-                        <div class="text-xs font-bold text-slate-900 font-mono">${d.dob}</div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] text-blue-700 font-semibold">Date of Joining (DOJ)</div>
-                        <div class="text-xs font-bold text-slate-900 font-mono">${d.doj}</div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] text-blue-700 font-semibold">Date of Superannuation (DOR)</div>
-                        <div class="text-xs font-bold text-rose-700 font-mono">${d.dor}</div>
-                        <div class="text-[9px] text-blue-600">Rule 75(a) Compliant</div>
-                    </div>
-                </div>
-
-                <!-- Present Posting & Pay Details -->
-                <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
-                    <div class="font-bold text-slate-800 flex items-center justify-between">
-                        <span>Current Posting & Scale</span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.tenure_norm_status === 'Yes' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
-                            ${d.tenure_norm_status === 'Yes' ? 'Tenure Over (>4/5y)' : 'Within Tenure Norm'}
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div><strong class="text-slate-600">Designation:</strong> ${d.current_designation}</div>
-                        <div><strong class="text-slate-600">Station/Office:</strong> ${d.establishment}</div>
-                        <div><strong class="text-slate-600">Block / District:</strong> ${d.block ? `${d.block}, ` : ''}${d.district}</div>
-                        <div><strong class="text-slate-600">Tenure at Station:</strong> ${d.tenure_years} yrs</div>
-                        <div class="col-span-2"><strong class="text-slate-600">Present Pay Level:</strong> ${d.present_pay_level}</div>
-                        <div class="col-span-2"><strong class="text-slate-600">Qualifications:</strong> ${d.qualifications}</div>
-                    </div>
-                </div>
-
-                <!-- Family, Welfare & Board Exam Claims -->
-                <div class="p-3 rounded-lg border border-amber-200 bg-amber-50/40 space-y-1">
-                    <div class="font-bold text-amber-900 flex items-center gap-1.5">
-                        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-700"></i>
-                        <span>Family, Spouse & Academic Safeguards (Memo 291)</span>
-                    </div>
-                    <div class="text-[11px] text-slate-700">${d.family_details || 'No special spouse co-location or child board exam claim filed.'}</div>
-                </div>
-
-                <!-- Stated Preferences -->
-                <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
-                    <div class="font-bold text-slate-800">Officer Stated Preferences (1 - 10)</div>
-                    <div class="grid grid-cols-2 gap-1 bg-white p-2 rounded border border-slate-200 max-h-36 overflow-y-auto">
-                        ${prefsHtml}
-                    </div>
-                </div>
-
-                <!-- Simulation Allotment Status -->
-                ${d.latest_allotment ? `
-                    <div class="p-3 rounded-lg border border-emerald-300 bg-emerald-50 space-y-1">
-                        <div class="font-bold text-emerald-900 flex items-center gap-1.5">
-                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-700"></i>
-                            <span>Simulated Posting Allotment</span>
+                <!-- TAB 1: SERVICE & PERSONAL PROFILE -->
+                <div id="dossierSecProfile" class="dossier-sec space-y-4">
+                    ${d.attention_flag ? `
+                        <div class="p-3.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 flex items-start gap-3 shadow-sm animate-pulse">
+                            <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5"></i>
+                            <div>
+                                <div class="font-bold text-xs uppercase tracking-wider text-rose-700">Administrative Attention Flag</div>
+                                <div class="text-xs font-semibold text-rose-900 mt-0.5">${d.attention_reason || 'Incumbent seated on abolished post or cascading field vacancy pending.'}</div>
+                                ${d.decision_note ? `<div class="text-[11px] text-rose-800 mt-1 font-mono">Note: ${d.decision_note}</div>` : ''}
+                            </div>
                         </div>
-                        <div class="text-xs text-emerald-950">
-                            <div><strong>Substantive Main:</strong> ${d.latest_allotment.substantive_post_name}</div>
-                            ${d.latest_allotment.su_post_name ? `<div><strong>Service Utilization (SU):</strong> ${d.latest_allotment.su_post_name}</div>` : ''}
-                            <div class="text-[10px] text-slate-500 font-mono mt-0.5">Recorded: ${d.latest_allotment.timestamp}</div>
+                    ` : ''}
+
+                    <!-- Identity & Contacts Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                        <div class="md:col-span-2">
+                            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Officer Name & Registration</div>
+                            <div class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <span>${d.officer_name}</span>
+                                ${d.caste ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800">${d.caste}</span>` : ''}
+                            </div>
+                            <div class="text-[11px] font-mono text-wbblue-700 font-bold mt-0.5">
+                                HRMS ID: ${d.hrms_id} ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `| WBVC Reg: ${d.wbvc_reg_no}` : ''}
+                            </div>
+                        </div>
+                        <div class="space-y-0.5 text-[11px] border-t md:border-t-0 md:border-l border-slate-200 md:pl-3">
+                            <div><strong class="text-slate-600">Mobile:</strong> <span class="font-mono text-slate-800">${d.mobile}</span></div>
+                            <div><strong class="text-slate-600">Email:</strong> <span class="text-slate-800">${d.email}</span></div>
+                            <div><strong class="text-slate-600">WhatsApp:</strong> <span class="font-mono text-slate-800">${d.whatsapp}</span></div>
                         </div>
                     </div>
-                ` : `
-                    <div class="p-2.5 rounded bg-slate-100 text-slate-600 text-center italic text-xs">
-                        No posting decision simulated yet. Officer is pending placement.
+
+                    <!-- Dates of Service & WBSR Rule 75(a) -->
+                    <div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-center">
+                        <div>
+                            <div class="text-[10px] text-blue-700 font-semibold">Date of Birth (DOB)</div>
+                            <div class="text-xs font-bold text-slate-900 font-mono">${d.dob}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-blue-700 font-semibold">Date of Joining (DOJ)</div>
+                            <div class="text-xs font-bold text-slate-900 font-mono">${d.doj}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-blue-700 font-semibold">Superannuation (DOR)</div>
+                            <div class="text-xs font-bold text-rose-700 font-mono">${d.dor}</div>
+                            <div class="text-[9px] text-blue-600 font-medium">Rule 75(a) Compliant</div>
+                        </div>
                     </div>
-                `}
+
+                    <!-- Present Posting & Pay Details -->
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
+                        <div class="font-bold text-slate-800 flex items-center justify-between">
+                            <span>Present Posting & Pay Details</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.tenure_norm_status === 'Yes' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
+                                ${d.tenure_norm_status === 'Yes' ? 'Tenure Over (>4/5y)' : 'Within Tenure Norm'}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div><strong class="text-slate-600">Designation:</strong> ${d.current_designation}</div>
+                            <div><strong class="text-slate-600">Station/Office:</strong> ${d.establishment}</div>
+                            <div><strong class="text-slate-600">Block / District:</strong> ${d.block ? `${d.block}, ` : ''}${d.district}</div>
+                            <div><strong class="text-slate-600">Station Tenure:</strong> ${d.tenure_years} yrs</div>
+                            <div><strong class="text-slate-600">Office Code:</strong> <span class="font-mono">${d.office_code}</span></div>
+                            <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono">${d.ddo_code}</span></div>
+                            <div class="col-span-2"><strong class="text-slate-600">Present Scale:</strong> ${d.present_pay_level}</div>
+                            <div class="col-span-2"><strong class="text-slate-600">Cadre:</strong> ${d.cadre}</div>
+                        </div>
+                    </div>
+
+                    <!-- Permanent & Current Addresses -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50">
+                        <div>
+                            <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                                <i data-lucide="home" class="w-3.5 h-3.5 text-slate-500"></i>
+                                <span>Ancestral Permanent Address</span>
+                            </div>
+                            <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
+                                ${d.ancestral_address}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                                <i data-lucide="building" class="w-3.5 h-3.5 text-slate-500"></i>
+                                <span>Current Residential Address</span>
+                            </div>
+                            <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
+                                ${d.current_address}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stated Preferences -->
+                    <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
+                        <div class="font-bold text-slate-800">Officer Stated Preferences (1 - 10)</div>
+                        <div class="grid grid-cols-2 gap-1 bg-white p-2 rounded border border-slate-200 max-h-32 overflow-y-auto">
+                            ${prefsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Current Simulated Allotment -->
+                    ${d.latest_allotment ? `
+                        <div class="p-3 rounded-lg border border-emerald-300 bg-emerald-50 space-y-1">
+                            <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-700"></i>
+                                <span>Active Board Simulation Allotment</span>
+                            </div>
+                            <div class="text-xs text-emerald-950">
+                                <div><strong>Substantive Main:</strong> ${d.latest_allotment.substantive_post_name}</div>
+                                ${d.latest_allotment.su_post_name ? `<div><strong>Service Utilization (SU):</strong> ${d.latest_allotment.su_post_name}</div>` : ''}
+                                <div class="text-[10px] text-slate-500 font-mono mt-0.5">Recorded: ${d.latest_allotment.timestamp} | Reason: ${d.latest_allotment.reason}</div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="p-2.5 rounded bg-slate-100 text-slate-600 text-center italic text-xs">
+                            No posting decision simulated yet. Officer is awaiting placement.
+                        </div>
+                    `}
+                </div>
+
+                <!-- TAB 2: POSTING HISTORY TIMELINE -->
+                <div id="dossierSecHistory" class="dossier-sec hidden space-y-3">
+                    <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900">
+                        <strong>Complete Career Posting Record:</strong> Historical postings, transfers, and tenures recorded across state establishments.
+                    </div>
+                    <div class="space-y-2 max-h-[450px] overflow-y-auto p-1">
+                        ${historyTimelineHtml}
+                    </div>
+                </div>
+
+                <!-- TAB 3: SPOUSE & FAMILY MATTER -->
+                <div id="dossierSecFamily" class="dossier-sec hidden space-y-4">
+                    <div class="p-3.5 rounded-lg border border-amber-200 bg-amber-50/50 space-y-2">
+                        <div class="font-bold text-amber-900 flex items-center gap-1.5">
+                            <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
+                            <span>Spouse Service Matter & Co-location Safeguards (Memo 291)</span>
+                        </div>
+                        <div class="text-xs text-slate-800 bg-white p-2.5 rounded border border-amber-200">
+                            ${d.spouse_service_details}
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="shield" class="w-4 h-4 text-wbblue-700"></i>
+                            <span>Family Dependencies & Medical Conditions</span>
+                        </div>
+                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200">
+                            ${d.family_dependencies}
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700"></i>
+                            <span>Academic Qualifications & Specializations</span>
+                        </div>
+                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200">
+                            ${d.academic_details}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: DISTRICT POST VISUALIZER & QUICK ALLOTMENT COCKPIT -->
+                <div id="dossierSecGrid" class="dossier-sec hidden space-y-3">
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between gap-3 text-xs">
+                        <div class="text-emerald-950 font-medium">
+                            <strong>Interactive Allocation Cockpit:</strong> Click any post button below to allot directly to <strong>${d.officer_name}</strong> as Substantive Main or Service Utilization (SU).
+                        </div>
+                    </div>
+
+                    <div id="modalVisualGridContainer" class="space-y-4 max-h-[500px] overflow-y-auto p-1">
+                        <div class="py-8 text-center text-slate-400">Loading district posts grid...</div>
+                    </div>
+                </div>
             `;
             lucide.createIcons();
+            window.switchDossierSubTab('profile');
         } catch (err) {
             console.error('Failed to load dossier:', err);
             container.innerHTML = `<div class="py-12 text-center text-rose-500 font-medium">Failed to load officer dossier: ${err.message}</div>`;
+        }
+    };
+
+    // --- DISTRICT POST VISUALIZER GRID COMPONENT ---
+    window.renderVisualGrid = async function(containerId, isModal = false, targetHrmsId = null) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/posts/visual-grid');
+            if (!res.ok) throw new Error('Failed to load visual grid data');
+            const data = await res.json();
+
+            // Update main legend counts if available
+            const elPure = document.getElementById('legendCountPure');
+            const elPaper = document.getElementById('legendCountPaper');
+            const elAttention = document.getElementById('legendCountAttention');
+            const elBoard = document.getElementById('legendCountBoard');
+            const elFilled = document.getElementById('legendCountFilled');
+            if (elPure && data.summary) {
+                elPure.innerText = data.summary.pure_vacant;
+                elPaper.innerText = data.summary.vacant_on_paper;
+                elAttention.innerText = data.summary.attention_required;
+                elBoard.innerText = data.summary.board_selected;
+                elFilled.innerText = data.summary.filled;
+            }
+
+            // Populate district filter options if main filter exists
+            const distFilter = document.getElementById('visualGridDistrictFilter');
+            if (distFilter && distFilter.options.length <= 1) {
+                data.districts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    distFilter.appendChild(opt);
+                });
+                distFilter.onchange = () => {
+                    const selected = distFilter.value;
+                    document.querySelectorAll('.district-grid-card').forEach(card => {
+                        if (selected === 'ALL' || card.getAttribute('data-district') === selected) {
+                            card.classList.remove('hidden');
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    });
+                };
+            }
+
+            // Render district sections with post buttons
+            let html = '';
+            data.grid.forEach(distGroup => {
+                const dName = distGroup.district;
+                const ddPosts = distGroup.dd_posts || [];
+                const cadrePosts = distGroup.cadre_posts || [];
+                const totalInDist = ddPosts.length + cadrePosts.length;
+
+                const renderButton = (p) => {
+                    let btnColorClass = "bg-slate-500 text-white hover:bg-slate-600";
+                    if (p.status_code === 'VACANT_PURE') {
+                        btnColorClass = "bg-emerald-500 text-white hover:bg-emerald-600 font-bold";
+                    } else if (p.status_code === 'VACANT_ON_PAPER') {
+                        btnColorClass = "bg-amber-500 text-white hover:bg-amber-600 font-medium";
+                    } else if (p.status_code === 'ATTENTION_REQUIRED') {
+                        btnColorClass = "bg-rose-500 text-white hover:bg-rose-600 font-bold animate-pulse";
+                    } else if (p.status_code === 'BOARD_SELECTED') {
+                        btnColorClass = "bg-purple-600 text-white hover:bg-purple-700 font-medium";
+                    } else if (p.status_code === 'OBLITERATED') {
+                        btnColorClass = "bg-slate-300 text-slate-700 line-through border border-slate-400 opacity-60";
+                    }
+
+                    const clickHandler = isModal && targetHrmsId
+                        ? `onclick="window.promptPostAllotment('${p.id}', ${p.raw_id}, '${p.type}', '${p.post_name.replace(/'/g, "\\'")}', '${targetHrmsId}')"`
+                        : `onclick="showToast('${p.id}: ${p.post_name} - ${p.status_label}', 'info')"`;
+
+                    return `
+                        <button ${clickHandler} 
+                                class="px-2 py-1 text-[10px] rounded border border-black/10 shadow-sm transition truncate max-w-[175px] text-left flex items-center justify-between gap-1 ${btnColorClass}"
+                                title="${p.id} | ${p.designation} (${p.establishment}${p.block ? `, ${p.block}` : ''}) | ${p.status_label}">
+                            <span class="truncate">${p.id}: ${p.designation}</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-white shrink-0"></span>
+                        </button>
+                    `;
+                };
+
+                html += `
+                    <div class="district-grid-card bg-white rounded-lg border border-slate-200 p-3.5 shadow-sm space-y-2.5" data-district="${dName}">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <div class="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-wbblue-700"></i>
+                                <span>${dName}</span>
+                                <span class="px-2 py-0.2 rounded-full bg-slate-100 text-slate-600 font-normal text-[10px]">${totalInDist} posts</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                                <span>DD: ${ddPosts.length}</span> | <span>Cadre: ${cadrePosts.length}</span>
+                            </div>
+                        </div>
+
+                        ${ddPosts.length > 0 ? `
+                            <div>
+                                <div class="text-[10px] font-bold text-wbblue-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <i data-lucide="award" class="w-3 h-3 text-wbblue-700"></i>
+                                    <span>Deputy Director Posts (Pay Level 19)</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${ddPosts.map(renderButton).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${cadrePosts.length > 0 ? `
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <i data-lucide="building-2" class="w-3 h-3 text-slate-500"></i>
+                                    <span>Cadre Posts (AD / BLDO / VO)</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${cadrePosts.map(renderButton).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        } catch (err) {
+            console.error('Failed to render visual grid:', err);
+            container.innerHTML = `<div class="py-8 text-center text-rose-500 font-medium">Failed to load posts grid: ${err.message}</div>`;
+        }
+    };
+
+    // --- QUICK ALLOTMENT PROMPT FROM VISUAL GRID ---
+    window.promptPostAllotment = async function(postId, rawId, postType, postName, targetHrmsId) {
+        const off = window.activeDossierOfficer;
+        if (!off) return;
+
+        const choice = confirm(
+            `ALLOT POST TO: ${off.officer_name} (HRMS: ${targetHrmsId})\n\n` +
+            `Target Post: [${postId}] ${postName}\n\n` +
+            `Click OK to allot as SUBSTANTIVE MAIN POST (Pay Level 19)\n` +
+            `Click CANCEL to allot as SERVICE UTILIZATION (SU) POST`
+        );
+
+        const isSubstantive = choice;
+        const subId = isSubstantive ? rawId : (off.latest_allotment ? off.latest_allotment.substantive_post_id : 1);
+        const suId = !isSubstantive ? rawId : null;
+
+        try {
+            const res = await fetch('/api/simulation/allot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: 'CURRENT_SESSION',
+                    officer_hrms: targetHrmsId,
+                    substantive_post_id: subId,
+                    su_post_id: suId,
+                    reason: isSubstantive ? "Substantive Main Allotment via District Visual Grid" : "Service Utilization Allotment via District Visual Grid",
+                    officer_type: "roster"
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Successfully allotted [${postId}] to ${off.officer_name}!`, 'success');
+                // Reload dossier and roster table
+                window.openOfficerDossier(targetHrmsId);
+                loadRoster();
+                loadSimulationHistory();
+            } else {
+                showToast(data.error || 'Allotment failed', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Network error during allotment', 'error');
         }
     };
 

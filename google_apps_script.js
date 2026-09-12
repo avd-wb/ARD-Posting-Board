@@ -27,39 +27,62 @@ function onOpen() {
 
 /**
  * Real-Time onEdit Trigger:
- * Fires instantly when an officer selects a post in Column J.
- * Alerts immediately if the post has already been allotted elsewhere.
+/**
+ * Real-Time onEdit Trigger:
+ * Fires instantly when an officer selects a post.
+ * Alerts immediately if the post has already been allotted elsewhere,
+ * and dynamically colors the cell/row based on vacancy type and status:
+ * - Green (#D1FAE5): Pure Vacancy / Direct Allotment
+ * - Soft Blue / Amber (#DBEAFE / #FEF3C7): Allotted with Service Utilization (SU)
+ * - Red (#FFE4E6): Conflict / Duplicate Allotment / Attention Required
  */
 function onEdit(e) {
   if (!e || !e.range) return;
   const sheet = e.range.getSheet();
-  if (sheet.getName() !== 'Posting_Dashboard') return;
+  const sName = sheet.getName();
+  if (sName !== 'Posting_Dashboard' && sName !== '50_Pt_Roster_Decisions') return;
   
   const col = e.range.getColumn();
   const row = e.range.getRow();
   
-  // Col 10 is Substantive Post (J), Col 12 is Service Utilization Post (L)
-  if ((col === 10 || col === 12) && row >= 10) {
+  // Handle 50_Pt_Roster_Decisions (Col 13 = Substantive, Col 15 = SU)
+  // Handle Posting_Dashboard (Col 10 = Substantive, Col 12 = SU)
+  const isRosterSheet = sName === '50_Pt_Roster_Decisions';
+  const subCol = isRosterSheet ? 13 : 10;
+  const suCol = isRosterSheet ? 15 : 12;
+  const startRow = isRosterSheet ? 2 : 10;
+  
+  if ((col === subCol || col === suCol) && row >= startRow) {
     const val = e.range.getValue();
-    if (!val || val.toString().trim() === '') return;
+    if (!val || val.toString().trim() === '') {
+      e.range.setBackground('#FFFFFF');
+      return;
+    }
     const postStr = val.toString().trim();
     
     const lastRow = sheet.getLastRow();
-    const colJ = sheet.getRange(10, 10, lastRow - 9, 1).getValues();
-    const colL = sheet.getRange(10, 12, lastRow - 9, 1).getValues();
+    const subValues = sheet.getRange(startRow, subCol, lastRow - startRow + 1, 1).getValues();
+    const suValues = sheet.getRange(startRow, suCol, lastRow - startRow + 1, 1).getValues();
     
     let count = 0;
-    for (let i = 0; i < colJ.length; i++) {
-      if (colJ[i][0] && colJ[i][0].toString().trim() === postStr) count++;
-      if (colL[i][0] && colL[i][0].toString().trim() === postStr) count++;
+    for (let i = 0; i < subValues.length; i++) {
+      if (subValues[i][0] && subValues[i][0].toString().trim() === postStr) count++;
+      if (suValues[i][0] && suValues[i][0].toString().trim() === postStr) count++;
     }
     
     if (count > 1) {
+      e.range.setBackground('#FFE4E6'); // Soft Red
       SpreadsheetApp.getActiveSpreadsheet().toast(
-        `⚠️ WARNING: Post "${postStr}" is already used up in ${count} places across Substantive / Service Utilization columns!`,
+        `⚠️ WARNING: Post "${postStr}" is already allotted in ${count} places! Please select an unoccupied vacancy.`,
         'Duplicate Post Alert',
         8
       );
+    } else {
+      if (col === subCol) {
+        e.range.setBackground('#D1FAE5'); // Pure Vacancy Green
+      } else {
+        e.range.setBackground('#DBEAFE'); // SU Blue
+      }
     }
   }
 }

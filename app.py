@@ -247,28 +247,55 @@ def get_roster_candidates(
     conn = get_db()
     cur = conn.cursor()
 
-    query = "SELECT * FROM roster_50_point_candidates WHERE 1=1"
+    query = """
+    SELECT r.*, 
+           COALESCE(e.attention_flag, 0) as attention_flag, 
+           e.attention_reason, 
+           COALESCE(e.needs_backfill, 0) as needs_backfill, 
+           e.decision_note,
+           e.mobile, e.email, e.current_address
+    FROM roster_50_point_candidates r
+    LEFT JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
+    WHERE 1=1
+    """
     params = []
 
     if category and category != "ALL":
-        query += " AND caste = ?"
+        query += " AND r.caste = ?"
         params.append(category)
 
     if allotment_status and allotment_status != "ALL":
-        query += " AND allotment_status = ?"
+        query += " AND r.allotment_status = ?"
         params.append(allotment_status)
 
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (officer_name LIKE ? OR hrms_id LIKE ? OR present_posting LIKE ? OR present_block LIKE ? OR present_district LIKE ?)"
+        query += " AND (r.officer_name LIKE ? OR r.hrms_id LIKE ? OR r.present_posting LIKE ? OR r.present_block LIKE ? OR r.present_district LIKE ?)"
         params.extend([s, s, s, s, s])
 
-    query += " ORDER BY sl_no"
+    query += " ORDER BY r.sl_no"
     cur.execute(query, params)
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
 
     return {"count": len(rows), "data": rows}
+
+@app.get("/api/posts/visual-grid")
+def get_posts_visual_grid_endpoint(
+    session_id: str = "CURRENT_SESSION",
+    district: Optional[str] = None
+):
+    """
+    Visual Grid API:
+    Returns all cadre & DD posts grouped by district with real-time color classifications:
+    - Pure Vacancies (Green)
+    - Vacant on Paper / Incumbent on SU (Amber)
+    - Action Required / Conflict / Replacement Needed (Red)
+    - Board Selected (Purple)
+    - Obliterated / Abolished under 1808 (Grey Strikethrough)
+    - Filled / Occupied (Blue)
+    """
+    return engine.get_posts_visual_grid(session_id=session_id, district_filter=district)
 
 @app.get("/api/obliterated")
 def get_obliterated_officers(status: Optional[str] = None, search: Optional[str] = None):

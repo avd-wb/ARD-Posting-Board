@@ -319,10 +319,14 @@ def build_workbook():
         ws_roster.cell(row=idx, column=11, value=p2).font = italic_font
         ws_roster.cell(row=idx, column=12, value=p3).font = italic_font
 
-        # Blank default so user can choose cleanly via dropdown
-        ws_roster.cell(row=idx, column=13, value="").font = bold_font
-        ws_roster.cell(row=idx, column=14, value="NO").alignment = Alignment(horizontal="center", vertical="center")
-        ws_roster.cell(row=idx, column=15, value="").font = bold_font
+        # Populate confirmed decisions from DB if present
+        sub_name = r["substantive_post_name"] or ""
+        su_name = r["su_post_name"] or ""
+        has_su = "YES" if su_name else "NO"
+
+        ws_roster.cell(row=idx, column=13, value=sub_name).font = bold_font
+        ws_roster.cell(row=idx, column=14, value=has_su).alignment = Alignment(horizontal="center", vertical="center")
+        ws_roster.cell(row=idx, column=15, value=su_name).font = bold_font
 
         # Status Formula
         status_formula = (
@@ -424,10 +428,14 @@ def build_workbook():
         post_stat = "Serving Incumbent" if not r["is_vacant"] else "Vacant Abolished"
         ws_oblit.cell(row=idx, column=9, value=post_stat).alignment = Alignment(horizontal="center")
 
-        # Substantive Dropdown Selection
-        ws_oblit.cell(row=idx, column=10, value="").font = bold_font
-        ws_oblit.cell(row=idx, column=11, value="NO").alignment = Alignment(horizontal="center")
-        ws_oblit.cell(row=idx, column=12, value="").font = bold_font
+        # Substantive & SU Selections
+        sub_name_ob = r["substantive_post_name"] or ""
+        su_name_ob = r["su_post_name"] or ""
+        has_su_ob = "YES" if su_name_ob else "NO"
+
+        ws_oblit.cell(row=idx, column=10, value=sub_name_ob).font = bold_font
+        ws_oblit.cell(row=idx, column=11, value=has_su_ob).alignment = Alignment(horizontal="center")
+        ws_oblit.cell(row=idx, column=12, value=su_name_ob).font = bold_font
 
         # Status Formula
         status_formula = (

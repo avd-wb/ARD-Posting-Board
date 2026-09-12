@@ -930,6 +930,12 @@ class PostingEngine:
         if sim_row:
             officer["current_simulation_assignment"] = dict(sim_row)
 
+        # Extended dossier fields (contacts, posting history, addresses, spouse, attention flag)
+        cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (hrms_id,))
+        ext_row = cur.fetchone()
+        if ext_row:
+            officer.update(dict(ext_row))
+
         conn.close()
 
         if not officer:
@@ -939,7 +945,12 @@ class PostingEngine:
             "officer_name": officer.get("officer_name") or officer.get("incumbent_name") or "Officer",
             "hrms_id": str(hrms_id),
             "mobile": officer.get("mobile") or "—",
+            "whatsapp": officer.get("whatsapp") or "—",
             "email": officer.get("email") or "—",
+            "wbvc_reg_no": officer.get("wbvc_reg_no") or "—",
+            "office_code": officer.get("office_code") or "—",
+            "ddo_code": officer.get("ddo_code") or "—",
+            "cadre": officer.get("cadre") or "West Bengal Animal Husbandry and Veterinary Service",
             "dob": officer.get("dob") or officer.get("incumbent_dob") or "—",
             "doj": officer.get("doj") or officer.get("incumbent_doj") or "—",
             "dor": officer.get("dor") or officer.get("dor_rule75a") or officer.get("incumbent_dor") or "—",
@@ -954,9 +965,16 @@ class PostingEngine:
             "present_pay_level": officer.get("pay_level") or "Level 16 (Rs. 56,100 - Rs. 1,44,300)",
             "tenure_years": officer.get("tenure_years") or officer.get("incumbent_tenure") or "—",
             "tenure_norm_status": officer.get("tenure_over_flag") or "Within Norm",
-            "transfer_history": officer.get("last_transfer_order") or officer.get("service_history") or "Standard tenure completed",
-            "qualifications": officer.get("qualification") or "B.V.Sc. & A.H.",
-            "family_details": officer.get("family_details") or "—",
+            "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
+            "ancestral_address": officer.get("ancestral_address") or "Departmental Record",
+            "current_address": officer.get("current_address") or "Departmental Record",
+            "spouse_service_details": officer.get("spouse_service_details") or "No spouse co-location claim recorded.",
+            "family_dependencies": officer.get("family_dependencies") or officer.get("family_details") or "Standard family dependencies.",
+            "academic_details": officer.get("academic_details") or officer.get("qualification") or "B.V.Sc. & A.H.",
+            "decision_note": officer.get("decision_note") or "",
+            "needs_backfill": bool(officer.get("needs_backfill")),
+            "attention_flag": bool(officer.get("attention_flag")),
+            "attention_reason": officer.get("attention_reason") or "",
             "preferences": {
                 f"Pref_{i}": officer.get(f"pref_{i}") for i in range(1, 11) if officer.get(f"pref_{i}") and officer.get(f"pref_{i}") != "—"
             },
@@ -969,6 +987,218 @@ class PostingEngine:
             dossier["preferences_summary"] = officer.get("all_preferences")
 
         return dossier
+
+    def get_posts_visual_grid(self, session_id: str = "CURRENT_SESSION", district_filter: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Returns all cadre & DD posts grouped by district with real-time color classifications:
+        - VACANT_PURE (Green): Pure vacancy, ready for selection
+        - VACANT_ON_PAPER (Amber): Substantively occupied, but incumbent is on SU elsewhere
+        - ATTENTION_REQUIRED (Red): Conflict / cascading replacement needed
+        - BOARD_SELECTED (Purple): Chosen in active board session
+        - OBLITERATED (Grey Strikethrough): Abolished under 1808
+        - FILLED_NORMAL (Blue): Normally occupied
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+
+        # 1. Fetch simulation assignments for active session
+        cur.execute("""
+        SELECT substantive_post_id, su_post_id, officer_hrms_id, officer_name
+        FROM simulation_assignments WHERE session_id = ?
+        """, (session_id,))
+        sim_assignments = cur.fetchall()
+
+        board_sub_ids = set()
+        board_su_ids = set()
+        sub_to_officer = {}
+        su_to_officer = {}
+        for r in sim_assignments:
+            if r["substantive_post_id"]:
+                try:
+                    sid = int(r["substantive_post_id"])
+                    board_sub_ids.add(sid)
+                    sub_to_officer[sid] = r["officer_name"]
+                except Exception:
+                    pass
+            if r["su_post_id"]:
+                try:
+                    suid = int(r["su_post_id"])
+                    board_su_ids.add(suid)
+                    su_to_officer[suid] = r["officer_name"]
+                except Exception:
+                    pass
+
+        # 2. Fetch officers currently on SU in baseline
+        cur.execute("SELECT incumbent_hrms, id FROM cadre_1794_posts WHERE service_utilized_flag = 1 AND incumbent_hrms IS NOT NULL")
+        su_baseline_posts = set(r["id"] for r in cur.fetchall())
+
+        # 3. Fetch obliterated post IDs
+        cur.execute("SELECT post_name, district FROM obliterated_posts_1808")
+        oblit_entries = set((str(r["post_name"] or "").strip().lower(), str(r["district"] or "").strip().lower()) for r in cur.fetchall())
+
+        # 4. Fetch DD posts
+        cur.execute("SELECT dd_sl, district, establishment, office, post_name, allotment_status, allotted_name FROM available_dd_posts ORDER BY district, office")
+        dd_rows = [dict(r) for r in cur.fetchall()]
+
+        # 5. Fetch 1,794 Cadre posts
+        cadre_query = "SELECT id, post_sl, district, block, establishment, designation, occupancy_status, incumbent_name, incumbent_hrms, is_substantive_blocked, su_allotted_name FROM cadre_1794_posts"
+        params = []
+        if district_filter and district_filter != "ALL":
+            cadre_query += " WHERE district = ?"
+            params.append(district_filter)
+        cadre_query += " ORDER BY district, block, establishment, designation"
+        cur.execute(cadre_query, params)
+        cadre_rows = [dict(r) for r in cur.fetchall()]
+
+        conn.close()
+
+        # Grouping container
+        districts_map = {}
+
+        summary_counts = {
+            "pure_vacant": 0,
+            "vacant_on_paper": 0,
+            "attention_required": 0,
+            "board_selected": 0,
+            "obliterated": 0,
+            "filled": 0,
+            "total": 0
+        }
+
+        def add_post_to_grid(p_data):
+            dist = p_data["district"] or "Unassigned District"
+            if dist not in districts_map:
+                districts_map[dist] = {
+                    "district": dist,
+                    "dd_posts": [],
+                    "cadre_posts": []
+                }
+            if p_data["type"] == "DD":
+                districts_map[dist]["dd_posts"].append(p_data)
+            else:
+                districts_map[dist]["cadre_posts"].append(p_data)
+            summary_counts["total"] += 1
+            st = p_data["status_code"]
+            if st == "VACANT_PURE":
+                summary_counts["pure_vacant"] += 1
+            elif st == "VACANT_ON_PAPER":
+                summary_counts["vacant_on_paper"] += 1
+            elif st == "ATTENTION_REQUIRED":
+                summary_counts["attention_required"] += 1
+            elif st == "BOARD_SELECTED":
+                summary_counts["board_selected"] += 1
+            elif st == "OBLITERATED":
+                summary_counts["obliterated"] += 1
+            elif st == "FILLED_NORMAL":
+                summary_counts["filled"] += 1
+
+        # Process DD posts
+        for dd in dd_rows:
+            dd_id = dd["dd_sl"]
+            is_selected = dd_id in board_sub_ids
+            status_code = "VACANT_PURE"
+            status_label = "Vacant DD Post"
+            badge_class = "bg-emerald-500 text-white"
+            allotted_officer = sub_to_officer.get(dd_id) or dd.get("allotted_name")
+
+            if is_selected or dd.get("allotment_status") == "Allotted":
+                status_code = "BOARD_SELECTED"
+                status_label = f"Selected: {allotted_officer or 'Board Promotee'}"
+                badge_class = "bg-purple-600 text-white font-medium"
+
+            p_item = {
+                "id": f"DD-{dd_id}",
+                "raw_id": dd_id,
+                "type": "DD",
+                "post_name": dd["post_name"],
+                "designation": "Deputy Director, ARD",
+                "establishment": dd["office"] or dd["establishment"],
+                "block": "District HQ",
+                "district": dd["district"],
+                "status_code": status_code,
+                "status_label": status_label,
+                "badge_class": badge_class,
+                "incumbent_name": None,
+                "allotted_to": allotted_officer,
+                "is_promotable": True
+            }
+            if not district_filter or district_filter == "ALL" or dd["district"].lower() == district_filter.lower():
+                add_post_to_grid(p_item)
+
+        # Process Cadre posts
+        for cp in cadre_rows:
+            cid = cp["id"]
+            desig = cp["designation"] or "Post"
+            est = cp["establishment"] or "Office"
+            block = cp["block"] or ""
+            dist = cp["district"] or "HQ"
+            inc_name = cp["incumbent_name"]
+            is_vacant = cp["occupancy_status"] == "Vacant" or not inc_name
+
+            # Check obliteration
+            post_key = (desig.strip().lower(), dist.strip().lower())
+            is_obliterated = post_key in oblit_entries
+
+            # Check board selection
+            is_sub_selected = cid in board_sub_ids
+            is_su_selected = cid in board_su_ids
+            allotted_officer = su_to_officer.get(cid) or sub_to_officer.get(cid) or cp.get("su_allotted_name")
+
+            # Check cascading replacement attention (e.g. Amta-II, Sankrail, Uluberia-I)
+            is_cascading_flag = any(k in f"{desig} {est} {block}".lower() for k in ["amta 2", "amta ii", "sankrail", "uluberia 1", "uluberia i"]) and not is_vacant
+
+            status_code = "FILLED_NORMAL"
+            status_label = f"Occupied by {inc_name}"
+            badge_class = "bg-slate-500 text-white"
+
+            if is_obliterated:
+                status_code = "OBLITERATED"
+                status_label = "Obliterated / Abolished under 1808"
+                badge_class = "bg-slate-300 text-slate-700 line-through border border-slate-400"
+            elif is_cascading_flag:
+                status_code = "ATTENTION_REQUIRED"
+                status_label = f"Attention: Cascading Replacement Needed (Currently {inc_name})"
+                badge_class = "bg-rose-500 text-white font-bold animate-pulse"
+            elif is_sub_selected or is_su_selected:
+                status_code = "BOARD_SELECTED"
+                status_label = f"Board Selected: {allotted_officer or 'Assigned'}"
+                badge_class = "bg-purple-600 text-white font-medium"
+            elif cid in su_baseline_posts:
+                status_code = "VACANT_ON_PAPER"
+                status_label = f"Vacant on Paper (Incumbent {inc_name} on SU)"
+                badge_class = "bg-amber-500 text-white font-medium"
+            elif is_vacant:
+                status_code = "VACANT_PURE"
+                status_label = "Pure Sanctioned Vacancy"
+                badge_class = "bg-emerald-500 text-white font-bold"
+
+            p_item = {
+                "id": f"P-{cid}",
+                "raw_id": cid,
+                "type": "CADRE",
+                "post_name": f"{desig}, {est}",
+                "designation": desig,
+                "establishment": est,
+                "block": block,
+                "district": dist,
+                "status_code": status_code,
+                "status_label": status_label,
+                "badge_class": badge_class,
+                "incumbent_name": inc_name,
+                "allotted_to": allotted_officer,
+                "is_promotable": False
+            }
+            add_post_to_grid(p_item)
+
+        # Sort districts alphabetically
+        sorted_districts = sorted(districts_map.keys())
+        structured_grid = [districts_map[d] for d in sorted_districts]
+
+        return {
+            "districts": sorted_districts,
+            "grid": structured_grid,
+            "summary": summary_counts
+        }
 
     # --- AI ALLOTMENT RECOMMENDATION ENGINE ---
 

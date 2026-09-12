@@ -193,6 +193,12 @@
                         <span>Official Orders & Gazette</span>
                         <span class="ml-1 text-[11px] bg-slate-600 text-white font-bold px-2 py-0.2 rounded-full">470</span>
                     </button>
+
+                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-300"></i>
+                        <span>District Post Visualizer</span>
+                        <span id="badgeVisualGridCount" class="ml-1 text-[11px] bg-emerald-600 text-white font-bold px-2 py-0.2 rounded-full">2,038</span>
+                    </button>
                 </nav>
             </div>
         </div>
@@ -589,6 +595,61 @@
             </div>
         </div>
 
+        <!-- ==================== TAB 7: DISTRICT-WISE POST STATUS VISUALIZER ==================== -->
+        <div id="tab-visual-grid" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="layout-grid" class="w-5 h-5 text-emerald-700"></i>
+                            <span>District-Wise Post Status Visualizer (2,038 Total Posts)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Real-time interactive color-coded status of all sanctioned posts across all districts. Click any post to inspect details.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <label class="text-slate-600 font-semibold">Filter District:</label>
+                        <select id="visualGridDistrictFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-emerald-600">
+                            <option value="ALL">All Districts & Complexes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Color Legend Bar -->
+                <div class="px-4 py-2.5 bg-slate-100/80 border-b border-slate-200 flex flex-wrap items-center gap-3 text-xs">
+                    <span class="font-bold text-slate-700">Legend:</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-500 text-white font-bold text-[11px] shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        Pure Vacant (<span id="legendCountPure">0</span>)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-amber-500 text-white font-bold text-[11px] shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        Vacant on Paper / SU (<span id="legendCountPaper">0</span>)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-rose-500 text-white font-bold text-[11px] shadow-sm animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        Attention / Replacement (<span id="legendCountAttention">0</span>)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-purple-600 text-white font-bold text-[11px] shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        Board Selected (<span id="legendCountBoard">0</span>)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-slate-300 text-slate-700 line-through border border-slate-400 font-bold text-[11px]">
+                        Obliterated (1808)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-slate-500 text-white font-bold text-[11px] shadow-sm">
+                        Filled (<span id="legendCountFilled">0</span>)
+                    </span>
+                </div>
+
+                <!-- Grid Body -->
+                <div id="visualGridBody" class="p-5 space-y-6 max-h-[700px] overflow-y-auto">
+                    <div class="py-12 text-center text-slate-400">Loading district post visualizer...</div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ==================== DUAL ALLOTMENT MODAL ==================== -->
@@ -896,17 +957,43 @@
 
     <!-- ==================== OFFICER DOSSIER DETAIL MODAL ==================== -->
     <div id="officerDossierModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
             <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-wbblue-950 to-slate-900 text-white flex items-center justify-between">
                 <div>
                     <h3 class="font-bold text-base flex items-center gap-2">
                         <i data-lucide="contact" class="w-5 h-5 text-amber-300"></i>
-                        <span>Officer Personnel Dossier</span>
+                        <span id="dossierModalTitle">Officer Personnel & Service Dossier</span>
                     </h3>
                     <p class="text-xs text-blue-200 mt-0.5" id="dossierSubtitle">Department of Animal Resources Development</p>
                 </div>
-                <button id="btnCloseDossierModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <div class="flex items-center gap-2">
+                    <button id="btnDossierAIAllot" class="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-lg shadow transition flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Recommend AI Allotment</span>
+                    </button>
+                    <button id="btnCloseDossierModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub-tabs within Dossier -->
+            <div class="flex items-center gap-1 border-b border-slate-200 px-4 pt-2 bg-slate-50 text-xs font-semibold overflow-x-auto">
+                <button id="dossierSubTabProfile" onclick="window.switchDossierSubTab('profile')" class="dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                    <span>Service & Personal Dossier</span>
+                </button>
+                <button id="dossierSubTabHistory" onclick="window.switchDossierSubTab('history')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                    <span>Posting History Timeline</span>
+                </button>
+                <button id="dossierSubTabFamily" onclick="window.switchDossierSubTab('family')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="heart-handshake" class="w-3.5 h-3.5"></i>
+                    <span>Spouse & Family Matter</span>
+                </button>
+                <button id="dossierSubTabGrid" onclick="window.switchDossierSubTab('grid')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span class="text-emerald-700 font-bold">District Post Visualizer & Allotment</span>
                 </button>
             </div>
 
@@ -914,11 +1001,8 @@
                 <!-- Populated dynamically via openOfficerDossier(hrmsId) -->
             </div>
 
-            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-                <button id="btnDossierAIAllot" class="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-lg shadow transition flex items-center gap-1.5">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                    <span>Recommend AI Allotment</span>
-                </button>
+            <div class="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div class="text-[11px] text-slate-500" id="dossierFooterMeta">WBSR Rule 75(a) & Memo 291 Compliant</div>
                 <button id="btnCloseDossierFooter" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
                     Close
                 </button>
