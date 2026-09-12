@@ -128,11 +128,11 @@ def get_overview():
     obliterated_posts = cur.fetchone()[0]
     cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE is_vacant != 'Yes'")
     obliterated_officers = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE rehabilitation_status = 'Rehabilitated'")
+    cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE is_vacant != 'Yes' AND (UPPER(rehabilitation_status) = 'REHABILITATED' OR (substantive_post_name IS NOT NULL AND substantive_post_name != ''))")
     obliterated_rehabilitated = cur.fetchone()[0]
 
     # Available DD posts (242 available, 2 vigilance holds out of 244)
-    cur.execute("SELECT count(*) FROM available_dd_posts WHERE is_blocked_vigilance = 0 AND allotment_status = 'Available'")
+    cur.execute("SELECT count(*) FROM available_dd_posts WHERE is_blocked_vigilance = 0 AND UPPER(allotment_status) = 'AVAILABLE'")
     vacant_dd = cur.fetchone()[0]
 
     # Vacant AD posts in 1,794 cadre
@@ -142,7 +142,7 @@ def get_overview():
     # Roster candidates
     cur.execute("SELECT count(*) FROM roster_50_point_candidates")
     roster_candidates = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM roster_50_point_candidates WHERE allotment_status = 'Allotted'")
+    cur.execute("SELECT count(*) FROM roster_50_point_candidates WHERE UPPER(allotment_status) = 'ALLOTTED' OR substantive_post_name IS NOT NULL")
     roster_allotted = cur.fetchone()[0]
 
     conn.close()
