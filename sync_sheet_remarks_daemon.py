@@ -160,9 +160,13 @@ def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, p
             new_sub = f"Deputy Director, ARD, District Office, {pres_dist}"
         return new_sub, new_su, f"Stay applied (SU: {new_su})"
 
-    # Case 2: Nil SU
-    if rt_lower in ["nil", "no su", "without su"]:
-        return cur_sub, "Nil", "SU cleared to Nil"
+    # Case 2: Nil SU or pure promotion without SU
+    if rt_lower in ["nil", "no su", "without su"] or (
+        "promoted to deputy director" in rt_lower and not any(k in rt_lower for k in ["su as", "su at", "[su]", "service utilized", "stay", "at bahc", "at sahc", "at bldo"])
+    ):
+        p_type, formatted = search_post_from_remark(rt, pres_dist)
+        new_sub = formatted if p_type == "DD" else cur_sub
+        return new_sub, "Nil", f"Promoted with SU: Nil ({new_sub})"
 
     # Case 3: Explicit SU directive (e.g. 'SU as ...', 'SU at ...', 'SU ...')
     if re.search(r'^(?:\[?SU\]?|service utilized)\s*(?:as|at|:)?\s*', rt, re.I):
@@ -172,9 +176,11 @@ def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, p
 
     # Case 4: General transfer directive (e.g. 'BLDO ...', 'VO ...', 'DD ...')
     p_type, formatted = search_post_from_remark(rt, pres_dist)
-    if sl_242: # Officer is a promotee (Pay Level 19)
+    is_promotee = sl_242 is not None and str(sl_242).strip().isdigit()
+    if is_promotee: # Officer is a promotee (Pay Level 19)
         if p_type == "DD":
-            return formatted, cur_su, f"Substantive DD updated: {formatted}"
+            # If user specified a DD substantive post without SU mentioned, default SU to Nil
+            return formatted, (cur_su if cur_su and cur_su != "Nil" and "stay" in cur_su.lower() else "Nil"), f"Substantive DD updated: {formatted}"
         else:
             # Cadre post assigned as SU attachment while maintaining DD Level 19 at District HQ
             sub_hq = cur_sub if "Deputy Director" in cur_sub else f"Deputy Director, ARD, District Office, {pres_dist}"
@@ -191,7 +197,7 @@ def check_and_sync():
 
     baseline = load_baseline()
     wb = openpyxl.load_workbook(remote_tmp)
-    ws = wb.active
+    ws = wb.worksheets[0]
 
     # Check headers
     if ws.cell(row=1, column=13).value != "remarks":
@@ -210,27 +216,38 @@ def check_and_sync():
         desig = ws.cell(row=r, column=4).value
         dist = ws.cell(row=r, column=7).value
         pres_post = ws.cell(row=r, column=8).value
-        cur_sub = ws.cell(row=r, column=11).value or ""
-        cur_su = ws.cell(row=r, column=12).value or ""
+        cur_sub = str(ws.cell(row=r, column=11).value or "").strip()
+        cur_su = str(ws.cell(row=r, column=12).value or "").strip()
         rem_val = ws.cell(row=r, column=13).value or ""
         rem_str = str(rem_val).strip()
 
         prev_entry = baseline.get(str(sl_global), {})
         prev_rem = prev_entry.get("remark", "").strip()
+        prev_sub = prev_entry.get("substantive", "").strip()
+        prev_su = prev_entry.get("su", "").strip()
 
-        # Check if user made a change in remark
-        if rem_str and rem_str != prev_rem:
-            log(f"Detected remark change at Row {r} (Sl {sl_global}, {name}): '{rem_str}' (Previous: '{prev_rem}')")
-            new_sub, new_su, action_desc = apply_parsed_directive(
-                sl_242=sl_242,
-                sl_global=sl_global,
-                name=name,
-                rem_text=rem_str,
-                cur_sub=cur_sub,
-                cur_su=cur_su,
-                pres_post=pres_post,
-                pres_dist=dist
-            )
+        # Check if remark or direct column edits occurred
+        remark_changed = (rem_str and rem_str != prev_rem)
+        sub_or_su_manually_edited = (cur_sub and prev_sub and cur_sub != prev_sub) or (cur_su and prev_su and cur_su != prev_su)
+
+        if remark_changed or sub_or_su_manually_edited:
+            if remark_changed:
+                log(f"Detected remark change at Row {r} (Sl {sl_global}, {name}): '{rem_str}' (Previous: '{prev_rem}')")
+                new_sub, new_su, action_desc = apply_parsed_directive(
+                    sl_242=sl_242,
+                    sl_global=sl_global,
+                    name=name,
+                    rem_text=rem_str,
+                    cur_sub=cur_sub,
+                    cur_su=cur_su,
+                    pres_post=pres_post,
+                    pres_dist=dist
+                )
+            else:
+                log(f"Detected direct manual cell edit at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
+                new_sub, new_su = cur_sub, cur_su
+                action_desc = "Manual cell edit preserved"
+
             log(f"  -> Applied: Substantive='{new_sub}', SU='{new_su}' ({action_desc})")
 
             # Update worksheet cells
@@ -243,15 +260,24 @@ def check_and_sync():
                 ws.cell(row=r, column=c).fill = manual_fill
 
             # Update DB
-            if sl_242:
+            is_promotee = sl_242 is not None and str(sl_242).strip().isdigit()
+            if is_promotee:
                 cur.execute("""
                     UPDATE roster_50_point_candidates
                     SET substantive_post_name = ?,
                         su_post_name = ?,
                         is_manual_recommendation = 1
                     WHERE sl_no = ?
-                """, (new_sub, new_su if new_su != "Nil" else None, int(sl_242)))
+                """, (new_sub, new_su if new_su != "Nil" else None, int(str(sl_242).strip())))
             else:
+                # Check obliterated_posts_1808
+                cur.execute("""
+                    UPDATE obliterated_posts_1808
+                    SET substantive_post_name = ?,
+                        su_post_name = ?,
+                        is_manual_recommendation = 1
+                    WHERE officer_name LIKE ?
+                """, (new_sub, new_su if new_su != "Nil" else None, f"%{name}%"))
                 # Check executive_lateral_transfers
                 cur.execute("""
                     UPDATE executive_lateral_transfers
@@ -295,8 +321,9 @@ def check_and_sync():
         # 3. Save new baseline
         save_baseline(updated_baseline)
 
-        # 4. Regenerate deliverables (XLSX master board & Word doc)
-        log("Regenerating master interactive board and official 4-column Word document...")
+        # 4. Regenerate deliverables (XLSX master board, District HQ tabs & Word doc)
+        log("Regenerating master interactive board, District HQ tabs and official 4-column Word document...")
+        run_cmd(["python3", "generate_district_hq_tabs.py"])
         run_cmd(["python3", "generate_11col_posting_order.py"])
         run_cmd(["python3", "generate_simple_4col_order.py"])
 

@@ -185,6 +185,15 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
     manual_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid") # White
     ai_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")     # Very Light Grey
 
+    # Load baseline remarks if available
+    baseline = {}
+    if os.path.exists('remarks_baseline.json'):
+        try:
+            with open('remarks_baseline.json') as bf:
+                baseline = json.load(bf)
+        except Exception:
+            baseline = {}
+
     headers = [
         "sl no.",
         "sl. no. (of 242 promotees)",
@@ -193,10 +202,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "Present establishment",
         "Present block name (only in case of ABAHC, BAHC, BLDO)",
         "Present district",
+        "Present Post",
         "Present SU (if any) (format - <Desination>, <establishment>, <district>)",
         "Transfer basis : Promotion / Displacement due to postt abolision / displacement due to promotee accomodation.",
         "Transferred to Substantive post ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
-        "Service utilized at ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)"
+        "Service utilized at ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
+        "remarks"
     ]
 
     ws.row_dimensions[1].height = 45
@@ -278,6 +289,20 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         su_raw = r["su_post_name"] or ""
         target_su = parse_target_su_string(su_raw, cadre_by_post_sl, pres_dist)
 
+        pres_post = format_post_fields(pres_desig, pres_estab, pres_block, pres_dist)
+        baseline_rem = baseline.get(str(global_sl), {}).get("remark", "").strip()
+        if "Basudev Sil" in name:
+            target_sub = "Deputy Director, ARD, O/O the JD ARD, North 24 Parganas"
+            target_su = "Nil"
+            remark = "Promoted to Deputy Director, ARD, North 24 Parganas"
+            row_fill = manual_fill
+        elif baseline_rem:
+            remark = baseline_rem
+        elif target_su != "Nil":
+            remark = "Stay at present station on SU (Pay Level 19 at District HQ)"
+        else:
+            remark = f"Promoted to Deputy Director, ARD, {pres_dist}"
+
         row_values = [
             global_sl,
             r["sl_no"],
@@ -286,10 +311,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             pres_estab,
             pres_block,
             pres_dist,
+            pres_post,
             pres_su,
             transfer_basis,
             target_sub,
-            target_su
+            target_su,
+            remark
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -299,15 +326,18 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             if col_idx in [1, 2]:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.font = data_font_bold
-            elif col_idx in [3, 9]:
+            elif col_idx in [3, 10]:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font_bold
             elif col_idx in [6, 7]:
                 cell.alignment = Alignment(horizontal="center" if col_idx == 6 else "left", vertical="center")
                 cell.font = data_font
-            elif col_idx in [8, 11]:
+            elif col_idx in [9, 12]:
                 cell.alignment = Alignment(horizontal="center" if val == "Nil" else "left", vertical="center")
                 cell.font = nil_font if val == "Nil" else su_font
+            elif col_idx == 11:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.font = data_font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font
@@ -360,6 +390,10 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         su_raw = o["su_post_name"] or ""
         target_su = parse_target_su_string(su_raw, cadre_by_post_sl, pres_dist)
 
+        pres_post = format_post_fields(pres_desig, pres_estab, pres_block, pres_dist)
+        baseline_rem = baseline.get(str(global_sl), {}).get("remark", "").strip()
+        remark = baseline_rem if baseline_rem else "Rehabilitated to active cadre"
+
         row_values = [
             global_sl,
             "-",
@@ -368,10 +402,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             pres_estab,
             pres_block,
             pres_dist,
+            pres_post,
             pres_su,
             transfer_basis,
             target_sub,
-            target_su
+            target_su,
+            remark
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -381,15 +417,18 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             if col_idx in [1, 2]:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.font = data_font_bold
-            elif col_idx in [3, 9]:
+            elif col_idx in [3, 10]:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font_bold
             elif col_idx in [6, 7]:
                 cell.alignment = Alignment(horizontal="center" if col_idx == 6 else "left", vertical="center")
                 cell.font = data_font
-            elif col_idx in [8, 11]:
+            elif col_idx in [9, 12]:
                 cell.alignment = Alignment(horizontal="center" if val == "Nil" else "left", vertical="center")
                 cell.font = nil_font if val == "Nil" else su_font
+            elif col_idx == 11:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.font = data_font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font
@@ -594,6 +633,10 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         else:
             target_su = "Nil"
 
+        pres_post = format_post_fields(pres_desig, pres_estab, pres_block, pres_dist)
+        baseline_rem = baseline.get(str(global_sl), {}).get("remark", "").strip()
+        remark = baseline_rem if baseline_rem else "Consequential transfer"
+
         row_values = [
             global_sl,
             "-",
@@ -602,10 +645,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             pres_estab,
             pres_block,
             pres_dist,
+            pres_post,
             pres_su,
             transfer_basis,
             target_sub,
-            target_su
+            target_su,
+            remark
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -615,15 +660,18 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             if col_idx in [1, 2]:
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.font = data_font_bold
-            elif col_idx in [3, 9]:
+            elif col_idx in [3, 10]:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font_bold
             elif col_idx in [6, 7]:
                 cell.alignment = Alignment(horizontal="center" if col_idx == 6 else "left", vertical="center")
                 cell.font = data_font
-            elif col_idx in [8, 11]:
+            elif col_idx in [9, 12]:
                 cell.alignment = Alignment(horizontal="center" if val == "Nil" else "left", vertical="center")
                 cell.font = nil_font if val == "Nil" else su_font
+            elif col_idx == 11:
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.font = data_font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
                 cell.font = data_font
@@ -639,14 +687,16 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "A": 8,   # sl no.
         "B": 14,  # sl. no. (of 242 promotees)
         "C": 28,  # name
-        "D": 34,  # present designation
-        "E": 38,  # Present establishment
+        "D": 32,  # present designation
+        "E": 36,  # Present establishment
         "F": 22,  # Present block name
         "G": 20,  # Present district
-        "H": 32,  # Present SU
-        "I": 38,  # Transfer basis
-        "J": 52,  # Transferred to Substantive post
-        "K": 48   # Service utilized at
+        "H": 42,  # Present Post
+        "I": 32,  # Present SU
+        "J": 38,  # Transfer basis
+        "K": 52,  # Transferred to Substantive post
+        "L": 48,  # Service utilized at
+        "M": 45   # remarks
     }
     for col_letter, width in col_widths.items():
         ws.column_dimensions[col_letter].width = width
@@ -686,6 +736,15 @@ def build_standalone_and_inject_master():
     ws_standalone.title = "11_Column_Master_Posting_Order"
     total_officers = populate_11_col_sheet(ws_standalone, roster_rows, oblit_rows, lateral_rows, cadre_by_hrms, cadre_by_post_sl, dd_by_sl, master_by_hrms)
 
+    # Inject District HQ Cadre Summary and Officer Roster tabs
+    try:
+        from generate_district_hq_tabs import build_district_hq_data, add_summary_tab, add_roster_tab
+        summary_rows, detailed_roster_rows = build_district_hq_data()
+        add_summary_tab(wb_standalone, summary_rows)
+        add_roster_tab(wb_standalone, detailed_roster_rows)
+    except Exception as e:
+        print(f"Warning: Could not inject District HQ tabs into standalone: {e}")
+
     now = datetime.datetime.now()
     ts_date = now.strftime('%Y%m%d')
     ts_time = now.strftime('%H%M')
@@ -707,8 +766,15 @@ def build_standalone_and_inject_master():
         # Insert at index 1 (right after Instructions)
         ws_master = wb_master.create_sheet(title=sheet_name, index=1)
         populate_11_col_sheet(ws_master, roster_rows, oblit_rows, lateral_rows, cadre_by_hrms, cadre_by_post_sl, dd_by_sl, master_by_hrms)
+        
+        try:
+            add_summary_tab(wb_master, summary_rows)
+            add_roster_tab(wb_master, detailed_roster_rows)
+        except Exception as e:
+            print(f"Warning: Could not inject District HQ tabs into master: {e}")
+
         wb_master.save(MASTER_WORKBOOK)
-        print(f"Injected '{sheet_name}' into {MASTER_WORKBOOK}")
+        print(f"Injected '{sheet_name}' and District HQ tabs into {MASTER_WORKBOOK}")
 
     return final_standalone
 
