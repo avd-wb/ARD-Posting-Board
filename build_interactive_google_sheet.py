@@ -532,6 +532,54 @@ def build_workbook():
                 cell.fill = fill_color
             ws_disp.row_dimensions[idx].height = 20
 
+    # Section 2: Group C Cascading Replacement Warnings (Field Posts Requiring Urgent Backfill)
+    start_c_row = ws_disp.max_row + 3
+    ws_disp.cell(row=start_c_row, column=1, value="GROUP C: CASCADING REPLACEMENT WARNINGS (FIELD POSTS REQUIRING IMMEDIATE BACKFILL)").font = Font(name="Calibri", size=12, bold=True, color="991B1B")
+    ws_disp.merge_cells(f"A{start_c_row}:H{start_c_row}")
+    
+    c_header_row = start_c_row + 1
+    casc_headers = [
+        "Sl", "Transferred Out Officer", "HRMS ID", "Vacated Field Post (Must Backfill)", 
+        "District", "New Promotional / Transfer Post", "Pay Level", "Action Required / Warning"
+    ]
+    red_header_fill = PatternFill(start_color="991B1B", end_color="991B1B", fill_type="solid")
+    red_row_fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+    red_font = Font(name="Calibri", size=10, bold=True, color="991B1B")
+
+    for c_idx, h in enumerate(casc_headers, 1):
+        cell = ws_disp.cell(row=c_header_row, column=c_idx, value=h)
+        cell.fill = red_header_fill
+        cell.font = white_header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = cell_border
+    ws_disp.row_dimensions[c_header_row].height = 28
+
+    c.execute("""
+        SELECT r.hrms_id, r.officer_name, r.present_posting, r.present_district,
+               r.substantive_post_name, e.attention_reason
+        FROM roster_50_point_candidates r
+        JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
+        WHERE e.needs_backfill = 1
+        ORDER BY r.present_district, r.officer_name
+    """)
+    casc_rows = c.fetchall()
+    for c_idx, cr in enumerate(casc_rows, 1):
+        target_r = c_header_row + c_idx
+        ws_disp.cell(row=target_r, column=1, value=c_idx).alignment = Alignment(horizontal="center")
+        ws_disp.cell(row=target_r, column=2, value=cr["officer_name"]).font = bold_font
+        ws_disp.cell(row=target_r, column=3, value=cr["hrms_id"]).alignment = Alignment(horizontal="center")
+        ws_disp.cell(row=target_r, column=4, value=cr["present_posting"]).font = red_font
+        ws_disp.cell(row=target_r, column=5, value=cr["present_district"]).alignment = Alignment(horizontal="center")
+        ws_disp.cell(row=target_r, column=6, value=cr["substantive_post_name"])
+        ws_disp.cell(row=target_r, column=7, value="Level 16 -> 19").alignment = Alignment(horizontal="center")
+        ws_disp.cell(row=target_r, column=8, value="⚠️ VACATED FIELD POST - MUST BE BACKFILLED IMMEDIATELY").font = red_font
+        
+        for col_i in range(1, 9):
+            cell = ws_disp.cell(row=target_r, column=col_i)
+            cell.border = cell_border
+            cell.fill = red_row_fill
+        ws_disp.row_dimensions[target_r].height = 22
+
     # =========================================================================
     # SHEET 8: Secretariat_Posting_Order (Exact 6 Columns Requested by User)
     # =========================================================================
@@ -612,6 +660,56 @@ def build_workbook():
             cell.fill = fill_color
             cell.font = bold_font if c_idx in [1, 2, 5] else normal_font
         ws_order.row_dimensions[target_r].height = 24
+
+    # Part 2: Executive Realignment & Lateral Transfer Schedule (18 Named Cadre Posts)
+    start_sec2 = ws_order.max_row + 2
+    ws_order.merge_cells(f"A{start_sec2}:F{start_sec2}")
+    sec2_title = ws_order.cell(row=start_sec2, column=1, value="SCHEDULE B: LATERAL TRANSFERS, SERVICE UTILIZATION & CADRE REALIGNMENTS")
+    sec2_title.font = Font(name="Calibri", size=11, bold=True, color="0F766E")
+    sec2_title.alignment = Alignment(horizontal="center", vertical="center")
+    ws_order.row_dimensions[start_sec2].height = 24
+    
+    sec2_hdr_row = start_sec2 + 1
+    for c_idx, h in enumerate(sec_headers, 1):
+        cell = ws_order.cell(row=sec2_hdr_row, column=c_idx, value=h)
+        cell.fill = teal_header_fill
+        cell.font = white_header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = cell_border
+    ws_order.row_dimensions[sec2_hdr_row].height = 28
+
+    exec_transfers = [
+        ("Dr. Prasanta Kumar Bera (2001001103) — DVO, Howrah", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
+        ("Dr. Pradip Pati (2000004209) — AD, ARD (Management), Haringhata Farm SU at Banglar Dairy", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
+        ("Dr. Sukanta Roy (2012002908) — AD, ARD (VR&I), North 24 Parganas", "Level 16", "Administrative Transfer", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
+        ("Dr. Debi Prasad Nandi (2000000354) — BLDO, Swarupnagar, North 24 Parganas", "Level 16", "Promotion / Placement", "AD, ARD, North 24 Parganas [SU as AD, ARD (Vety.), HQ, Kolkata]", "Level 16"),
+        ("Dr. Nirmalya Ranjan Sarkar (2014000243) — AD, ARD (SA), Hooghly", "Level 16", "Cadre Restructuring", "AD, ARD, Hooghly [SU as AD, ARD (Vety.), HQ, Kolkata]", "Level 16"),
+        ("Dr. Puspendu Panja (2005000825) — AD, ARD (Management), Haringhata Farm, Nadia", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
+        ("Dr. Banibrata Nayek (1999000493) — BLDO, Kulpi, South 24 Pgs", "Level 16", "Administrative Transfer", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
+        ("Dr. Shuvendu Halder (1998000164) — AD, ARD (Vety.), HQ, Kolkata", "Level 16", "Administrative Transfer (Reciprocal Swap)", "Veterinary Officer, BAHC, Kalna-II, Purba Bardhaman", "Level 16"),
+        ("Dr. Madhusudan Mukherjee (2001001523) — VO, BAHC, Kalna-II, Purba Bardhaman", "Level 16", "Administrative Transfer (Reciprocal Swap)", "AD, ARD (Vety.), HQ, Kolkata [SU at WBLDCL, HQ as Manager (HR)]", "Level 16"),
+        ("Dr. Partha Sarathi Chattopadhyay (2001000022) — AD, ARD (Vety.), HQ SU at WBLDCL, HQ", "Level 16", "SU Withdrawn / Field Transfer (Swap)", "Block Livestock Development Officer, Ratua-I, Malda", "Level 16"),
+        ("Dr. Dipak Dey (2019018249) — BLDO, Ratua-I, Malda", "Level 16", "Deputation / Transfer (Swap)", "AD, ARD (Vety.), Dte. HQ [SU at WBLDCL, HQ (Marketing)]", "Level 16"),
+        ("Dr. Santanu Nandi (2011000171) — AD, ARD (Vety.), Dte. HQ SU at WBLDCL, HQ (Marketing)", "Level 16", "SU Withdrawn / Field Transfer", "Block Livestock Development Officer, Bangaon, North 24 Parganas", "Level 16"),
+        ("Dr. Sumit Chowdhury (2005000244) — AD, ARD (Vety.), HQ, Kolkata", "Level 16", "Administrative Transfer", "Assistant Director, ARD (VR&I), IAH&VB, Belgachia, Kolkata", "Level 16")
+    ]
+
+    for ex_idx, (ex_name, ex_pl, ex_tb, ex_place, ex_npl) in enumerate(exec_transfers, 1):
+        tr = sec2_hdr_row + ex_idx
+        ws_order.cell(row=tr, column=1, value=ex_idx).alignment = Alignment(horizontal="center", vertical="center")
+        ws_order.cell(row=tr, column=2, value=ex_name).alignment = Alignment(horizontal="left", vertical="center")
+        ws_order.cell(row=tr, column=3, value=ex_pl).alignment = Alignment(horizontal="center", vertical="center")
+        ws_order.cell(row=tr, column=4, value=ex_tb).alignment = Alignment(horizontal="center", vertical="center")
+        ws_order.cell(row=tr, column=5, value=ex_place).alignment = Alignment(horizontal="left", vertical="center")
+        ws_order.cell(row=tr, column=6, value=ex_npl).alignment = Alignment(horizontal="center", vertical="center")
+        
+        fill_color = zebra_fill if ex_idx % 2 == 0 else plain_fill
+        for col_i in range(1, 7):
+            c_cell = ws_order.cell(row=tr, column=col_i)
+            c_cell.border = cell_border
+            c_cell.fill = fill_color
+            c_cell.font = bold_font if col_i in [1, 2, 5] else normal_font
+        ws_order.row_dimensions[tr].height = 24
 
     # =========================================================================
     # SHEET 9: Master_Cadre_Directory (1,624 Statewide Cadre Employees)

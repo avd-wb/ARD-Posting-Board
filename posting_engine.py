@@ -1487,6 +1487,59 @@ class PostingEngine:
         conn.close()
         return rows
 
+    # --- GROUP C: CASCADING REPLACEMENT WARNINGS (FIELD POST BACKFILLS) ---
+    def get_cascading_replacement_warnings(self) -> List[Dict[str, Any]]:
+        """
+        Returns all field posts (BLDO, VO, BAHC, SAHC) vacated due to promotional or
+        administrative transfers without incoming replacement, requiring urgent backfill.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT r.sl_no, r.roster_point, r.officer_name, r.hrms_id, 
+                   r.present_posting, r.present_district, r.substantive_post_name,
+                   r.su_post_name, e.attention_reason, e.mobile, e.email
+            FROM roster_50_point_candidates r
+            JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
+            WHERE e.needs_backfill = 1 OR e.attention_flag = 1
+            ORDER BY r.present_district ASC, r.officer_name ASC
+        """)
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+
+    # --- DISTRICT HEADQUARTERS AD CADRE BALANCE (3 AD CEILING) ---
+    def get_district_ad_balance(self) -> List[Dict[str, Any]]:
+        """
+        Calculates AD staffing across District Joint Director offices,
+        verifying adherence to the 3-AD limit (minimum 2 in small hill districts).
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT district, COUNT(*) as total_sanctioned_ad,
+                   SUM(CASE WHEN occupancy_status = 'Occupied' THEN 1 ELSE 0 END) as occupied_ad,
+                   SUM(CASE WHEN occupancy_status = 'Vacant' THEN 1 ELSE 0 END) as vacant_ad
+            FROM cadre_1794_posts
+            WHERE designation LIKE '%Assistant Director%'
+              AND (establishment LIKE '%District%' OR establishment LIKE '%Office of the Deputy Director%' OR establishment LIKE '%DD%' OR establishment LIKE '%Joint Director%')
+            GROUP BY district
+            ORDER BY district ASC
+        """)
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            dist_name = d["district"]
+            is_small = dist_name in ["Kalimpong", "Darjeeling", "Jhargram", "Alipurduar"]
+            norm = 2 if is_small else 3
+            d["target_norm"] = norm
+            d["is_compliant"] = d["occupied_ad"] <= norm
+            d["surplus_count"] = max(0, d["occupied_ad"] - norm)
+            rows.append(d)
+        conn.close()
+        return rows
+
+
 if __name__ == "__main__":
     engine = PostingEngine()
     print("Testing dynamic posts...")

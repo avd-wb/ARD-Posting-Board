@@ -227,6 +227,11 @@ def get_cadre_hierarchy():
     """Returns official 6-tier rank waterfall hierarchy and establishment distribution."""
     return engine.get_cadre_waterfall_hierarchy()
 
+@app.get("/api/cadre/district-ad-balance")
+def get_district_ad_balance_endpoint():
+    """Returns AD cadre compliance metrics across all district Joint Director offices (3 AD norm)."""
+    return engine.get_district_ad_balance()
+
 @app.get("/api/cadre/{post_id}")
 def get_single_post(post_id: int):
     conn = get_db()
@@ -718,6 +723,11 @@ I can assist you with:
 
     conn.close()
     return {"query": req.query, "response": response_text}
+
+@app.get("/api/posts/cascading-backfills")
+def get_cascading_backfills_endpoint():
+    """Returns Group C cascading replacement warnings for field posts that must be backfilled."""
+    return engine.get_cascading_replacement_warnings()
 
 @app.get("/api/download/google-sheets-version")
 def download_google_sheets_version():

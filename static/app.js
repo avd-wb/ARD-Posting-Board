@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (targetTab === 'tab-cascade') {
                     loadSimulationHistory();
+                    loadCascadingBackfills();
                 } else if (targetTab === 'tab-displaced') {
                     loadDisplacedPool();
                 } else if (targetTab === 'tab-visual-grid') {
@@ -577,6 +578,103 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- GROUP C CASCADING REPLACEMENT WARNINGS ---
+    let cascadingBackfillsData = [];
+    async function loadCascadingBackfills() {
+        const tbody = document.getElementById('cascadingBackfillTableBody');
+        const badge = document.getElementById('badgeCascadingCount');
+        const searchInput = document.getElementById('cascadingSearchInput');
+        if (!tbody) return;
+
+        try {
+            const res = await fetch('/api/posts/cascading-backfills');
+            cascadingBackfillsData = await res.json();
+            if (badge) {
+                badge.innerText = `${cascadingBackfillsData.length} Vacated Posts`;
+            }
+
+            function renderRows(items) {
+                if (!items || items.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
+                                No cascading vacancies matching your filter.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = items.map((item, idx) => `
+                    <tr class="hover:bg-rose-50/60 transition duration-150 border-b border-rose-100">
+                        <td class="py-2.5 px-3 font-mono text-slate-500 font-semibold">${idx + 1}</td>
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-slate-900 flex items-center gap-1.5 cursor-pointer hover:text-wbblue-700" onclick="window.showOfficerProfileModal('${item.hrms_id}')">
+                                <span>${item.officer_name}</span>
+                                <span class="text-[10px] font-normal text-slate-500 font-mono">(${item.hrms_id})</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500">Roster Pt: ${item.roster_point || item.sl_no}</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <div class="font-bold text-rose-700 flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                                <span>${item.present_posting}</span>
+                            </div>
+                            <div class="text-[11px] text-rose-600 font-medium">⚠️ Relieved without substitute</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                                ${item.present_district || 'District HQ'}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-slate-800 text-[11px]">
+                            <div class="font-semibold text-emerald-800">${item.substantive_post_name || 'Substantive DD Post'}</div>
+                            ${item.su_post_name ? `<div class="text-teal-700 font-medium">SU: ${item.su_post_name}</div>` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
+                                🚨 IMMEDIATE BACKFILL
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
+
+            renderRows(cascadingBackfillsData);
+
+            if (searchInput && !searchInput.dataset.initialized) {
+                searchInput.dataset.initialized = 'true';
+                searchInput.addEventListener('input', (e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    if (!q) {
+                        renderRows(cascadingBackfillsData);
+                        return;
+                    }
+                    const filtered = cascadingBackfillsData.filter(item =>
+                        (item.officer_name && item.officer_name.toLowerCase().includes(q)) ||
+                        (item.hrms_id && item.hrms_id.toLowerCase().includes(q)) ||
+                        (item.present_posting && item.present_posting.toLowerCase().includes(q)) ||
+                        (item.present_district && item.present_district.toLowerCase().includes(q)) ||
+                        (item.substantive_post_name && item.substantive_post_name.toLowerCase().includes(q))
+                    );
+                    renderRows(filtered);
+                });
+            }
+        } catch (e) {
+            console.error('Error loading cascading backfills:', e);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-4 text-center text-rose-600 text-xs">
+                        Failed to load cascading backfills: ${e.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
     // --- SIMULATION CONTROLS (AUTO-SOLVE & RESET) ---
     function initSimulationControls() {
         const btnAutoSolve = document.getElementById('btnAutoSolve');
@@ -599,6 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await loadObliterated();
                 await loadCadre();
                 await loadSimulationHistory();
+                await loadCascadingBackfills();
             } catch (e) {
                 console.error('Auto solve error:', e);
                 alert('Auto solver failed: ' + e.message);
@@ -615,6 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await loadObliterated();
                 await loadCadre();
                 await loadSimulationHistory();
+                await loadCascadingBackfills();
             } catch (e) {
                 console.error('Reset error:', e);
             }

@@ -522,6 +522,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Group C: Cascading Replacement Warnings (Must Backfill Field Posts) -->
+            <div class="mt-6 bg-white rounded-xl shadow-sm border border-rose-200 overflow-hidden">
+                <div class="p-4 border-b border-rose-100 bg-rose-50/80 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse"></span>
+                        <h3 class="font-bold text-rose-950 text-sm flex items-center gap-1.5">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i>
+                            <span>Group C: Cascading Replacement Warnings (Must Backfill Field Posts)</span>
+                        </h3>
+                    </div>
+                    <span id="badgeCascadingCount" class="px-2.5 py-0.5 rounded-full bg-rose-600 text-white font-bold text-xs">104 Vacated Posts</span>
+                </div>
+                <div class="p-3 text-xs text-rose-900 bg-rose-50/40 border-b border-rose-100 flex items-center justify-between">
+                    <span>Field posts (BLDO, BAHC, SAHC) vacated due to promotional or administrative outbound transfers with no incoming relief doctor. <strong>Immediate backfill required to prevent administrative breakdown.</strong></span>
+                    <input type="text" id="cascadingSearchInput" placeholder="Filter district or block..." class="text-xs border border-rose-200 rounded px-2.5 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-rose-400 w-48">
+                </div>
+                <div class="overflow-x-auto max-h-[380px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-rose-100 text-left text-xs">
+                        <thead class="bg-rose-100/70 text-rose-900 font-semibold sticky top-0 z-10">
+                            <tr>
+                                <th class="py-2.5 px-3">Sl</th>
+                                <th class="py-2.5 px-3">Transferred Officer</th>
+                                <th class="py-2.5 px-3">Vacated Field Post (Alert: Must Backfill)</th>
+                                <th class="py-2.5 px-3">District</th>
+                                <th class="py-2.5 px-3">New Substantive / SU Post</th>
+                                <th class="py-2.5 px-3 text-center">Urgency Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cascadingBackfillTableBody" class="divide-y divide-rose-100 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- ==================== TAB 5: OFFICIAL ORDERS REPOSITORY ==================== -->
