@@ -50,6 +50,20 @@ def run_cmd(cmd_list, timeout=120):
         log(f"Command failed: {' '.join(cmd_list)}\nSTDERR: {res.stderr}")
     return res
 
+def clean_post_string(text):
+    if not text or str(text).strip().lower() in ["nil", "none", "null", "-", ""]:
+        return "Nil" if str(text).strip().lower() in ["nil", "none", "null", "-", ""] else ""
+    t = str(text).strip()
+    t = re.sub(r'(?i)(?:Assistant Director,?\s*ARD,?\s*)+', 'Assistant Director, ARD, ', t)
+    t = re.sub(r'(?i)(?:Deputy Director,?\s*ARD,?\s*)+', 'Deputy Director, ARD, ', t)
+    t = re.sub(r'(?i)(?:Veterinary Officer,?\s*)+', 'Veterinary Officer, ', t)
+    parts = [p.strip() for p in t.split(',') if p.strip()]
+    dedup = []
+    for p in parts:
+        if not dedup or p.lower() != dedup[-1].lower():
+            dedup.append(p)
+    return ', '.join(dedup)
+
 def sync_database_truth(conn):
     """
     Harmonizes all relational tables in ard_master_truth.db:
@@ -59,6 +73,18 @@ def sync_database_truth(conn):
     """
     log("Synchronizing database truth across all tables...")
     cur = conn.cursor()
+
+    # 0. Clean formatting in source tables
+    for tbl, col in [('roster_50_point_candidates', 'substantive_post_name'),
+                     ('roster_50_point_candidates', 'su_post_name'),
+                     ('obliterated_posts_1808', 'substantive_post_name'),
+                     ('obliterated_posts_1808', 'su_post_name'),
+                     ('executive_lateral_transfers', 'transferred_post_name')]:
+        cur.execute(f"SELECT rowid, {col} FROM {tbl} WHERE {col} IS NOT NULL")
+        for rowid, val in cur.fetchall():
+            cleaned = clean_post_string(val)
+            if cleaned != val:
+                cur.execute(f"UPDATE {tbl} SET {col} = ? WHERE rowid = ?", (cleaned, rowid))
 
     # 1. available_dd_posts: reset available status, then allot based on roster_50_point_candidates
     cur.execute("""

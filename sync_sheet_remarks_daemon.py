@@ -142,6 +142,21 @@ def search_post_from_remark(remark, fallback_dist=""):
 
     return "RAW", rem
 
+def clean_post_string(text):
+    if not text or str(text).strip().lower() in ["nil", "none", "null", "-", ""]:
+        return "Nil" if str(text).strip().lower() in ["nil", "none", "null", "-", ""] else ""
+    t = str(text).strip()
+    t = re.sub(r'(?i)(?:Assistant Director,?\s*ARD,?\s*)+', 'Assistant Director, ARD, ', t)
+    t = re.sub(r'(?i)(?:Deputy Director,?\s*ARD,?\s*)+', 'Deputy Director, ARD, ', t)
+    t = re.sub(r'(?i)(?:Veterinary Officer,?\s*)+', 'Veterinary Officer, ', t)
+    parts = [p.strip() for p in t.split(',') if p.strip()]
+    dedup = []
+    for p in parts:
+        if not dedup or p.lower() != dedup[-1].lower():
+            dedup.append(p)
+    return ', '.join(dedup)
+
+
 def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, pres_post, pres_dist):
     """
     Returns (new_substantive, new_su, log_description)
@@ -280,7 +295,7 @@ def check_and_sync():
                 )
             elif sub_or_su_manually_edited:
                 log(f"Detected direct manual cell edit by Debi Da at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
-                new_sub, new_su = cur_sub, cur_su
+                new_sub, new_su = clean_post_string(cur_sub), clean_post_string(cur_su)
                 action_desc = "Manual cell edit preserved"
             else:
                 log(f"Detected remark change at Row {r} (Sl {sl_global}, {name}): '{rem_str}' (Previous: '{prev_rem}')")
@@ -295,6 +310,8 @@ def check_and_sync():
                     pres_dist=dist
                 )
 
+            new_sub = clean_post_string(new_sub)
+            new_su = clean_post_string(new_su)
             log(f"  -> Applied: Substantive='{new_sub}', SU='{new_su}' ({action_desc})")
 
             # Update worksheet cells (Column 11 Substantive, Column 12 SU)
