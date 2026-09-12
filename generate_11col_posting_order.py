@@ -511,6 +511,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             "estab": "Sub-Divisional and Block Level Set up of Howrah",
             "block": "Udaynarayanpur",
             "dist": "Howrah"
+        },
+        "2015008435": {
+            "desig": "Veterinary Officer, SAHC",
+            "estab": "Block Level Set up of Alipurduar District",
+            "block": "",
+            "dist": "Alipurduar"
         }
     }
 
@@ -538,28 +544,10 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             pres_desig = c_info.get("designation") or m_info.get("designation") or "Veterinary Officer"
             pres_estab = c_info.get("establishment") or m_info.get("establishment") or l["present_posting"]
             pres_dist = c_info.get("district") or l["district_from"] or m_info.get("district") or ""
-            pres_block = ""
-            if is_block_post(pres_desig, pres_estab):
-                pres_block = clean_block_name(c_info.get("block", "") or "", pres_dist)
-                if not pres_block:
-                    m_b = re.search(r'(?:BLDO|BLOCK)\s*,?\s*([A-Za-z0-9\-]+)', l["present_posting"] or "")
-                    if m_b:
-                        pres_block = clean_block_name(m_b.group(1), pres_dist)
+            pres_block = clean_block_name(c_info.get("block") or m_info.get("block") or "", pres_dist) if is_block_post(pres_desig, pres_estab) else ""
 
-        # Present SU
-        pres_su = format_present_su(hrms, pres_desig, pres_estab, pres_dist, f"{l.get('present_posting', '')} {l.get('reason_notes', '')}")
-
-        # Transfer Basis
-        tt = l.get("transfer_type", "")
-        rn = l.get("reason_notes", "")
-        if "Promotion" in tt or "Promotion" in rn:
-            transfer_basis = "Promotion"
-        elif "Prayer" in tt or "prayer" in rn.lower():
-            transfer_basis = "Transfer on Prayer (Consequential)"
-        elif "Swap" in tt or "Swap" in rn or "freeing" in rn.lower():
-            transfer_basis = "Displacement due to promotee accomodation"
-        else:
-            transfer_basis = "Displacement due to promotee accomodation"
+        pres_su = format_present_su(hrms, pres_desig, pres_estab, pres_dist, l["present_posting"])
+        transfer_basis = "Displacement due to promotee accomodation"
 
         # Target Substantive Post
         trans_raw = l["transferred_post_name"] or ""
@@ -589,6 +577,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             target_sub = "Assistant Director, ARD (Veterinary), Training Institute, Medinipur, Paschim Medinipur"
         elif hrms == "2010001372":
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Howrah, Uluberia-II, Howrah"
+        elif hrms == "2015008435":
+            target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of North 24 Parganas District, Basirhat-I, North 24 Parganas"
         elif hrms == "2005000472":
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Hooghly, Tarakeswar, Hooghly"
         else:

@@ -339,9 +339,18 @@ def build_order():
             seen_hrms.add(hrms)
         sl_s = str(sch3_idx)
         sch3_idx += 1
+        raw_trans = r['transferred_post_name'] or ''
+        m_su = re.search(r'\[SU\s*([^\]]+)\]', raw_trans)
+        if m_su:
+            su_text = m_su.group(1).strip()
+            sub_text = re.sub(r'\[SU\s*[^\]]+\]', '', raw_trans).strip()
+        else:
+            su_text = 'Nil'
+            sub_text = raw_trans
+
         c2 = clean_pres(r['officer_name'], r['present_posting'])
-        c3 = clean_sub(r['transferred_post_name'])
-        c4 = clean_su(r['reason_notes'])
+        c3 = clean_sub(sub_text)
+        c4 = clean_su(su_text)
         is_m = bool(r['is_manual_recommendation'])
         add_row(table3, sl_s, c2, c3, c4, is_manual=is_m)
 
