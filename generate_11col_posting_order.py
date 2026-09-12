@@ -121,6 +121,7 @@ def parse_target_post_string(raw_txt, cadre_by_post_sl, dist_fallback=""):
 
     clean_sub = re.sub(r'[\(\[]Post\s*\d+[\)\]]', '', raw_sub).strip()
     clean_sub = re.sub(r'\[DD Post\s*\d+\]', '', clean_sub).strip()
+    clean_sub = re.sub(r'\s*\([^)]*\)\s*', ' ', clean_sub).strip()
     clean_sub = re.sub(r'\s+', ' ', clean_sub).strip()
 
     desig_match = re.match(r'^(Joint Director,?\s*ARD(?:\s*\([^\)]+\))?|Deputy Director,?\s*ARD(?:\s*\([^\)]+\))?|Assistant Director,?\s*ARD(?:\s*\([^\)]+\))?|Assistant Director of Animal Resources Development(?:\s*\([^\)]+\))?|Block Livestock Development Officer|Block Live Stock Development Officer|Veterinary Officer,?\s*(?:ABAHC|BAHC|SAHC)?|Veterinary Officer)', clean_sub, re.I)
@@ -166,9 +167,6 @@ def parse_target_su_string(raw_su, cadre_by_post_sl, dist_fallback=""):
             return "Manager (HR), West Bengal Livestock Development Corporation Ltd. HQ, Salt Lake, Kolkata"
         elif "Marketing" in clean_su:
             return "Marketing In-Charge, West Bengal Livestock Development Corporation Ltd. HQ, Salt Lake, Kolkata"
-
-    if "Udaynarayanpur" in clean_su:
-        return "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Howrah, Udaynarayanpur, with additional charge of VO, BAHC, Udaynarayanpur, Howrah"
 
     return clean_su if clean_su else "Nil"
 
@@ -274,7 +272,7 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             dd_dist = dd_info.get("district", "")
             target_sub = format_post_fields("Deputy Director, ARD", dd_office, "", dd_dist)
         else:
-            target_sub = format_post_fields("Deputy Director, ARD", sub_raw, "", pres_dist)
+            target_sub = parse_target_post_string(sub_raw, cadre_by_post_sl, pres_dist)
 
         # Target SU Post
         su_raw = r["su_post_name"] or ""
