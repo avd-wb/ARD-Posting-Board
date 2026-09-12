@@ -77,14 +77,44 @@ def format_post_fields(desig, estab, block, district):
 
 def format_present_su(hrms, desig, estab, dist, raw_txt=""):
     known_su = {
+        # --- Roster Promotees Confirmed SU ---
+        "1994003405": "Assistant Director, ARD (VR&I), Directorate HQ, Salt Lake, Kolkata",
+        "2000000956": "Veterinary Officer, WBLDCL, Pig Breeding Farm, Haringhata, Nadia",
         "2005002146": "Managing Director, Ichamati Milk Union, North 24 Parganas",
+        "1994005648": "District Executive Officer (DEO), PBGSBS, Bankura",
+        "1994002290": "District Executive Officer (DEO), PBGSBS, Paschim Bardhaman",
+        "2016000125": "In-Charge Deputy Director, ARD & PO, Uttar Dinajpur",
+        "1995001799": "Station Director-I, IVF/ETT Lab, PBGSBS, Haringhata Farm, Nadia",
+        "1995000208": "Manager (Purchase), Banglar Dairy Ltd., Kolkata",
+        "2001001954": "Assistant Director, ARD, FSBS, Haringhata Farm, PBGSBS, Nadia",
+        "1994000544": "Manager (Purchase) & In-Charge, Salboni Feed Plant, Paschim Medinipur",
+        "2001004512": "Assistant Director, ARD, FSBS, Haringhata Farm, PBGSBS, Nadia",
+        "1994001912": "Assistant Director, ARD, Bull Mother Farm, Haringhata, Kalyani, Nadia",
         "1995003790": "Assistant Director, ARD (VR&I), State Poultry Farm Gobardanga, North 24 Parganas",
-        "2001000187": "Station Director-1, Central Semen Bank PBGSBS, Belgachia, Kolkata",
-        "1997000854": "Block Livestock Development Officer, Block Livestock Development Office Bangaon, North 24 Parganas",
         "1995000449": "Station Director-II, PBGSBS HQ, Salt Lake, Kolkata",
         "1998001949": "Assistant Director, ARD (DEO), Office of the Deputy Director, ARD, Paschim Bardhaman",
         "2000007392": "Veterinary Officer, Animal Science Laboratory, Directorate HQ, Kolkata",
         "1995001801": "Veterinary Officer, Bull Mother Farm, Haringhata, Nadia",
+
+        # --- Obliterated / Restructured Posts Confirmed SU ---
+        "1998004593": "Managing Director, Kangsabati Co-Operative Milk Producers' Union Ltd., Bankura",
+        "2014006880": "Assistant Director, ARD, State Poultry Farm, Bankura",
+        "1989000622": "Assistant Director, ARD, KGFF, Bankura",
+        "2001000173": "District Executive Officer (DEO), PBGSBS, Birbhum",
+        "2001002240": "Managing Director, Mayurakshi Co-Operative Milk Union Ltd., Birbhum",
+        "2019004721": "Manager (Farm) & In-Charge, Suri Poultry Farm, WBLDCL, Birbhum",
+        "1998009067": "District Executive Officer (DEO), PBGSBS, Darjeeling",
+        "2000004209": "Manager-in-Charge, Haringhata Milk Plant, Banglar Dairy Ltd., Nadia",
+        "1998002362": "Manager (Training & Development), AARM, WBLDCL, Haringhata, Nadia",
+        "2012001834": "Assistant Director, ARD, WBLDCL HQ, Salt Lake, Kolkata",
+        "2009000823": "Assistant Director, ARD, WBLDCL, Haringhata Poultry Farm, Nadia",
+        "2010001271": "Station Director-III, Bull Mother Farm, PBGSBS, Kalyani, Nadia",
+        "2014003337": "Assistant Director, ARD, Duck Breeding Farm, Domkal, Murshidabad",
+        "2010008053": "District Executive Officer (DEO), PBGSBS, Murshidabad",
+        "2001000140": "Managing Director, Bhagirathi Co-Operative Milk Union Ltd., Murshidabad",
+        "2001000187": "Station Director-1, Central Semen Bank, PBGSBS, Belgachia, Kolkata",
+        "2014001113": "Assistant Director, ARD, State Poultry Farm, Kakdwip, South 24 Parganas",
+        "1997000854": "Block Livestock Development Officer, Block Livestock Development Office Bangaon, North 24 Parganas",
     }
     if hrms in known_su:
         return known_su[hrms]
