@@ -325,13 +325,13 @@ def main():
         check_and_sync()
         return
 
-    log("Starting Remarks Sync Daemon (running every 10 minutes / 600s)...")
+    log("Starting Remarks Sync Daemon (running every 30 minutes / 1800s)...")
     while True:
         try:
             check_and_sync()
         except Exception as e:
             log(f"Error during sync cycle: {e}")
-        time.sleep(600)
+        time.sleep(1800)
 
 if __name__ == "__main__":
     main()
