@@ -579,6 +579,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Howrah, Uluberia-II, Howrah"
         elif hrms == "2015008435":
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of North 24 Parganas District, Basirhat-I, North 24 Parganas"
+        elif hrms == "2001001503":
+            target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Purba Medinipur, Panskura-I, Purba Medinipur"
         elif hrms == "2005000472":
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Hooghly, Tarakeswar, Hooghly"
         else:
