@@ -16,11 +16,14 @@ Sheets Included:
 """
 
 import sqlite3
+import re
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
+
+from generate_simple_4col_order import clean_pres, clean_sub, clean_su
 
 DB_PATH = "ard_master_truth.db"
 OUTPUT_FILE = "WB_ARD_Interactive_Posting_Board_GoogleSheets_Ready.xlsx"
@@ -709,6 +712,176 @@ def build_workbook():
         ws_order.row_dimensions[tr].height = 24
 
     # =========================================================================
+    # SHEET 8B: 4_Column_Posting_Order (Exact 4-Column Official Table Requested by User)
+    # Col 1: Sl no.
+    # Col 2: Name of the Officers with Present posting
+    # Col 3: Place of posting on promotion / Transfer (Substantive post)
+    # Col 4: Service Utilized post (if any)
+    # Border: Single black line borders only, simple, to the point
+    # =========================================================================
+    ws_4col = wb.create_sheet(title="4_Column_Posting_Order")
+    ws_4col.views.sheetView[0].showGridLines = True
+
+    black_thin = Side(border_style="thin", color="000000")
+    black_border = Border(left=black_thin, right=black_thin, top=black_thin, bottom=black_thin)
+    black_hdr_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    sec_hdr_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+    order_4col_font = Font(name="Times New Roman", size=10, color="000000")
+    order_4col_bold = Font(name="Times New Roman", size=10, bold=True, color="000000")
+    order_4col_hdr_font = Font(name="Times New Roman", size=10.5, bold=True, color="000000")
+
+    # Title block
+    ws_4col.merge_cells("A1:D1")
+    ws_4col.merge_cells("A2:D2")
+    ws_4col.merge_cells("A3:D3")
+    ws_4col.merge_cells("A4:D4")
+
+    ws_4col.cell(row=1, column=1, value="GOVERNMENT OF WEST BENGAL").font = Font(name="Times New Roman", size=13, bold=True, color="000000")
+    ws_4col.cell(row=2, column=1, value="Animal Resources Development Department").font = Font(name="Times New Roman", size=11, bold=True, color="000000")
+    ws_4col.cell(row=3, column=1, value="AR & AH Branch, Prani Sampad Bhawan, LB-2, Sector-III, Salt Lake, Kolkata - 700 106").font = Font(name="Times New Roman", size=9.5, italic=True, color="000000")
+    ws_4col.cell(row=4, column=1, value="NOTIFICATION (MEMO NO. 1890-AR&AH / DATED 12.09.2026)").font = Font(name="Times New Roman", size=10.5, bold=True, color="000000")
+
+    for r_idx in range(1, 5):
+        ws_4col.cell(row=r_idx, column=1).alignment = Alignment(horizontal="center", vertical="center")
+        ws_4col.row_dimensions[r_idx].height = 20
+
+    ws_4col.row_dimensions[5].height = 8 # Spacing
+
+    col4_headers = [
+        "Sl no.",
+        "Name of the Officers with Present posting",
+        "Place of posting on promotion / Transfer (Substantive post)",
+        "Service Utilized post (if any)"
+    ]
+
+    def write_4col_header(ws, row_idx):
+        for c_idx, h in enumerate(col4_headers, 1):
+            cell = ws.cell(row=row_idx, column=c_idx, value=h)
+            cell.fill = black_hdr_fill
+            cell.font = order_4col_hdr_font
+            cell.alignment = Alignment(horizontal="center" if c_idx == 1 else "left", vertical="center", wrap_text=True)
+            cell.border = black_border
+        ws.row_dimensions[row_idx].height = 28
+
+    cur_row = 6
+
+    # Schedule I: Promotion to DD (242 Promotees)
+    ws_4col.merge_cells(f"A{cur_row}:D{cur_row}")
+    s1_title = ws_4col.cell(row=cur_row, column=1, value="Schedule I: Promotion to the post of Deputy Director, ARD (Pay Level 19)")
+    s1_title.font = Font(name="Times New Roman", size=11, bold=True, color="000000")
+    s1_title.alignment = Alignment(horizontal="center", vertical="center")
+    s1_title.fill = sec_hdr_fill
+    for ci in range(1, 5):
+        ws_4col.cell(row=cur_row, column=ci).border = black_border
+    ws_4col.row_dimensions[cur_row].height = 24
+    cur_row += 1
+
+    write_4col_header(ws_4col, cur_row)
+    cur_row += 1
+
+    c.execute("""
+        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name
+        FROM roster_50_point_candidates
+        ORDER BY sl_no ASC
+    """)
+    for r in c.fetchall():
+        sl_val = r['sl_no']
+        c2_val = clean_pres(r['officer_name'], r['present_posting'])
+        c3_val = clean_sub(r['substantive_post_name'])
+        c4_val = clean_su(r['su_post_name'])
+
+        ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
+        ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=3, value=c3_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=4, value=c4_val).alignment = Alignment(horizontal="center" if c4_val == "Nil" else "left", vertical="center", wrap_text=True)
+
+        for col_i in range(1, 5):
+            cell = ws_4col.cell(row=cur_row, column=col_i)
+            cell.border = black_border
+            cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
+        ws_4col.row_dimensions[cur_row].height = 22
+        cur_row += 1
+
+    # Schedule II: Serving Officers on Abolished Posts (61 Officers)
+    cur_row += 1
+    ws_4col.merge_cells(f"A{cur_row}:D{cur_row}")
+    s2_title = ws_4col.cell(row=cur_row, column=1, value="Schedule II: Rehabilitation and Posting of Serving Officers from Abolished / Restructured Posts")
+    s2_title.font = Font(name="Times New Roman", size=11, bold=True, color="000000")
+    s2_title.alignment = Alignment(horizontal="center", vertical="center")
+    s2_title.fill = sec_hdr_fill
+    for ci in range(1, 5):
+        ws_4col.cell(row=cur_row, column=ci).border = black_border
+    ws_4col.row_dimensions[cur_row].height = 24
+    cur_row += 1
+
+    write_4col_header(ws_4col, cur_row)
+    cur_row += 1
+
+    c.execute("""
+        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name
+        FROM obliterated_posts_1808
+        WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
+        ORDER BY oblit_sl ASC
+    """)
+    for idx, r in enumerate(c.fetchall(), 1):
+        sl_val = idx
+        pres_str = f"{r['post_name']}, {r['establishment'] or r['district']}"
+        c2_val = clean_pres(r['officer_name'], pres_str)
+        c3_val = clean_sub(r['substantive_post_name'])
+        c4_val = clean_su(r['su_post_name'])
+
+        ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
+        ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=3, value=c3_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=4, value=c4_val).alignment = Alignment(horizontal="center" if c4_val == "Nil" else "left", vertical="center", wrap_text=True)
+
+        for col_i in range(1, 5):
+            cell = ws_4col.cell(row=cur_row, column=col_i)
+            cell.border = black_border
+            cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
+        ws_4col.row_dimensions[cur_row].height = 22
+        cur_row += 1
+
+    # Schedule III: Lateral & Field Transfers (14 Officers)
+    cur_row += 1
+    ws_4col.merge_cells(f"A{cur_row}:D{cur_row}")
+    s3_title = ws_4col.cell(row=cur_row, column=1, value="Schedule III: Consequential Lateral Transfers & Inter-District Field Postings")
+    s3_title.font = Font(name="Times New Roman", size=11, bold=True, color="000000")
+    s3_title.alignment = Alignment(horizontal="center", vertical="center")
+    s3_title.fill = sec_hdr_fill
+    for ci in range(1, 5):
+        ws_4col.cell(row=cur_row, column=ci).border = black_border
+    ws_4col.row_dimensions[cur_row].height = 24
+    cur_row += 1
+
+    write_4col_header(ws_4col, cur_row)
+    cur_row += 1
+
+    c.execute("""
+        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes
+        FROM executive_lateral_transfers
+        ORDER BY sl_no ASC
+    """)
+    for r in c.fetchall():
+        sl_val = r['sl_no']
+        c2_val = clean_pres(r['officer_name'], r['present_posting'])
+        c3_val = clean_sub(r['transferred_post_name'])
+        c4_val = clean_su(r['reason_notes'])
+
+        ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
+        ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=3, value=c3_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws_4col.cell(row=cur_row, column=4, value=c4_val).alignment = Alignment(horizontal="center" if c4_val == "Nil" else "left", vertical="center", wrap_text=True)
+
+        for col_i in range(1, 5):
+            cell = ws_4col.cell(row=cur_row, column=col_i)
+            cell.border = black_border
+            cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
+        ws_4col.row_dimensions[cur_row].height = 22
+        cur_row += 1
+
+    # =========================================================================
     # SHEET 9: Master_Cadre_Directory (1,624 Statewide Cadre Employees)
     # =========================================================================
     ws_master = wb.create_sheet(title="Master_Cadre_Directory")
@@ -891,6 +1064,9 @@ def build_workbook():
         "Secretariat_Posting_Order": {
             "A": 8, "B": 45, "C": 18, "D": 28, "E": 52, "F": 32
         },
+        "4_Column_Posting_Order": {
+            "A": 8, "B": 54, "C": 48, "D": 42
+        },
         "Master_Cadre_Directory": {
             "A": 8, "B": 14, "C": 28, "D": 32, "E": 45, "F": 18, "G": 16, "H": 16, "I": 16, "J": 16, "K": 22, "L": 16, "M": 26, "N": 16, "O": 35, "P": 50
         },
@@ -902,7 +1078,7 @@ def build_workbook():
         }
     }
 
-    all_sheets = [ws_guide, ws_roster, ws_oblit, ws_dd, ws_ad, ws_su, ws_disp, ws_order, ws_master, ws_hq, ws_excess]
+    all_sheets = [ws_guide, ws_roster, ws_oblit, ws_dd, ws_ad, ws_su, ws_disp, ws_order, ws_4col, ws_master, ws_hq, ws_excess]
     for ws in all_sheets:
         title = ws.title
         if title in col_widths:

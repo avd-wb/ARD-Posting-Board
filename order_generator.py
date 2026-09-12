@@ -26,6 +26,8 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import nsdecls, qn
 
+from generate_simple_4col_order import clean_pres, clean_sub, clean_su, build_order
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 is_vercel = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
 DEFAULT_DB_PATH = "/tmp/ard_master_truth.db" if is_vercel else os.path.join(BASE_DIR, "ard_master_truth.db")
@@ -264,265 +266,84 @@ class OrderGenerator:
     def generate_docx_order(self, session_id: str = "CURRENT_SESSION", output_path: Optional[str] = None) -> str:
         """
         Generates official West Bengal Secretariat Notification in Microsoft Word (.docx) format
-        strictly following the format of Memo No. 391-AR&AH/AD/0/3A-16/2025.
+        strictly following the 4-column, single black line border table format requested by the user.
         """
-        if not output_path:
-            output_path = os.path.join(DEFAULT_OUT_DIR, f"Official_Notification_Order_{session_id}.docx")
-
-        conn = self.get_connection()
-        cur = conn.cursor()
-
-        cur.execute("""
-        SELECT 
-            id, officer_hrms_id, officer_name, from_post_name, substantive_post_name,
-            su_post_name, officer_type, reason
-        FROM simulation_assignments
-        WHERE session_id = ?
-        ORDER BY id ASC
-        """, (session_id,))
-        assignments = [dict(r) for r in cur.fetchall()]
-        conn.close()
-
-        doc = Document()
-
-        # Set page margins to standard 1 inch
-        for section in doc.sections:
-            section.top_margin = Inches(1.0)
-            section.bottom_margin = Inches(1.0)
-            section.left_margin = Inches(1.0)
-            section.right_margin = Inches(1.0)
-
-        # Header: Government of West Bengal
-        p_head = doc.add_paragraph()
-        p_head.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_head.paragraph_format.space_after = Pt(2)
-        r1 = p_head.add_run("Government of West Bengal\n")
-        r1.bold = True
-        r1.font.size = Pt(13)
-        r1.font.name = "Arial"
-
-        r2 = p_head.add_run("Animal Resources Development Department\n")
-        r2.bold = True
-        r2.font.size = Pt(12)
-        r2.font.name = "Arial"
-
-        r3 = p_head.add_run("AR & AH Branch, Prani Sampad Bhawan, LB - 2, Sector - III, Salt Lake, Kolkata - 700 106")
-        r3.font.size = Pt(10)
-        r3.font.name = "Arial"
-
-        # Memo Number & Date Line
-        doc.add_paragraph()
-        p_memo = doc.add_paragraph()
-        p_memo.paragraph_format.space_after = Pt(14)
-        run_memo = p_memo.add_run(f"No. 1890-AR&AH/3A-16/2026")
-        run_memo.bold = True
-        run_memo.font.size = Pt(10.5)
-        run_memo.font.name = "Arial"
-
-        p_memo.add_run("\t\t\t\t\t\tDate: " + datetime.date.today().strftime("%d.%m.%Y"))
-
-        # NOTIFICATION Title
-        p_notif = doc.add_paragraph()
-        p_notif.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_notif.paragraph_format.space_after = Pt(12)
-        r_notif = p_notif.add_run("NOTIFICATION")
-        r_notif.bold = True
-        r_notif.font.size = Pt(12)
-        r_notif.font.underline = True
-        r_notif.font.name = "Arial"
-
-        # Formal Preamble
-        p_preamble = doc.add_paragraph()
-        p_preamble.paragraph_format.line_spacing = 1.15
-        p_preamble.paragraph_format.space_after = Pt(12)
-        num_officers = len(assignments) or "the"
-        preamble_text = (
-            f"The Governor is pleased to appoint / promote / transfer the following {num_officers} officers borne under "
-            f"the West Bengal Animal Husbandry & Veterinary Service to the posts mentioned against their names on "
-            f"promotion / transfer / placement of service in the Pay Level indicated under WBS (ROPA) Rules, 2019 "
-            f"and allowances as admissible from time to time under the said Rules with effect from the date of taking over "
-            f"charge of their respective posts under the Directorate of Animal Resources & Animal Health, West Bengal. "
-            f"Their places of posting upon promotion / transfer / service utilization are mentioned below:"
-        )
-        r_pre = p_preamble.add_run(preamble_text)
-        r_pre.font.size = Pt(10.5)
-        r_pre.font.name = "Arial"
-
-        # Tabular Schedule
-        table = doc.add_table(rows=1, cols=3)
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table.autofit = False
-
-        # Set widths: Sl(0.6 in), Officer(3.2 in), Target(3.2 in)
-        widths = [Inches(0.6), Inches(3.2), Inches(3.2)]
-
-        hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = "Sl. No."
-        hdr_cells[1].text = "Name of the Officers with Present Posting"
-        hdr_cells[2].text = "Place of Posting on Promotion / Transfer / Utilization of Service"
-
-        for i, cell in enumerate(hdr_cells):
-            cell.width = widths[i]
-            cell.paragraphs[0].runs[0].font.bold = True
-            cell.paragraphs[0].runs[0].font.size = Pt(10)
-            cell.paragraphs[0].runs[0].font.name = "Arial"
-            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            shading_elm = parse_xml(r'<w:shd {} w:fill="F1F5F9"/>'.format(nsdecls('w')))
-            cell._tc.get_or_add_tcPr().append(shading_elm)
-
-        # Add Data Rows
-        for idx, a in enumerate(assignments, start=1):
-            row_cells = table.add_row().cells
-            row_cells[0].width = widths[0]
-            row_cells[1].width = widths[1]
-            row_cells[2].width = widths[2]
-
-            row_cells[0].text = str(idx)
-            row_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-            # Officer Info
-            p_off = row_cells[1].paragraphs[0]
-            r_o_name = p_off.add_run(f"{a['officer_name']}\n")
-            r_o_name.bold = True
-            r_o_post = p_off.add_run(f"{a['from_post_name'] or 'Departmental Station'}\n(HRMS: {a['officer_hrms_id']})")
-            r_o_post.font.size = Pt(9.5)
-
-            # Target Posting Info
-            p_tgt = row_cells[2].paragraphs[0]
-            sub_post = a.get("substantive_post_name") or a.get("to_post_name") or "Cadre Station"
-            r_tgt_main = p_tgt.add_run(f"{sub_post}\n")
-            r_tgt_main.bold = True
-
-            if a.get("su_post_name"):
-                r_su = p_tgt.add_run(f"He/She will also act on Service Utilization at: {a['su_post_name']} until further order.\n")
-                r_su.font.size = Pt(9.5)
-                r_su.font.color.rgb = RGBColor(15, 118, 110)
-
-            # Style text
-            for c in row_cells:
-                for p in c.paragraphs:
-                    for r in p.runs:
-                        r.font.name = "Arial"
-                        if not r.font.size:
-                            r.font.size = Pt(9.5)
-
-        # Public interest clause
-        doc.add_paragraph()
-        p_pi = doc.add_paragraph()
-        p_pi.paragraph_format.space_before = Pt(12)
-        r_pi = p_pi.add_run("This appointment / transfer is made in the interest of public service.")
-        r_pi.font.size = Pt(10.5)
-        r_pi.font.italic = True
-        r_pi.font.name = "Arial"
-
-        # Signatory block
-        doc.add_paragraph()
-        p_sig = doc.add_paragraph()
-        p_sig.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        r_sig1 = p_sig.add_run("By the order of the Governor,\n\n\nSd/-\nSpecial Secretary\nto the Government of West Bengal")
-        r_sig1.font.size = Pt(10)
-        r_sig1.font.name = "Arial"
-
-        # Copy forwarded section
-        p_copy_head = doc.add_paragraph()
-        p_copy_head.paragraph_format.space_before = Pt(14)
-        r_cp_head = p_copy_head.add_run(f"No. 1890 / 1(15) - AR&AH/3A-16/2026\t\t\tDate: {datetime.date.today().strftime('%d.%m.%Y')}")
-        r_cp_head.bold = True
-        r_cp_head.font.size = Pt(10)
-        r_cp_head.font.name = "Arial"
-
-        p_forward = doc.add_paragraph()
-        r_fwd = p_forward.add_run("Copy forwarded for information and necessary action to:\n")
-        r_fwd.font.size = Pt(10)
-        r_fwd.bold = True
-        r_fwd.font.name = "Arial"
-
-        standard_copies = [
-            "The Principal Accountant General (A&E), West Bengal, Treasury Buildings, Kolkata - 700 001.",
-            "The Accountant General (Audit), West Bengal, Treasury Buildings, Kolkata - 700 001.",
-            "The Pay & Accounts Officer, Kolkata Pay & Accounts Office - III, Subhanna, Salt Lake, Kolkata - 700 064.",
-            "The Director of AH&VS, West Bengal. He is requested to forward the joining reports of the officers to this Department.",
-            "The Managing Director, West Bengal Livestock Development Corporation Ltd. (WBLDCL).",
-            "The Chief Executive Officer, Paschim Banga Go Sampad Bikash Sanstha (PBGSBS).",
-            "The Director, Institute of Animal Health & Veterinary Biologicals (IAH&VB), Belgachia, Kolkata.",
-            "The Joint Director, ARD (All Zones / Divisions).",
-            "The Deputy Director, ARD & PO (All Districts).",
-            "The Treasury Officer (All concerned Treasuries).",
-            "The P.S. to the Hon’ble Minister-in-Charge, Animal Resources Development Department.",
-            "The Sr. P.S. to the Additional Chief Secretary, Animal Resources Development Department.",
-            "Dr. ...................................................................................., for immediate compliance.",
-            "The Nodal Officer, IT & Website, with the request to upload this Notification on the Departmental Website.",
-            "Guard File."
-        ]
-
-        for i, cp in enumerate(standard_copies, start=1):
-            p_c = doc.add_paragraph()
-            p_c.paragraph_format.space_after = Pt(2)
-            p_c.paragraph_format.left_indent = Inches(0.25)
-            r_c = p_c.add_run(f"{i}. {cp}")
-            r_c.font.size = Pt(9.5)
-            r_c.font.name = "Arial"
-
-        # Final Deputy Secretary sign
-        p_end = doc.add_paragraph()
-        p_end.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p_end.paragraph_format.space_before = Pt(20)
-        r_end = p_end.add_run("Deputy Secretary\nto the Government of West Bengal")
-        r_end.font.size = Pt(10)
-        r_end.font.name = "Arial"
-
-        doc.save(output_path)
-        return output_path
+        generated_file = build_order()
+        if output_path and os.path.abspath(output_path) != os.path.abspath(generated_file):
+            import shutil
+            shutil.copyfile(generated_file, output_path)
+            return output_path
+        return generated_file
 
     # --- 3. PRINTABLE HTML GAZETTE NOTIFICATION VIEW ---
 
     def generate_html_order(self, session_id: str = "CURRENT_SESSION") -> str:
         """
-        Generates an authentic Government of West Bengal printable HTML Notification.
+        Generates an authentic Government of West Bengal printable HTML Gazette Notification
+        strictly formatted with the requested 4 columns and black line borders:
+        - Sl no.
+        - Name of the Officers with Present posting
+        - Place of posting on promotion / Transfer (Substantive post)
+        - Service Utilized post (if any)
         """
         conn = self.get_connection()
         cur = conn.cursor()
 
+        # Schedule I: 242 Promotees
         cur.execute("""
-        SELECT 
-            id, officer_hrms_id, officer_name, from_post_name, substantive_post_name,
-            su_post_name, officer_type, reason
-        FROM simulation_assignments
-        WHERE session_id = ?
-        ORDER BY id ASC
-        """, (session_id,))
-        assignments = [dict(r) for r in cur.fetchall()]
+            SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name
+            FROM roster_50_point_candidates
+            ORDER BY sl_no ASC
+        """)
+        roster_rows = cur.fetchall()
+
+        # Schedule II: 61 Obliterated Non-Roster Rehabilitations
+        cur.execute("""
+            SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name
+            FROM obliterated_posts_1808
+            WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
+            ORDER BY oblit_sl ASC
+        """)
+        oblit_rows = cur.fetchall()
+
+        # Schedule III: 14 Consequential Lateral Transfers
+        cur.execute("""
+            SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes
+            FROM executive_lateral_transfers
+            ORDER BY sl_no ASC
+        """)
+        lateral_rows = cur.fetchall()
         conn.close()
 
-        rows_html = ""
-        for idx, a in enumerate(assignments, start=1):
-            sub_post = a.get("substantive_post_name") or a.get("to_post_name") or "Cadre Station"
-            su_post = a.get("su_post_name")
-            su_text = f"<div style='color: #0f766e; font-size: 11px; margin-top: 4px;'><strong>Service Utilization:</strong> {su_post} (until further order)</div>" if su_post else ""
+        def render_table_rows(rows, row_type):
+            out = ""
+            for idx, r in enumerate(rows, 1):
+                if row_type == "roster":
+                    sl = str(r["sl_no"])
+                    c2 = clean_pres(r["officer_name"], r["present_posting"])
+                    c3 = clean_sub(r["substantive_post_name"])
+                    c4 = clean_su(r["su_post_name"])
+                elif row_type == "oblit":
+                    sl = str(idx)
+                    pres = f"{r['post_name']}, {r['establishment'] or r['district']}"
+                    c2 = clean_pres(r["officer_name"], pres)
+                    c3 = clean_sub(r["substantive_post_name"])
+                    c4 = clean_su(r["su_post_name"])
+                else: # lateral
+                    sl = str(r["sl_no"])
+                    c2 = clean_pres(r["officer_name"], r["present_posting"])
+                    c3 = clean_sub(r["transferred_post_name"])
+                    c4 = clean_su(r["reason_notes"])
 
-            rows_html += f"""
-            <tr>
-                <td style="padding: 10px; text-align: center; font-weight: bold; border: 1px solid #cbd5e1; vertical-align: top;">{idx}</td>
-                <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
-                    <div style="font-weight: bold; color: #0f172a;">{a['officer_name']}</div>
-                    <div style="font-size: 11px; color: #475569;">{a['from_post_name'] or 'Present Station'}</div>
-                    <div style="font-family: monospace; font-size: 10px; color: #64748b;">HRMS: {a['officer_hrms_id']}</div>
-                </td>
-                <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
-                    <div style="font-weight: bold; color: #1e3a8a;">{sub_post}</div>
-                    {su_text}
-                </td>
-            </tr>
-            """
-
-        if not rows_html:
-            rows_html = """
-            <tr>
-                <td colspan="3" style="padding: 24px; text-align: center; color: #94a3b8; font-style: italic;">
-                    No simulated assignments found in active session. Allot officers or execute Auto-Solver to populate draft notification schedule.
-                </td>
-            </tr>
-            """
+                su_style = "text-align: center;" if c4 == "Nil" else "text-align: left; font-weight: bold; color: #047857;"
+                out += f"""
+                <tr>
+                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">{sl}</td>
+                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">{c2}</td>
+                    <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">{c3}</td>
+                    <td style="border: 1px solid #000; padding: 6px 8px; {su_style}">{c4}</td>
+                </tr>"""
+            return out
 
         today_str = datetime.date.today().strftime("%d.%m.%Y")
 
@@ -538,69 +359,82 @@ class OrderGenerator:
             background: #fff;
             margin: 0;
             padding: 40px;
-            font-size: 12pt;
-            line-height: 1.4;
+            font-size: 11pt;
+            line-height: 1.35;
         }}
         .header {{
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }}
         .header h2 {{
             margin: 0;
-            font-size: 15pt;
+            font-size: 14pt;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }}
         .header h3 {{
             margin: 3px 0;
-            font-size: 13pt;
+            font-size: 12pt;
         }}
         .header p {{
             margin: 2px 0;
-            font-size: 10pt;
+            font-size: 9.5pt;
         }}
         .memo-bar {{
             display: flex;
             justify-content: space-between;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            font-size: 11pt;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            font-size: 10.5pt;
             font-weight: bold;
         }}
         .title-notification {{
             text-align: center;
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
             text-decoration: underline;
-            letter-spacing: 2px;
-            margin-bottom: 18px;
         }}
         .preamble {{
             text-align: justify;
-            margin-bottom: 20px;
-            text-indent: 40px;
+            margin-bottom: 18px;
+            text-indent: 30px;
+            font-size: 10.5pt;
+        }}
+        .sched-title {{
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            color: #000;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+            font-size: 9.5pt;
         }}
         th {{
-            background: #f1f5f9;
+            background: #f8fafc;
             font-weight: bold;
-            padding: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 11pt;
+            padding: 6px 8px;
+            border: 1px solid #000;
+            text-align: left;
+        }}
+        th.center {{
+            text-align: center;
         }}
         .sign-box {{
             text-align: right;
-            margin-top: 30px;
-            margin-bottom: 30px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            font-size: 10.5pt;
         }}
         .copy-block {{
-            margin-top: 20px;
-            font-size: 10pt;
-            line-height: 1.45;
+            margin-top: 15px;
+            font-size: 9.5pt;
+            line-height: 1.4;
         }}
         .no-print {{
             position: fixed;
@@ -645,30 +479,62 @@ class OrderGenerator:
     </div>
 
     <div class="memo-bar">
-        <div>No. 1890-AR&AH/3A-16/2026</div>
-        <div>Date: {today_str}</div>
+        <div>No. 1890 - AR&AH/AD/O/ 3A- 16/2026</div>
+        <div>Date: 12.09.2026</div>
     </div>
 
     <div class="title-notification">NOTIFICATION</div>
 
     <div class="preamble">
-        The Governor is pleased to appoint / promote / transfer the following officers borne under the West Bengal Animal Husbandry & Veterinary Service to the posts mentioned against their names on promotion / transfer / placement of service in the Pay Level indicated under WBS (ROPA) Rules, 2019 and allowances as admissible from time to time under the said Rules with effect from the date of taking over charge of their respective posts under the Directorate of Animal Resources & Animal Health, West Bengal. Their places of posting upon promotion / transfer / service utilization are mentioned below:
+        The Governor is pleased to order the promotion, placement, and transfer of the following officers of the West Bengal Animal Husbandry & Veterinary Service in the interest of public service, with immediate effect and until further orders, as detailed below:
     </div>
 
+    <div class="sched-title">Schedule I: Promotion to the post of Deputy Director, ARD (Pay Level 19)</div>
     <table>
         <thead>
             <tr>
-                <th style="width: 8%;">Sl. No.</th>
-                <th style="width: 46%;">Name of the Officers with Present Posting</th>
-                <th style="width: 46%;">Place of Posting on Promotion / Transfer / Utilization of Service</th>
+                <th class="center" style="width: 6%;">Sl no.</th>
+                <th style="width: 38%;">Name of the Officers with Present posting</th>
+                <th style="width: 34%;">Place of posting on promotion / Transfer (Substantive post)</th>
+                <th style="width: 22%;">Service Utilized post (if any)</th>
             </tr>
         </thead>
         <tbody>
-            {rows_html}
+            {render_table_rows(roster_rows, "roster")}
         </tbody>
     </table>
 
-    <div style="font-style: italic; margin-bottom: 25px;">
+    <div class="sched-title">Schedule II: Rehabilitation and Posting of Serving Officers from Abolished / Restructured Posts</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="center" style="width: 6%;">Sl no.</th>
+                <th style="width: 38%;">Name of the Officers with Present posting</th>
+                <th style="width: 34%;">Place of posting on promotion / Transfer (Substantive post)</th>
+                <th style="width: 22%;">Service Utilized post (if any)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {render_table_rows(oblit_rows, "oblit")}
+        </tbody>
+    </table>
+
+    <div class="sched-title">Schedule III: Consequential Lateral Transfers & Inter-District Field Postings</div>
+    <table>
+        <thead>
+            <tr>
+                <th class="center" style="width: 6%;">Sl no.</th>
+                <th style="width: 38%;">Name of the Officers with Present posting</th>
+                <th style="width: 34%;">Place of posting on promotion / Transfer (Substantive post)</th>
+                <th style="width: 22%;">Service Utilized post (if any)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {render_table_rows(lateral_rows, "lateral")}
+        </tbody>
+    </table>
+
+    <div style="font-style: italic; margin-bottom: 20px;">
         This appointment / transfer is made in the interest of public service.
     </div>
 
@@ -679,16 +545,16 @@ class OrderGenerator:
         to the Government of West Bengal
     </div>
 
-    <div class="memo-bar" style="border-top: 1px solid #cbd5e1; padding-top: 15px;">
-        <div>No. 1890 / 1(15) - AR&AH/3A-16/2026</div>
-        <div>Date: {today_str}</div>
+    <div class="memo-bar" style="border-top: 1px solid #000; padding-top: 12px;">
+        <div>No. 1890 / 1(15) - AR&AH/AD/O/ 3A- 16/2026</div>
+        <div>Date: 12.09.2026</div>
     </div>
 
     <div class="copy-block">
         <strong>Copy forwarded for information and necessary action to:</strong><br>
         1. The Principal Accountant General (A&E), West Bengal, Treasury Buildings, Kolkata - 700 001.<br>
         2. The Accountant General (Audit), West Bengal, Treasury Buildings, Kolkata - 700 001.<br>
-        3. The Pay & Accounts Officer, Kolkata Pay & Accounts Office - III, Salt Lake, Kolkata - 700 064.<br>
+        3. The Pay & Accounts Officer, Kolkata Pay & Accounts Office - III, Subhanna, Salt Lake, Kolkata - 700 064.<br>
         4. The Director of AH&VS, West Bengal. He is requested to forward the joining reports to this Department.<br>
         5. The Managing Director, West Bengal Livestock Development Corporation Ltd. (WBLDCL).<br>
         6. The Chief Executive Officer, Paschim Banga Go Sampad Bikash Sanstha (PBGSBS).<br>
@@ -703,7 +569,7 @@ class OrderGenerator:
         15. Guard File.<br>
     </div>
 
-    <div class="sign-box" style="margin-top: 35px;">
+    <div class="sign-box" style="margin-top: 30px;">
         <strong>Deputy Secretary</strong><br>
         to the Government of West Bengal
     </div>
