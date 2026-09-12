@@ -296,6 +296,11 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             target_su = "Nil"
             remark = "Promoted to Deputy Director, ARD, North 24 Parganas"
             row_fill = manual_fill
+        elif "Bhaskar Prasad Maji" in name:
+            target_sub = "Deputy Director, ARD, O/O the Additional Director, ARD, I.A.H. & V.B., (R. & T.)"
+            target_su = "Nil"
+            remark = "Promoted to Deputy Director, ARD, IAH&VB, Kolkata"
+            row_fill = manual_fill
         elif baseline_rem:
             remark = baseline_rem
         elif target_su != "Nil":
