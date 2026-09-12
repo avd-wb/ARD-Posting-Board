@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WB ARD Department | Smart Posting Decision Board & AI Cadre System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wbblue: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        avdsaffron: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                        wbgreen: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .badge-tenure-over {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+        .badge-avd {
+            background-color: #ffedd5;
+            color: #9a3412;
+            border: 1px solid #fb923c;
+        }
+        .badge-vacant {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #4ade80;
+        }
+        .badge-collision {
+            background-color: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #facc15;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+    <!-- Top Executive Header -->
+    <header class="bg-gradient-to-r from-wbblue-900 via-wbblue-800 to-slate-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Left: Government Branding -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+                        <i data-lucide="shield-check" class="w-7 h-7 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-semibold tracking-wider uppercase text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">Government of West Bengal</span>
+                            <span class="text-xs text-blue-200">| Animal Resources Development Department</span>
+                        </div>
+                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            Smart Posting Decision Board & AI Cadre System
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Right: Action Bar -->
+                <div class="flex items-center space-x-2.5">
+                    <button id="btnAutoSolve" class="inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-sm rounded-lg shadow-md hover:shadow-lg transition border border-emerald-400/30">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                        <span>Run AI Auto-Solver</span>
+                    </button>
+
+                    <button id="btnResetSim" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-700/80 hover:bg-slate-600 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        <span>Reset</span>
+                    </button>
+
+                    <button id="btnOpenBackupModal" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
+                        <i data-lucide="database-backup" class="w-3.5 h-3.5 text-cyan-300"></i>
+                        <span>Backup & Restore</span>
+                    </button>
+
+                    <button id="btnOpenShareModal" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-300"></i>
+                        <span>Share Online</span>
+                    </button>
+
+                    <a href="/api/download/google-sheets-version" download class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-800 hover:bg-teal-700 text-teal-100 hover:text-white font-medium text-xs rounded-lg border border-teal-500/40 shadow-sm transition" title="Download Shareable Interactive Google Sheets Version (.xlsx)">
+                        <i data-lucide="table-2" class="w-3.5 h-3.5 text-teal-300"></i>
+                        <span>Google Sheet (.xlsx)</span>
+                    </a>
+
+                    <a href="/api/simulation/export-excel" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs rounded-lg border border-emerald-500/40 shadow-sm transition" title="Export Excel with 6 official columns">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-200"></i>
+                        <span>Excel Order</span>
+                    </a>
+
+                    <a href="/api/simulation/export-docx" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs rounded-lg border border-blue-500/40 shadow-sm transition" title="Export Official Word Notification (Memo 391 standard)">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-200"></i>
+                        <span>Word (.docx)</span>
+                    </a>
+
+                    <a href="/api/simulation/view-order-html" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-medium text-xs rounded-lg border border-slate-600 shadow-sm transition" title="Printable Official Gazette Notification">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        <span>Gazette Order</span>
+                    </a>
+
+                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg shadow transition">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                        <span>AI Assistant</span>
+                        <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-wbblue-950/70 border-t border-wbblue-700/40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex space-x-1 sm:space-x-3 overflow-x-auto py-2" id="navTabs">
+                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-wbblue-800 flex items-center gap-2 transition">
+                        <i data-lucide="list-ordered" class="w-4 h-4 text-amber-300"></i>
+                        <span>50-Point Roster Panel</span>
+                        <span id="badgeRosterCount" class="ml-1 text-[11px] bg-amber-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">242</span>
+                    </button>
+
+                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+                        <span>Obliterated Posts (Memo 1808)</span>
+                        <span id="badgeOblitCount" class="ml-1 text-[11px] bg-rose-500 text-white font-bold px-2 py-0.2 rounded-full">106</span>
+                    </button>
+
+                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-300"></i>
+                        <span>Department Cadre (Memo 1809)</span>
+                        <span id="badgeCadreTotal" class="ml-1 text-[11px] bg-emerald-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">1,794</span>
+                    </button>
+
+                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="users" class="w-4 h-4 text-purple-300"></i>
+                        <span>Displaced Pool</span>
+                        <span id="badgeDisplacedCount" class="ml-1 text-[11px] bg-purple-600 text-white font-bold px-2 py-0.2 rounded-full">0</span>
+                    </button>
+
+                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="git-merge" class="w-4 h-4 text-cyan-300"></i>
+                        <span>Simulation & Cascades</span>
+                        <span id="badgeSimCount" class="ml-1 text-[11px] bg-cyan-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">0</span>
+                    </button>
+
+                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="file-text" class="w-4 h-4 text-slate-300"></i>
+                        <span>Official Orders & Gazette</span>
+                        <span class="ml-1 text-[11px] bg-slate-600 text-white font-bold px-2 py-0.2 rounded-full">470</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Top KPI Status Cards -->
+    <section class="bg-white border-b border-slate-200 shadow-sm py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div id="kpiCardTotalPosts" class="bg-slate-50 hover:bg-wbblue-50 border border-slate-200 hover:border-wbblue-400 rounded-lg p-3 text-center cursor-pointer transition shadow-sm hover:shadow group" title="Click to view Total Posts Waterfall Hierarchy">
+                    <div class="text-[11px] text-slate-500 group-hover:text-wbblue-700 font-medium flex items-center justify-center gap-1">
+                        <span>Total Posts</span>
+                        <i data-lucide="layers" class="w-3 h-3 text-wbblue-600"></i>
+                    </div>
+                    <div class="text-lg font-bold text-slate-800 group-hover:text-wbblue-800" id="kpiTotalPosts">1,794</div>
+                    <div class="text-[10px] text-slate-400 group-hover:text-wbblue-600 font-medium">Department Cadre ▾</div>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-emerald-700 font-medium">Clear Vacancies</div>
+                    <div class="text-lg font-bold text-emerald-700" id="kpiTotalVacancies">750</div>
+                    <div class="text-[10px] text-emerald-600 font-medium">Cadre Vacant Posts</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-blue-700 font-medium">Available DD Posts</div>
+                    <div class="text-lg font-bold text-blue-700" id="kpiVacantDD">242</div>
+                    <div class="text-[10px] text-blue-600">Promotion Target</div>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-teal-700 font-medium">AD Vacancies</div>
+                    <div class="text-lg font-bold text-teal-700" id="kpiVacantAD">119</div>
+                    <div class="text-[10px] text-teal-600">Cadre Absorption</div>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-amber-700 font-medium">50-Pt Roster</div>
+                    <div class="text-lg font-bold text-amber-700" id="kpiRoster">242</div>
+                    <div class="text-[10px] text-amber-600" id="kpiRosterSub">Pending: 242</div>
+                </div>
+                <div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-rose-700 font-medium">Obliterated Posts</div>
+                    <div class="text-lg font-bold text-rose-700" id="kpiObliterated">106</div>
+                    <div class="text-[10px] text-rose-600" id="kpiOblitSub">84 Incumbents</div>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-red-700 font-medium">Tenure Over (>4/5y)</div>
+                    <div class="text-lg font-bold text-red-700" id="kpiOverTenure">522</div>
+                    <div class="text-[10px] text-red-600">Memo 291 Exceeded</div>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                    <div class="text-[11px] text-purple-700 font-medium">Collisions</div>
+                    <div class="text-lg font-bold text-purple-700" id="kpiCollisions">0</div>
+                    <div class="text-[10px] text-purple-600">Forced Displacements</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================== TAB 1: 50-POINT ROSTER PANEL ==================== -->
+        <div id="tab-roster" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list-ordered" class="w-5 h-5 text-wbblue-700"></i>
+                            <span>50-Point Roster Promotion Panel (242 Candidates to Deputy Director)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Official 50-Point Roster dt. 07-09-2026. Matches candidates to 242 unblocked Deputy Director posts with dynamic real-time option reduction.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <select id="rosterCategoryFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-wbblue-600">
+                            <option value="ALL">All Categories</option>
+                            <option value="SC">SC (Scheduled Caste)</option>
+                            <option value="ST">ST (Scheduled Tribe)</option>
+                            <option value="Gen">General / UR</option>
+                        </select>
+                        <select id="rosterStatusFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-wbblue-600">
+                            <option value="ALL">All Status</option>
+                            <option value="Pending">Pending Allotment</option>
+                            <option value="Allotted">Allotted</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" id="rosterSearchInput" placeholder="Search doctor, block, HRMS..." class="text-xs border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 w-48 sm:w-60 focus:ring-2 focus:ring-wbblue-600">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="py-3 px-3">Sl</th>
+                                <th class="py-3 px-2">Pt</th>
+                                <th class="py-3 px-2">Quota</th>
+                                <th class="py-3 px-4">Officer Name & HRMS</th>
+                                <th class="py-3 px-2">Caste</th>
+                                <th class="py-3 px-5">Detailed Present Posting (Designation, Office, Block, District)</th>
+                                <th class="py-3 px-3">Superannuation</th>
+                                <th class="py-3 px-4">Submitted Preferences</th>
+                                <th class="py-3 px-4">Allotment Status (Substantive & SU)</th>
+                                <th class="py-3 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rosterTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: OBLITERATED POSTS (MEMO 1808) ==================== -->
+        <div id="tab-obliterated" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-rose-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600"></i>
+                            <span>Obliterated Posts Schedule (Notification No. 1808 - 106 Abolished Posts)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Statutory abolition schedule. 84 active serving officers (e.g. Dr. Nirmalya Ranjan Sarkar) require systematic rehabilitation or roster promotion.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="oblitStatusFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">All Status</option>
+                            <option value="Pending">Pending Rehabilitation</option>
+                            <option value="Rehabilitated">Rehabilitated</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" id="oblitSearchInput" placeholder="Search officer, district, block..." class="text-xs border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 w-52">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10">
+                            <tr>
+                                <th class="py-3 px-3">Sl</th>
+                                <th class="py-3 px-4">Abolished Post & Establishment</th>
+                                <th class="py-3 px-3">District & Block</th>
+                                <th class="py-3 px-4">Incumbent Serving Officer</th>
+                                <th class="py-3 px-3">HRMS ID</th>
+                                <th class="py-3 px-3">Tenure / Status</th>
+                                <th class="py-3 px-4">Career Track</th>
+                                <th class="py-3 px-4">Rehabilitation Allotment</th>
+                                <th class="py-3 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oblitTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: MASTER CADRE & VACANCIES (1,794) ==================== -->
+        <div id="tab-cadre" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col gap-3">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="layout-grid" class="w-5 h-5 text-emerald-600"></i>
+                                <span>Active Department Cadre (1,794 Sanctioned Posts under Notification No. 1809)</span>
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Verified Master Source of Truth: 1,044 Occupied posts + 750 Clear Vacancies across all 23 districts and institutions.
+                            </p>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium" id="cadrePaginationInfo">
+                            Showing 1 to 100 of 1,794 posts
+                        </div>
+                    </div>
+
+                    <!-- Multi-tier filters -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2 border-t border-slate-200">
+                        <select id="cadreDistrictFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">All Districts</option>
+                        </select>
+
+                        <select id="cadreDesigFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">All Designations</option>
+                        </select>
+
+                        <select id="cadreStatusFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">All Status</option>
+                            <option value="vacant">Clear Vacancy</option>
+                            <option value="occupied">Occupied</option>
+                        </select>
+
+                        <select id="cadreTenureFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">Tenure Status</option>
+                            <option value="Yes">Over-Tenure (>4/5y)</option>
+                            <option value="No">Within Tenure</option>
+                        </select>
+
+                        <select id="cadreAVDFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">AVD Affiliation</option>
+                            <option value="Yes">AVD Member</option>
+                            <option value="No">Non-Member</option>
+                        </select>
+
+                        <div class="relative">
+                            <input type="text" id="cadreSearchInput" placeholder="Search post, block, doctor..." class="w-full text-xs border border-slate-300 rounded-lg pl-8 pr-3 py-1.5">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="py-3 px-3">Post ID</th>
+                                <th class="py-3 px-4">Designation & Institution</th>
+                                <th class="py-3 px-3">Block</th>
+                                <th class="py-3 px-3">District</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-4">Current Occupant / Incumbent</th>
+                                <th class="py-3 px-3">Tenure</th>
+                                <th class="py-3 px-3">Superannuation</th>
+                                <th class="py-3 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cadreTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Pagination -->
+                <div class="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <button id="btnCadrePrev" class="px-3 py-1.5 rounded border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40">Previous</button>
+                        <button id="btnCadreNext" class="px-3 py-1.5 rounded border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40">Next</button>
+                    </div>
+                    <span class="text-slate-500">Showing 100 rows per page</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: SIMULATION & CASCADES ==================== -->
+        <div id="tab-cascade" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Solver Controls & Rules -->
+                <div class="space-y-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-emerald-600"></i>
+                            <span>Multi-Party Posting Solver</span>
+                        </h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Simulates global cadre optimization across 242 50-Point Roster candidates, 84 serving displaced officers, and 242 available DD vacancies.
+                        </p>
+                        <div class="space-y-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <div class="flex items-center gap-2 text-slate-700">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                <span>Phase 1: Dual-status officers to DD vacancies</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-slate-700">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                <span>Phase 2: 50-Point Roster promotions to DD vacancies</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-slate-700">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                <span>Phase 3: Obliterated officer rehabilitation to AD vacancies</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 flex flex-col gap-2">
+                            <button id="btnRunSolverCascade" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center gap-2">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                <span>Execute Cadre Auto-Solve</span>
+                            </button>
+                            <button id="btnResetCascade" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg border border-slate-300 transition">
+                                Reset Simulation State
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Cascade Audit Trail -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                                <i data-lucide="git-merge" class="w-5 h-5 text-cyan-600"></i>
+                                <span>Simulation Audit Trail & Cascade Decisions</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Chronological record of substantive and SU postings with displacement tracking.</p>
+                        </div>
+                        <span id="simAuditCount" class="px-2.5 py-1 rounded-full bg-cyan-100 text-cyan-800 font-bold text-xs">0 moves</span>
+                    </div>
+                    <div id="simAuditList" class="p-4 flex-1 overflow-y-auto max-h-[560px] space-y-2.5">
+                        <div class="text-center py-12 text-slate-400 text-xs">
+                            No assignments executed in this simulation yet. Click "Run AI Auto-Solver" or make manual assignments.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: OFFICIAL ORDERS REPOSITORY ==================== -->
+        <div id="tab-orders" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="file-text" class="w-5 h-5 text-wbblue-700"></i>
+                            <span>Official Orders, Notifications & Gazette Repository (470 Orders)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Published orders from ard.wb.gov.in and Google Drive archives.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="ordersCategoryFilter" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700">
+                            <option value="ALL">All Categories</option>
+                            <option value="STATUTORY_RULES">Statutory Rules (1808)</option>
+                            <option value="CADRE_SCHEDULE">Cadre Schedule (1809)</option>
+                            <option value="APPOINTMENTS_AND_TRANSFERS">Appointments & Transfers</option>
+                            <option value="MCAS_AND_PROMOTIONS">MCAS & Promotions</option>
+                            <option value="SERVICE_CONFIRMATION">Service Confirmation</option>
+                            <option value="GENERAL_ORDERS">General Orders</option>
+                        </select>
+                        <input type="text" id="ordersSearchInput" placeholder="Search order no, doctor..." class="text-xs border border-slate-300 rounded-lg px-3 py-1.5 w-52">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10">
+                            <tr>
+                                <th class="py-3 px-3">Date</th>
+                                <th class="py-3 px-3">Order Number</th>
+                                <th class="py-3 px-2">Category</th>
+                                <th class="py-3 px-5">Title & Subject</th>
+                                <th class="py-3 px-4">Key Officers / Beneficiaries</th>
+                                <th class="py-3 px-3 text-right">Source Link</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 6: TRANSFERABLE DISPLACED QUEUE POOL ==================== -->
+        <div id="tab-displaced" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-purple-700"></i>
+                            <span>Transferable Displaced Queue Pool ("Transfer due to Displaced")</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Serving officers displaced due to Service Utilization (SU) allotments or post restructuring awaiting active posting.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="displacedPoolStatusBadge" class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full border border-purple-300">
+                            0 Displaced Officers Pending Placement
+                        </span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10">
+                            <tr>
+                                <th class="py-3 px-3">Sl No</th>
+                                <th class="py-3 px-4">Officer Name & HRMS</th>
+                                <th class="py-3 px-4">Station Displaced From</th>
+                                <th class="py-3 px-3">District / Block</th>
+                                <th class="py-3 px-4">Displaced By (Incoming Doctor & Event)</th>
+                                <th class="py-3 px-2">Pay Level</th>
+                                <th class="py-3 px-2">Tenure</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="displacedTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ==================== DUAL ALLOTMENT MODAL ==================== -->
+    <div id="allotModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200">
+            <div class="p-4 border-b border-slate-200 bg-wbblue-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-5 h-5 text-amber-300"></i>
+                        <span>Dual Allotment System (Substantive + SU)</span>
+                    </h3>
+                    <p class="text-xs text-blue-200 mt-0.5" id="modalOfficerSubtitle">Officer details...</p>
+                </div>
+                <button id="btnCloseModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                <!-- Officer Context Box -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1.5">
+                    <div class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-wbblue-700"></i>
+                        <span id="modalOfficerNameHeader">Officer Name</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div><span class="text-slate-500">Current Post:</span> <strong id="modalCurrPost" class="text-slate-800">-</strong></div>
+                        <div><span class="text-slate-500">Block / District:</span> <strong id="modalCurrDist" class="text-slate-800">-</strong></div>
+                        <div><span class="text-slate-500">Roster Point / Quota:</span> <strong id="modalRosterPt" class="text-slate-800">-</strong></div>
+                        <div><span class="text-slate-500">Superannuation (DOR):</span> <strong id="modalDOR" class="text-slate-800">-</strong></div>
+                    </div>
+                    <div class="pt-1 border-t border-slate-200 text-slate-600 text-[11px]">
+                        <span class="text-slate-500 font-medium">Submitted Preferences:</span> <span id="modalPrefs" class="italic">-</span>
+                    </div>
+                </div>
+
+                <!-- Field 1: Substantive / Main Post Selection -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-wbblue-700 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                        <span>Select Substantive / Main Post (Mandatory)</span>
+                    </label>
+                    <p class="text-[11px] text-slate-500">
+                        Promotees select from 242 available Deputy Director posts; displaced officers select from clear cadre vacancies. Dynamically shrinks as posts are taken.
+                    </p>
+                    <select id="modalSubstantivePostSelect" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-wbblue-600">
+                        <option value="">Loading available posts...</option>
+                    </select>
+                </div>
+
+                <!-- Field 2: Optional Service Utilization (SU) Post Selection -->
+                <div class="space-y-2 pt-2 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                            <span>Service Utilization (SU) Post (Optional)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                            <input type="checkbox" id="modalEnableSUCheck" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                            <span class="font-medium">Attach SU Post</span>
+                        </label>
+                    </div>
+                    <div id="modalSUContainer" class="hidden space-y-1.5">
+                        <p class="text-[11px] text-slate-500">
+                            Select any post (vacant or filled) across 1,794 cadre posts. If an occupied post is selected, the incumbent is flagged for displacement.
+                        </p>
+                        <select id="modalSUPostSelect" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-teal-600">
+                            <option value="">-- Choose Post for Service Utilization --</option>
+                        </select>
+                        <div id="modalCollisionAlert" class="hidden p-2.5 rounded-lg text-xs bg-amber-50 border border-amber-300 text-amber-900 flex items-start gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0"></i>
+                            <div id="modalCollisionText" class="text-[11px] leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Posting Reason Selection -->
+                <div class="pt-2 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Posting Reason / Administrative Authority</label>
+                    <select id="modalReasonSelect" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-800">
+                        <option value="Promotion (50-Point Roster)">Promotion under 50-Point Roster (to Deputy Director)</option>
+                        <option value="Notification 1808 Rehabilitation">Notification No. 1808 Rehabilitation (from Abolished Post)</option>
+                        <option value="Rotational Transfer (Memo 291)">Rotational Transfer on Tenure Completion (Memo 291)</option>
+                        <option value="Administrative Grounds">Administrative Grounds</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
+                <button id="btnCancelModal" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg border border-slate-300 hover:bg-slate-100">Cancel</button>
+                <button id="btnConfirmAllot" class="px-4 py-2 text-xs font-bold text-white bg-wbblue-700 hover:bg-wbblue-600 rounded-lg shadow transition flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Confirm Allotment</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== BACKUP & ROLLBACK MODAL ==================== -->
+    <div id="backupModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300">
+            <div class="p-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="database-backup" class="w-5 h-5 text-cyan-300"></i>
+                        <span>Database Backup & Rollback Manager</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Automated timestamped snapshots in backups/ directory with safe rollback.</p>
+                </div>
+                <button id="btnCloseBackupModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <!-- Create Snapshot Action Box -->
+                <div class="p-3 rounded-lg border border-cyan-200 bg-cyan-50/50 flex items-center justify-between gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-800 mb-1">Create New Snapshot</label>
+                        <input type="text" id="inputBackupTag" placeholder="Tag (e.g. pre_roster_run)" class="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white">
+                    </div>
+                    <button id="btnCreateBackupNow" class="mt-4 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5">
+                        <i data-lucide="camera" class="w-4 h-4"></i>
+                        <span>Snapshot Now</span>
+                    </button>
+                </div>
+
+                <!-- Backups List Table -->
+                <div class="space-y-2">
+                    <div class="font-bold text-xs text-slate-700 flex items-center justify-between">
+                        <span>Available Database Snapshots</span>
+                        <span id="backupListCount" class="text-slate-400 font-normal">0 snapshots</span>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0">
+                                <tr>
+                                    <th class="py-2.5 px-3">Timestamp / Date</th>
+                                    <th class="py-2.5 px-3">Filename</th>
+                                    <th class="py-2.5 px-2">Size</th>
+                                    <th class="py-2.5 px-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backupTableBody" class="divide-y divide-slate-200 bg-white">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+                <button id="btnCloseBackupFooter" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg border border-slate-300 hover:bg-slate-100">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SHARE ONLINE MODAL ==================== -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-300">
+            <div class="p-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="share-2" class="w-5 h-5 text-amber-300"></i>
+                        <span>Publish & Share Decision Board Online</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Allow colleagues and administrative team members to access this board.</p>
+                </div>
+                <button id="btnCloseShareModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Option 1: Local LAN / Wi-Fi -->
+                <div class="p-3.5 rounded-lg border border-slate-200 bg-slate-50 space-y-2">
+                    <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="wifi" class="w-4 h-4 text-wbblue-600"></i>
+                        <span>Option 1: Office Wi-Fi / Local Network</span>
+                    </div>
+                    <p class="text-slate-600 text-[11px]">Any colleague connected to the same office Wi-Fi network can access the dashboard immediately at:</p>
+                    <div class="p-2 rounded bg-white border border-slate-300 font-mono text-wbblue-800 font-bold select-all flex items-center justify-between">
+                        <span id="localNetworkUrl">http://192.168.29.68:8000</span>
+                    </div>
+                </div>
+
+                <!-- Option 2: Instant Public Tunnel -->
+                <div class="p-3.5 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-2">
+                    <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <i data-lucide="globe" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Option 2: Public Internet Access (Instant Secure Tunnel)</span>
+                    </div>
+                    <p class="text-slate-600 text-[11px]">Run this one-line command in terminal to generate an instant free HTTPS link for any team member worldwide:</p>
+                    <div class="p-2 rounded bg-slate-900 text-emerald-400 font-mono text-[11px] select-all">
+                        ./share_online.sh
+                    </div>
+                    <p class="text-[10px] text-slate-500">Or execute: <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-700">npx -y localtunnel --port 8000</code></p>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+                <button id="btnCloseShareFooter" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-lg border border-slate-300 hover:bg-slate-100">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CADRE WATERFALL HIERARCHY MODAL ==================== -->
+    <div id="waterfallModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-wbblue-950 via-wbblue-900 to-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="layers" class="w-5 h-5 text-amber-300"></i>
+                        <span>Cadre Post Waterfall Hierarchy (1,794 Sanctioned Posts)</span>
+                    </h3>
+                    <p class="text-xs text-blue-200 mt-0.5">Notification No. 1809-AR&AH/3A-08/23 dt. 18.06.2025 | Establishment & Rank Structure</p>
+                </div>
+                <button id="btnCloseWaterfallModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Scrollable -->
+            <div class="p-5 space-y-5 overflow-y-auto flex-1 text-xs">
+                <!-- KPI Summary Strip -->
+                <div class="grid grid-cols-4 gap-3">
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                        <div class="text-[11px] text-slate-500 font-medium">Sanctioned Cadre</div>
+                        <div class="text-xl font-bold text-slate-900" id="wfSanctioned">1,794</div>
+                        <div class="text-[10px] text-slate-400">Total Statutory Posts</div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                        <div class="text-[11px] text-blue-700 font-medium">Occupied Posts</div>
+                        <div class="text-xl font-bold text-blue-800" id="wfOccupied">1,044</div>
+                        <div class="text-[10px] text-blue-600 font-medium" id="wfOccupancyRate">58.2% Occupancy</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center">
+                        <div class="text-[11px] text-emerald-700 font-medium">Clear Vacancies</div>
+                        <div class="text-xl font-bold text-emerald-800" id="wfVacant">750</div>
+                        <div class="text-[10px] text-emerald-600 font-medium" id="wfVacancyRate">41.8% Vacant</div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                        <div class="text-[11px] text-amber-700 font-medium">Available for Promotion</div>
+                        <div class="text-xl font-bold text-amber-800">242</div>
+                        <div class="text-[10px] text-amber-600 font-medium">Deputy Director Posts</div>
+                    </div>
+                </div>
+
+                <!-- 6-Tier Waterfall Hierarchy Table -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-wbblue-700"></i>
+                        <span>6-Tier Administrative Cadre Waterfall Breakdown</span>
+                    </h4>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="py-2.5 px-3">Cadre Rank Tier</th>
+                                    <th class="py-2.5 px-3">ROPA Pay Level</th>
+                                    <th class="py-2.5 px-2 text-center">Sanctioned</th>
+                                    <th class="py-2.5 px-2 text-center">Occupied</th>
+                                    <th class="py-2.5 px-2 text-center">Vacant</th>
+                                    <th class="py-2.5 px-3 text-center">Occupancy Bar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wfTierTableBody" class="divide-y divide-slate-200 bg-white">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Establishment Type Distribution -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="building-2" class="w-4 h-4 text-emerald-700"></i>
+                        <span>Establishment Type Distribution</span>
+                    </h4>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0">
+                                <tr>
+                                    <th class="py-2 px-3">Establishment Type</th>
+                                    <th class="py-2 px-2 text-center">Sanctioned</th>
+                                    <th class="py-2 px-2 text-center">Occupied</th>
+                                    <th class="py-2 px-2 text-center">Vacant</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wfEstabTableBody" class="divide-y divide-slate-200 bg-white">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+                <button id="btnCloseWaterfallFooter" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== OFFICER DOSSIER DETAIL MODAL ==================== -->
+    <div id="officerDossierModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-slate-900 via-wbblue-950 to-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="contact" class="w-5 h-5 text-amber-300"></i>
+                        <span>Officer Personnel Dossier</span>
+                    </h3>
+                    <p class="text-xs text-blue-200 mt-0.5" id="dossierSubtitle">Department of Animal Resources Development</p>
+                </div>
+                <button id="btnCloseDossierModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs" id="dossierContent">
+                <!-- Populated dynamically via openOfficerDossier(hrmsId) -->
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <button id="btnDossierAIAllot" class="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 rounded-lg shadow transition flex items-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    <span>Recommend AI Allotment</span>
+                </button>
+                <button id="btnCloseDossierFooter" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== AI ALLOTMENT RECOMMENDATION MODAL ==================== -->
+    <div id="aiAllotModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-amber-200"></i>
+                        <span>AI Intelligent Allotment Recommendation</span>
+                    </h3>
+                    <p class="text-xs text-amber-100 mt-0.5" id="aiAllotSubtitle">Automated Constraint & Welfare Optimization</p>
+                </div>
+                <button id="btnCloseAIAllotModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs" id="aiAllotContent">
+                <!-- Populated dynamically via openAIAllotModal(hrmsId) -->
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <button id="btnCloseAIAllotFooter" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
+                    Cancel / Manual Allot
+                </button>
+                <button id="btnConfirmAIAllot" class="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>Approve & Execute Allotment</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FLOATING AI COPILOT DRAWER ==================== -->
+    <div id="aiDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-white shadow-2xl border-l border-slate-300 z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- AI Header -->
+        <div class="p-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center">
+                    <i data-lucide="bot" class="w-5 h-5 text-indigo-300"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">ARD Cadre AI Copilot</h3>
+                    <p class="text-[11px] text-indigo-200">1,794 Cadre, Memo 1808, 50-Pt Roster & Memo 291</p>
+                </div>
+            </div>
+            <button id="btnCloseAIDrawer" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- AI Messages Area -->
+        <div id="aiMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
+            <div class="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 text-indigo-900 space-y-2">
+                <div class="font-bold flex items-center gap-1.5 text-indigo-800">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+                    <span>Welcome to ARD Cadre Decision Assistant</span>
+                </div>
+                <p class="text-[11px] leading-relaxed text-indigo-800/80">
+                    I can assist with queries on the 1,794 active cadre posts (Notification 1809), 106 abolished posts (Notification 1808), 242 50-Point Roster candidates, and Transfer Policy 2009 (Memo 291).
+                </p>
+                <div class="pt-2 border-t border-indigo-200/60 flex flex-wrap gap-1.5">
+                    <button class="ai-quick-btn text-[10px] bg-white hover:bg-indigo-100 text-indigo-700 font-medium px-2 py-1 rounded border border-indigo-200 transition">
+                        Dr. Nirmalya Ranjan Sarkar
+                    </button>
+                    <button class="ai-quick-btn text-[10px] bg-white hover:bg-indigo-100 text-indigo-700 font-medium px-2 py-1 rounded border border-indigo-200 transition">
+                        DD Vacancies by District
+                    </button>
+                    <button class="ai-quick-btn text-[10px] bg-white hover:bg-indigo-100 text-indigo-700 font-medium px-2 py-1 rounded border border-indigo-200 transition">
+                        Retirements in 6 months
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Input Box -->
+        <div class="p-3 border-t border-slate-200 bg-slate-50">
+            <form id="aiChatForm" class="flex items-center gap-2">
+                <input type="text" id="aiInputText" placeholder="Ask about doctor, rule, vacancy..." class="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 focus:ring-2 focus:ring-indigo-600">
+                <button type="submit" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script file -->
+    <script src="/static/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.env.local
+.DS_Store
+*.log
+backups/
+.vercel/
+file_manifest.json
+*.tmp
+
