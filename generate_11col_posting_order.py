@@ -73,7 +73,14 @@ def format_post_fields(desig, estab, block, district):
         p_clean = p.strip(" ,.-")
         if p_clean and (not res or p_clean.lower() != res[-1].lower()):
             res.append(p_clean)
-    return ', '.join(res)
+    full_str = ', '.join(res)
+    full_str = re.sub(r'(?i)(Assistant Director,?\s*ARD,?\s*)+', 'Assistant Director, ARD, ', full_str)
+    tokens = [t.strip() for t in full_str.split(',') if t.strip()]
+    dedup = []
+    for t in tokens:
+        if not dedup or t.lower() != dedup[-1].lower():
+            dedup.append(t)
+    return ', '.join(dedup)
 
 def format_present_su(hrms, desig, estab, dist, raw_txt=""):
     known_su = {
@@ -429,8 +436,11 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         if m_post:
             p_info = cadre_by_post_sl.get(int(m_post.group(1)), {})
             target_sub = format_post_fields(p_info.get("designation", ""), p_info.get("establishment", ""), p_info.get("block", ""), p_info.get("district", ""))
-        elif "Active Cadre" in sub_raw or "Rehabilitated to" in sub_raw:
+        elif "Active Cadre" in sub_raw or "Rehabilitated to" in sub_raw or not sub_raw:
             target_sub = format_post_fields("Assistant Director, ARD", f"District Office, {pres_dist}", "", pres_dist)
+        elif "Assistant Director" in sub_raw:
+            clean_estab = sub_raw.replace("Assistant Director, ARD", "").replace("Assistant Director", "").strip(" ,-")
+            target_sub = format_post_fields("Assistant Director, ARD", clean_estab, "", pres_dist)
         else:
             target_sub = format_post_fields("Assistant Director, ARD", sub_raw, "", pres_dist)
 
