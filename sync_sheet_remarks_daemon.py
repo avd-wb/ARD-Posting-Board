@@ -149,14 +149,15 @@ def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, p
     rt = rem_text.strip()
     rt_lower = rt.lower()
 
-    if not rt or rt_lower in ["none", "null", "-", ""]:
+    if not rt or rt_lower in ["none", "null", "-", "", "consequential transfer", "rehabilitated to active cadre", "rehabilitation", "service utilized (su)"]:
         return cur_sub, cur_su, "No change"
 
     # Case 1: Stay at present post
     if any(k in rt_lower for k in ["stay", "same post", "present post"]):
-        new_su = pres_post
+        # If SU is already set to something meaningful, preserve it
+        new_su = cur_su if (cur_su and cur_su != "Nil") else pres_post
         new_sub = cur_sub
-        if sl_242 and not cur_sub.startswith("Deputy Director"):
+        if sl_242 and str(sl_242).strip().isdigit() and not cur_sub.startswith("Deputy Director"):
             new_sub = f"Deputy Director, ARD, District Office, {pres_dist}"
         return new_sub, new_su, f"Stay applied (SU: {new_su})"
 
@@ -186,7 +187,10 @@ def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, p
             sub_hq = cur_sub if "Deputy Director" in cur_sub else f"Deputy Director, ARD, District Office, {pres_dist}"
             return sub_hq, formatted, f"Promotee SU assigned: {formatted}"
     else: # Lateral transfer or Obliterated post rehab
-        return formatted, "Nil", f"Transfer post updated: {formatted}"
+        if p_type == "CADRE" or any(k in rt_lower for k in ["transfer", "posted as", "posted to", "bldo", "bahc", "sahc", "director"]):
+            return formatted, "Nil", f"Transfer post updated: {formatted}"
+        else:
+            return cur_sub, cur_su, "No change"
 
 def check_and_sync():
     log("Starting check of Column M ('remarks') from Google Sheet...")
