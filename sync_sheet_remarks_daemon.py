@@ -368,35 +368,15 @@ def check_and_sync():
 
     if changes_detected:
         log(f"Total changes detected and applied: {len(changes_detected)}")
-        # 1. Save modified workbook locally
-        wb.save(LOCAL_EXCEL)
-        wb.save(remote_tmp)
-
-        # 2. Upload back to Google Drive overwriting in-place
-        log("Uploading updated spreadsheet back to Google Drive...")
-        upload_remote_sheet(LOCAL_EXCEL)
-
-        # 3. Save new baseline
         save_baseline(updated_baseline)
 
-        # 4. Regenerate deliverables (XLSX master board, District HQ tabs & Word doc)
-        log("Regenerating master interactive board, District HQ tabs and official 4-column Word document...")
-        run_cmd(["python3", "generate_district_hq_tabs.py"])
-        run_cmd(["python3", "generate_11col_posting_order.py"])
-        run_cmd(["python3", "generate_simple_4col_order.py"])
+        # Trigger universal synchronization across all database tables, all tabs in all sheets, and web app
+        from sync_orchestrator import run_full_sync
+        run_full_sync()
 
-        # 5. Upload master board & word doc to Drive
-        run_cmd(["rclone", "copy", "WB_ARD_Interactive_Posting_Board_GoogleSheets_Ready.xlsx", "gdrive:", "--drive-root-folder-id", DRIVE_FOLDER_ID])
-
-        # 6. Git commit and push to main
-        log("Pushing updates to GitHub / Vercel...")
-        run_cmd(["git", "add", "-A"])
-        run_cmd(["git", "commit", "-m", f"Auto-sync {len(changes_detected)} directives from Google Sheet Column M Remarks"])
-        run_cmd(["git", "push", "origin", "main"])
-
-        log("Successfully synchronized all changes across Google Sheets, Database, and Web App.")
+        log(f"Successfully synchronized all {len(changes_detected)} changes across all tabs, all sheets, database, and web app.")
     else:
-        log("No changes detected in Column M. System is up to date.")
+        log("No changes detected in Column N comments or Column M remarks. System is up to date.")
 
     # Clean up temp file
     if os.path.exists(remote_tmp):
