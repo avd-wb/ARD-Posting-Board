@@ -192,14 +192,33 @@ def apply_parsed_directive(sl_242, sl_global, name, rem_text, cur_sub, cur_su, p
         else:
             return cur_sub, cur_su, "No change"
 
+COLUMN_N_FILE = os.path.join(WORKSPACE, "column_n_comments.json")
+
+def load_column_n_comments():
+    if os.path.exists(COLUMN_N_FILE):
+        try:
+            with open(COLUMN_N_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_column_n_comments(data):
+    try:
+        with open(COLUMN_N_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        log(f"Error saving column N comments: {e}")
+
 def check_and_sync():
-    log("Starting check of Column M ('remarks') from Google Sheet...")
+    log("Starting check of Column N ('comments'), Column M ('remarks'), and manual cell edits from Google Sheet...")
     remote_tmp = download_remote_sheet()
     if not remote_tmp:
         log("ERROR: Could not download remote spreadsheet via rclone.")
         return
 
     baseline = load_baseline()
+    col_n_map = load_column_n_comments()
     wb = openpyxl.load_workbook(remote_tmp)
     ws = wb.worksheets[0]
 
@@ -207,14 +226,20 @@ def check_and_sync():
     if ws.cell(row=1, column=13).value != "remarks":
         ws.cell(row=1, column=13, value="remarks")
 
+    col_n_hdr = ws.cell(row=1, column=14).value
+    if not col_n_hdr:
+        ws.cell(row=1, column=14, value="Comments (Debi Da)")
+
     changes_detected = []
     updated_baseline = dict(baseline)
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    for r in range(2, 330):
+    for r in range(2, ws.max_row + 1):
         sl_global = ws.cell(row=r, column=1).value
+        if not sl_global:
+            continue
         sl_242 = ws.cell(row=r, column=2).value
         name = ws.cell(row=r, column=3).value
         desig = ws.cell(row=r, column=4).value
@@ -225,17 +250,39 @@ def check_and_sync():
         rem_val = ws.cell(row=r, column=13).value or ""
         rem_str = str(rem_val).strip()
 
+        # Column N: Comments written by Debi Da (NEVER OVERWRITE OR CLEAR)
+        col_n_val = ws.cell(row=r, column=14).value
+        col_n_str = str(col_n_val).strip() if col_n_val is not None else ""
+
         prev_entry = baseline.get(str(sl_global), {})
         prev_rem = prev_entry.get("remark", "").strip()
         prev_sub = prev_entry.get("substantive", "").strip()
         prev_su = prev_entry.get("su", "").strip()
+        prev_col_n = prev_entry.get("comment_n", "").strip()
 
-        # Check if remark or direct column edits occurred
-        remark_changed = (rem_str and rem_str != prev_rem)
+        # Check if Debi Da commented in Column N, or edited cells manually, or edited Column M
+        col_n_changed = (col_n_str and col_n_str != prev_col_n)
         sub_or_su_manually_edited = (cur_sub and prev_sub and cur_sub != prev_sub) or (cur_su and prev_su and cur_su != prev_su)
+        remark_changed = (rem_str and rem_str != prev_rem)
 
-        if remark_changed or sub_or_su_manually_edited:
-            if remark_changed:
+        if col_n_changed or sub_or_su_manually_edited or remark_changed:
+            if col_n_changed:
+                log(f"Detected Debi Da's comment in Column N at Row {r} (Sl {sl_global}, {name}): '{col_n_str}' (Previous: '{prev_col_n}')")
+                new_sub, new_su, action_desc = apply_parsed_directive(
+                    sl_242=sl_242,
+                    sl_global=sl_global,
+                    name=name,
+                    rem_text=col_n_str,
+                    cur_sub=cur_sub,
+                    cur_su=cur_su,
+                    pres_post=pres_post,
+                    pres_dist=dist
+                )
+            elif sub_or_su_manually_edited:
+                log(f"Detected direct manual cell edit by Debi Da at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
+                new_sub, new_su = cur_sub, cur_su
+                action_desc = "Manual cell edit preserved"
+            else:
                 log(f"Detected remark change at Row {r} (Sl {sl_global}, {name}): '{rem_str}' (Previous: '{prev_rem}')")
                 new_sub, new_su, action_desc = apply_parsed_directive(
                     sl_242=sl_242,
@@ -247,18 +294,15 @@ def check_and_sync():
                     pres_post=pres_post,
                     pres_dist=dist
                 )
-            else:
-                log(f"Detected direct manual cell edit at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
-                new_sub, new_su = cur_sub, cur_su
-                action_desc = "Manual cell edit preserved"
 
             log(f"  -> Applied: Substantive='{new_sub}', SU='{new_su}' ({action_desc})")
 
-            # Update worksheet cells
+            # Update worksheet cells (Column 11 Substantive, Column 12 SU)
+            # CRITICAL: DO NOT TOUCH COLUMN 14 (Column N). It remains untouched and intact.
             ws.cell(row=r, column=11, value=new_sub)
             ws.cell(row=r, column=12, value=new_su)
             
-            # Highlight manual row in white
+            # Highlight manual row in white (Cols 1 to 13)
             manual_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
             for c in range(1, 14):
                 ws.cell(row=r, column=c).fill = manual_fill
@@ -294,6 +338,7 @@ def check_and_sync():
                 "row": r,
                 "sl": sl_global,
                 "name": name,
+                "col_n_comment": col_n_str,
                 "old_remark": prev_rem,
                 "new_remark": rem_str,
                 "new_sub": new_sub,
@@ -306,11 +351,20 @@ def check_and_sync():
                 "name": name,
                 "remark": rem_str,
                 "substantive": new_sub,
-                "su": new_su
+                "su": new_su,
+                "comment_n": col_n_str
             }
+        else:
+            if str(sl_global) in updated_baseline:
+                updated_baseline[str(sl_global)]["comment_n"] = col_n_str
+
+        if col_n_str:
+            col_n_map[str(sl_global)] = col_n_str
 
     conn.commit()
     conn.close()
+
+    save_column_n_comments(col_n_map)
 
     if changes_detected:
         log(f"Total changes detected and applied: {len(changes_detected)}")

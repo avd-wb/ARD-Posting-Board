@@ -224,6 +224,15 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         except Exception:
             baseline = {}
 
+    # Load Column N comments written by Debi Da (never overwrite or clear)
+    comments_n = {}
+    if os.path.exists('column_n_comments.json'):
+        try:
+            with open('column_n_comments.json') as cnf:
+                comments_n = json.load(cnf)
+        except Exception:
+            comments_n = {}
+
     headers = [
         "sl no.",
         "sl. no. (of 242 promotees)",
@@ -237,7 +246,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "Transfer basis : Promotion / Displacement due to postt abolision / displacement due to promotee accomodation.",
         "Transferred to Substantive post ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
         "Service utilized at ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
-        "remarks"
+        "remarks",
+        "Comments (Debi Da)"
     ]
 
     ws.row_dimensions[1].height = 45
@@ -338,6 +348,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         else:
             remark = f"Promoted to Deputy Director, ARD, {pres_dist}"
 
+        col_n_val = comments_n.get(str(global_sl), "")
+
         row_values = [
             global_sl,
             r["sl_no"],
@@ -351,7 +363,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             transfer_basis,
             target_sub,
             target_su,
-            remark
+            remark,
+            col_n_val
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -429,6 +442,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         baseline_rem = baseline.get(str(global_sl), {}).get("remark", "").strip()
         remark = baseline_rem if baseline_rem else "Rehabilitated to active cadre"
 
+        col_n_val = comments_n.get(str(global_sl), "")
+
         row_values = [
             global_sl,
             "-",
@@ -442,7 +457,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             transfer_basis,
             target_sub,
             target_su,
-            remark
+            remark,
+            col_n_val
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -672,6 +688,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         baseline_rem = baseline.get(str(global_sl), {}).get("remark", "").strip()
         remark = baseline_rem if baseline_rem else "Consequential transfer"
 
+        col_n_val = comments_n.get(str(global_sl), "")
+
         row_values = [
             global_sl,
             "-",
@@ -685,7 +703,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             transfer_basis,
             target_sub,
             target_su,
-            remark
+            remark,
+            col_n_val
         ]
 
         for col_idx, val in enumerate(row_values, 1):
@@ -731,7 +750,8 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "J": 38,  # Transfer basis
         "K": 52,  # Transferred to Substantive post
         "L": 48,  # Service utilized at
-        "M": 45   # remarks
+        "M": 45,  # remarks
+        "N": 40   # comments (Debi Da)
     }
     for col_letter, width in col_widths.items():
         ws.column_dimensions[col_letter].width = width
