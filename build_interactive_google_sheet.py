@@ -678,24 +678,21 @@ def build_workbook():
         cell.border = cell_border
     ws_order.row_dimensions[sec2_hdr_row].height = 28
 
-    exec_transfers = [
-        ("Dr. Prasanta Kumar Bera (2001001103) — DVO, Howrah", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
-        ("Dr. Pradip Pati (2000004209) — AD, ARD (Management), Haringhata Farm SU at Banglar Dairy", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
-        ("Dr. Sukanta Roy (2012002908) — AD, ARD (VR&I), North 24 Parganas", "Level 16", "Administrative Transfer", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
-        ("Dr. Debi Prasad Nandi (2000000354) — BLDO, Swarupnagar, North 24 Parganas", "Level 16", "Promotion / Placement", "AD, ARD, North 24 Parganas [SU as AD, ARD (Vety.), HQ, Kolkata]", "Level 16"),
-        ("Dr. Nirmalya Ranjan Sarkar (2014000243) — AD, ARD (SA), Hooghly", "Level 16", "Cadre Restructuring", "AD, ARD, Hooghly [SU as AD, ARD (Vety.), HQ, Kolkata]", "Level 16"),
-        ("Dr. Puspendu Panja (2005000825) — AD, ARD (Management), Haringhata Farm, Nadia", "Level 16", "Cadre Restructuring", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
-        ("Dr. Banibrata Nayek (1999000493) — BLDO, Kulpi, South 24 Pgs", "Level 16", "Administrative Transfer", "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata", "Level 16"),
-        ("Dr. Shuvendu Halder (1998000164) — AD, ARD (Vety.), HQ, Kolkata", "Level 16", "Administrative Transfer (Reciprocal Swap)", "Veterinary Officer, BAHC, Kalna-II, Purba Bardhaman", "Level 16"),
-        ("Dr. Madhusudan Mukherjee (2001001523) — VO, BAHC, Kalna-II, Purba Bardhaman", "Level 16", "Administrative Transfer (Reciprocal Swap)", "AD, ARD (Vety.), HQ, Kolkata [SU at WBLDCL, HQ as Manager (HR)]", "Level 16"),
-        ("Dr. Partha Sarathi Chattopadhyay (2001000022) — AD, ARD (Vety.), HQ SU at WBLDCL, HQ", "Level 16", "SU Withdrawn / Field Transfer (Swap)", "Block Livestock Development Officer, Ratua-I, Malda", "Level 16"),
-        ("Dr. Dipak Dey (2019018249) — BLDO, Ratua-I, Malda", "Level 16", "Deputation / Transfer (Swap)", "AD, ARD (Vety.), Dte. HQ [SU at WBLDCL, HQ (Marketing)]", "Level 16"),
-        ("Dr. Santanu Nandi (2011000171) — AD, ARD (Vety.), Dte. HQ SU at WBLDCL, HQ (Marketing)", "Level 16", "SU Withdrawn / Field Transfer", "Block Livestock Development Officer, Bangaon, North 24 Parganas", "Level 16"),
-        ("Dr. Sumit Chowdhury (2005000244) — AD, ARD (Vety.), HQ, Kolkata", "Level 16", "Administrative Transfer", "Assistant Director, ARD (VR&I), IAH&VB, Belgachia, Kolkata", "Level 16")
-    ]
+    c.execute("""
+        SELECT sl_no, officer_name, hrms_id, present_posting, transferred_post_name, transfer_type, reason_notes
+        FROM executive_lateral_transfers
+        ORDER BY sl_no ASC
+    """)
+    exec_transfers_db = c.fetchall()
 
-    for ex_idx, (ex_name, ex_pl, ex_tb, ex_place, ex_npl) in enumerate(exec_transfers, 1):
+    for ex_idx, r in enumerate(exec_transfers_db, 1):
         tr = sec2_hdr_row + ex_idx
+        ex_name = f"{r['officer_name']} ({r['hrms_id']}) — {r['present_posting']}"
+        ex_pl = "Level 16"
+        ex_tb = r['transfer_type']
+        ex_place = f"{r['transferred_post_name']} [{r['reason_notes']}]"
+        ex_npl = "Level 16"
+
         ws_order.cell(row=tr, column=1, value=ex_idx).alignment = Alignment(horizontal="center", vertical="center")
         ws_order.cell(row=tr, column=2, value=ex_name).alignment = Alignment(horizontal="left", vertical="center")
         ws_order.cell(row=tr, column=3, value=ex_pl).alignment = Alignment(horizontal="center", vertical="center")

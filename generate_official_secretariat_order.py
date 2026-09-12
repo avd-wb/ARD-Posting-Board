@@ -323,51 +323,64 @@ def create_order():
         run.font.size = Pt(10)
         run.font.color.rgb = RGBColor(255, 255, 255)
 
-    executive_schedule = [
-        ("1", "Dr. Shuvendu Halder (2000000780)\nVO, Kalna-II, Purba Bardhaman", "Retained as Veterinary Officer, Kalna-II, Purba Bardhaman (Reciprocal arrangement)."),
-        ("2", "Dr. Madhusudan Mukherjee (1993000628)\nVO, Kalna-II, Purba Bardhaman", "Promoted to AD, ARD (Vety), Directorate HQ [Post 53] on SU as Manager (HR), WBLDCL HQ, Salt Lake."),
-        ("3", "Dr. Partha Sarathi Chattopadhyay (1994000305)\nBLDO, Ratua-I, Malda", "Retained as Block Livestock Development Officer, Ratua-I, Malda (Reciprocal arrangement)."),
-        ("4", "Dr. Dipak Dey (1995000574)\nBLDO, Ratua-I, Malda", "Promoted to AD, ARD (Vety), Directorate HQ [Post 53] on SU as In-Charge Marketing, WBLDCL HQ, Salt Lake."),
-        ("5", "Dr. Santanu Nandi (1997000854)\nAD, ARD / SU Holder", "Service Utilization attachment withdrawn; posted substantively as BLDO, Bangaon, North 24 Parganas."),
-        ("6", "Dr. Nirmalya Ranjan Sarkar (2014000243)\nAssistant Director, ARD", "Substantively anchored as AD, ARD, Hooghly [Post 1108] on SU as AD, ARD (Vety.), Directorate HQ, Kolkata [Post 53]."),
-        ("7", "Dr. Prasanta Kumar Bera (1996000007)\nAssistant Director, ARD", "Substantive Assistant Director, ARD (Vety.), Directorate Headquarters, Salt Lake [Post 53]."),
-        ("8", "Dr. Puspendu Panja (2008000492)\nAssistant Director, ARD", "Substantive Assistant Director, ARD (Vety.), Directorate Headquarters, Salt Lake [Post 54]."),
-        ("9", "Dr. Pradip Pati (2009000185)\nAssistant Director, ARD", "Substantive Assistant Director, ARD (Vety.), Directorate Headquarters, Salt Lake [Post 55]."),
-        ("10", "Dr. Chayan Bhattacharya (2000000371)\nAssistant Director, ARD", "Retained as Assistant Director, ARD (Admin), Directorate Headquarters, Salt Lake [Post 56]."),
-        ("11", "Dr. Sumit Chowdhury (2005000244)\nAssistant Director, ARD", "Posted as Assistant Director, ARD (VR&I), IAH&VB, 37 Belgachia Road, Kolkata."),
-        ("12", "Dr. Janatosh Karan (1995000615)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 18]."),
-        ("13", "Dr. Susmita Roy (1996000030)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 19]."),
-        ("14", "Dr. Biplob Kumar Maiti (1995000573)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 20]."),
-        ("15", "Dr. Subir Kumar Mukherjee (1996000388)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 21]."),
-        ("16", "Dr. Subrata Majumdar (1995000685)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 22]."),
-        ("17", "Dr. Tapan Kumar Biswas (1995000416)\nPromoted Deputy Director", "Deputy Director, ARD (DAH & VS, Directorate Headquarters, Salt Lake) [DD Post 23]."),
-        ("18", "Group C: 104 Vacated Field Posts\nBLDO, BAHC & SAHC Units", "Controlling Joint Directors to immediately assign local holding charge pending backfill postings.")
-    ]
+    cur.execute("""
+        SELECT sl_no, hrms_id, officer_name, present_posting, transferred_post_name, reason_notes
+        FROM executive_lateral_transfers
+        ORDER BY sl_no ASC
+    """)
+    lat_rows = cur.fetchall()
 
-    for idx, (sl, off, act) in enumerate(executive_schedule):
+    for idx, r in enumerate(lat_rows):
         row = table3.add_row()
         cells = row.cells
         cells[0].width = col_widths[0]
         set_cell_margins(cells[0])
         p0 = cells[0].paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r0 = p0.add_run(sl)
+        r0 = p0.add_run(str(r["sl_no"]))
         r0.bold = True
         r0.font.name = "Times New Roman"
         r0.font.size = Pt(9.5)
 
         cells[1].width = col_widths[1]
         set_cell_margins(cells[1])
-        format_cell_text(cells[1], off)
+        off_text = f"{r['officer_name']} ({r['hrms_id']})\n{r['present_posting']}"
+        format_cell_text(cells[1], off_text)
 
         cells[2].width = col_widths[2]
         set_cell_margins(cells[2])
-        format_cell_text(cells[2], act)
+        act_text = f"{r['transferred_post_name']}\n[{r['reason_notes']}]"
+        format_cell_text(cells[2], act_text)
 
         if idx % 2 == 1:
             set_cell_background(cells[0], "F8FAFC")
             set_cell_background(cells[1], "F8FAFC")
             set_cell_background(cells[2], "F8FAFC")
+
+    # Add general holding charge note
+    row = table3.add_row()
+    cells = row.cells
+    cells[0].width = col_widths[0]
+    set_cell_margins(cells[0])
+    p0 = cells[0].paragraphs[0]
+    p0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r0 = p0.add_run(str(len(lat_rows) + 1))
+    r0.bold = True
+    r0.font.name = "Times New Roman"
+    r0.font.size = Pt(9.5)
+
+    cells[1].width = col_widths[1]
+    set_cell_margins(cells[1])
+    format_cell_text(cells[1], "Vacated Field Block & Hospital Units\n(Sub-Divisional, BLDO, BAHC & SAHC Units)")
+
+    cells[2].width = col_widths[2]
+    set_cell_margins(cells[2])
+    format_cell_text(cells[2], "Controlling Joint Directors to immediately assign local holding charge pending regular backfill postings.")
+
+    if len(lat_rows) % 2 == 1:
+        set_cell_background(cells[0], "F8FAFC")
+        set_cell_background(cells[1], "F8FAFC")
+        set_cell_background(cells[2], "F8FAFC")
 
     # 6. Concluding Clause
     p_close = doc.add_paragraph()
