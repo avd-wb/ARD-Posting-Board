@@ -59,8 +59,9 @@ if is_vercel:
     import shutil
     tmp_db = "/tmp/ard_master_truth.db"
     seed_db = os.path.join(BASE_DIR, "ard_master_truth.db")
-    if not os.path.exists(tmp_db) and os.path.exists(seed_db):
-        shutil.copy2(seed_db, tmp_db)
+    if os.path.exists(seed_db):
+        if not os.path.exists(tmp_db) or os.path.getmtime(seed_db) > os.path.getmtime(tmp_db):
+            shutil.copy2(seed_db, tmp_db)
     DB_PATH = tmp_db
     STATIC_DIR = os.path.join(BASE_DIR, "static")
 else:
