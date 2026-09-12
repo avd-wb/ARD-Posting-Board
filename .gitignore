@@ -10,3 +10,4 @@ backups/
 file_manifest.json
 *.tmp
 
+.vercel

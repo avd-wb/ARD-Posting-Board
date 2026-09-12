@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import pandas as pd
+from fastapi import Request
 import httpx
 from posting_engine import PostingEngine
 from backup_manager import BackupManager
@@ -34,6 +34,17 @@ app = FastAPI(
     version="2.1.0"
 )
 
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class VercelPathRestoreMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        v_path = request.query_params.get("__vercel_path")
+        if v_path is not None:
+            request.scope["path"] = "/" + v_path.lstrip("/")
+        response = await call_next(request)
+        return response
+
+app.add_middleware(VercelPathRestoreMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
