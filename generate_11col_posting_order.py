@@ -23,6 +23,7 @@ Visual Shading Rule:
 import sqlite3
 import re
 import os
+import json
 import datetime
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -83,7 +84,6 @@ def format_present_su(hrms, desig, estab, dist, raw_txt=""):
         "1995000449": "Station Director-II, PBGSBS HQ, Salt Lake, Kolkata",
         "1998001949": "Assistant Director, ARD (DEO), Office of the Deputy Director, ARD, Paschim Bardhaman",
         "2000007392": "Veterinary Officer, Animal Science Laboratory, Directorate HQ, Kolkata",
-        "2001000684": "Veterinary Officer, MDVH Katwa, Purba Bardhaman",
         "1995001801": "Veterinary Officer, Bull Mother Farm, Haringhata, Nadia",
     }
     if hrms in known_su:
