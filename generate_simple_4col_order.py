@@ -254,13 +254,17 @@ def build_order():
     set_table_black_borders(table1)
     add_table_header(table1)
 
+    seen_hrms = set()
+
     cur.execute("""
-        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name, is_manual_recommendation
+        SELECT sl_no, hrms_id, officer_name, present_posting, substantive_post_name, su_post_name, is_manual_recommendation
         FROM roster_50_point_candidates
         ORDER BY sl_no ASC
     """)
     roster_rows = cur.fetchall()
     for r in roster_rows:
+        if r['hrms_id']:
+            seen_hrms.add(str(r['hrms_id']).strip())
         sl_s = str(r['sl_no'])
         c2 = clean_pres(r['officer_name'], r['present_posting'])
         c3 = clean_sub(r['substantive_post_name'])
@@ -286,13 +290,15 @@ def build_order():
     add_table_header(table2)
 
     cur.execute("""
-        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name, is_manual_recommendation
+        SELECT oblit_sl, hrms_id, officer_name, post_name, district, establishment, substantive_post_name, su_post_name, is_manual_recommendation
         FROM obliterated_posts_1808
         WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
         ORDER BY oblit_sl ASC
     """)
     oblit_rows = cur.fetchall()
     for idx, r in enumerate(oblit_rows, 1):
+        if r['hrms_id']:
+            seen_hrms.add(str(r['hrms_id']).strip())
         sl_s = str(idx)
         pres_str = f"{r['post_name']}, {r['establishment'] or r['district']}"
         c2 = clean_pres(r['officer_name'], pres_str)
@@ -319,13 +325,20 @@ def build_order():
     add_table_header(table3)
 
     cur.execute("""
-        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes, is_manual_recommendation
+        SELECT sl_no, hrms_id, officer_name, present_posting, transferred_post_name, reason_notes, is_manual_recommendation
         FROM executive_lateral_transfers
         ORDER BY sl_no ASC
     """)
     lat_rows = cur.fetchall()
+    sch3_idx = 1
     for r in lat_rows:
-        sl_s = str(r['sl_no'])
+        hrms = str(r['hrms_id']).strip() if r['hrms_id'] else ''
+        if hrms and hrms in seen_hrms:
+            continue
+        if hrms:
+            seen_hrms.add(hrms)
+        sl_s = str(sch3_idx)
+        sch3_idx += 1
         c2 = clean_pres(r['officer_name'], r['present_posting'])
         c3 = clean_sub(r['transferred_post_name'])
         c4 = clean_su(r['reason_notes'])

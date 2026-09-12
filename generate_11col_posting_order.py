@@ -167,6 +167,9 @@ def parse_target_su_string(raw_su, cadre_by_post_sl, dist_fallback=""):
         elif "Marketing" in clean_su:
             return "Marketing In-Charge, West Bengal Livestock Development Corporation Ltd. HQ, Salt Lake, Kolkata"
 
+    if "Udaynarayanpur" in clean_su:
+        return "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Howrah, Udaynarayanpur, with additional charge of VO, BAHC, Udaynarayanpur, Howrah"
+
     return clean_su if clean_su else "Nil"
 
 def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hrms, cadre_by_post_sl, dd_by_sl, master_by_hrms):
@@ -502,6 +505,12 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
             "estab": "Sub-Divisional and Block Level Set up of North 24 Parganas District",
             "block": "Rajarhat",
             "dist": "North 24 Parganas"
+        },
+        "2010001372": {
+            "desig": "Veterinary Officer, BAHC",
+            "estab": "Sub-Divisional and Block Level Set up of Howrah",
+            "block": "Udaynarayanpur",
+            "dist": "Howrah"
         }
     }
 
@@ -577,7 +586,9 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         elif hrms == "2001000032":
             target_sub = "Veterinary Officer, SAHC, Sub-Divisional and Block Level Set up of Hooghly, Arambagh, Hooghly"
         elif hrms == "2000003056":
-            target_sub = "Veterinary Officer, SAHC, Sub-Divisional and Block Level Set up of Paschim Medinipur, Kharagpur, Paschim Medinipur"
+            target_sub = "Assistant Director, ARD (Veterinary), Training Institute, Medinipur, Paschim Medinipur"
+        elif hrms == "2010001372":
+            target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Howrah, Uluberia-II, Howrah"
         elif hrms == "2005000472":
             target_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Hooghly, Tarakeswar, Hooghly"
         else:
