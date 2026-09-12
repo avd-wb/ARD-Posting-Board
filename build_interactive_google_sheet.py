@@ -73,6 +73,9 @@ def build_workbook():
         ("5. Check Post Availability: Open sheet 'Available_DD_Posts' to see live allocation counters. Available posts show GREEN. Blocked/Allotted posts turn GRAY.", 10, False, "000000"),
         ("6. Obliterated Posts Rehabilitation: Open sheet 'Obliterated_Rehab_Decisions' to allot active posts to the 84 serving officers on abolished posts (including Dr. Nirmalya Ranjan Sarkar at Sl. 48).", 10, False, "000000"),
         ("7. Official Secretariat 6-Column Order: Sheet 'Secretariat_Posting_Order' automatically compiles the official notification order with pay levels live as you make decisions!", 10, False, "000000"),
+        ("8. Master Cadre Directory: Complete statewide directory of all 1,624 officers with HRMS IDs, designations, contact numbers, and superannuation dates.", 10, False, "000000"),
+        ("9. Directorate HQ Deployed Roster: Complete record of all 37 officers physically stationed at Directorate Headquarters & Salt Lake attached units (including Dr. Sumit Chowdhury, Dr. Atanu Saha, Dr. Ayan Mukherjee, etc.) with verified DOJs and career posting timelines.", 10, False, "000000"),
+        ("10. Excess & Unsanctioned Deployments: 135 officers deployed in field offices / HQ beyond the Notification 1809 sanctioned post limits.", 10, False, "000000"),
         ("", 10, False, "000000"),
         ("COLOR CODE LEGEND:", 12, True, "1E3A8A"),
         ("🟢 ALLOTTED DIRECT - Officer posted cleanly into clear substantive cadre vacancy (Soft Green).", 10, False, "065F46"),
@@ -610,6 +613,164 @@ def build_workbook():
             cell.font = bold_font if c_idx in [1, 2, 5] else normal_font
         ws_order.row_dimensions[target_r].height = 24
 
+    # =========================================================================
+    # SHEET 9: Master_Cadre_Directory (1,624 Statewide Cadre Employees)
+    # =========================================================================
+    ws_master = wb.create_sheet(title="Master_Cadre_Directory")
+    ws_master.views.sheetView[0].showGridLines = True
+
+    master_headers = [
+        "Sl No", "HRMS ID", "Officer Name", "Designation", "Present Posting / Office",
+        "District", "Service Status", "Date of Retirement", "50-Pt Roster?", 
+        "HQ Deployed?", "Excess / Unsanctioned?", "Mobile", "Email", "WBVC Reg No", 
+        "Residential Address", "Posting History / Notes"
+    ]
+    for c_idx, h in enumerate(master_headers, 1):
+        cell = ws_master.cell(row=1, column=c_idx, value=h)
+        cell.fill = navy_header_fill
+        cell.font = white_header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = cell_border
+    ws_master.row_dimensions[1].height = 28
+
+    c.execute("""
+        SELECT hrms_id, officer_name, designation, present_posting, district,
+               service_status, dor, is_50pt_candidate, is_hq_deployed, is_unsanctioned_post,
+               mobile, email, wbvc_reg_no, residential_address,
+               COALESCE(NULLIF(hq_posting_history, ''), source_notes) as notes
+        FROM master_all_cadre_employees
+        ORDER BY 
+            is_hq_deployed DESC,
+            is_50pt_candidate DESC,
+            district ASC,
+            officer_name ASC
+    """)
+    master_rows = c.fetchall()
+    for idx, r in enumerate(master_rows, 2):
+        row_sl = idx - 1
+        ws_master.cell(row=idx, column=1, value=row_sl).alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=2, value=r["hrms_id"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=3, value=r["officer_name"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_master.cell(row=idx, column=4, value=r["designation"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_master.cell(row=idx, column=5, value=r["present_posting"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_master.cell(row=idx, column=6, value=r["district"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=7, value=r["service_status"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=8, value=r["dor"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=9, value="YES" if r["is_50pt_candidate"] else "NO").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=10, value="YES" if r["is_hq_deployed"] else "NO").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=11, value="YES" if r["is_unsanctioned_post"] else "NO").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=12, value=r["mobile"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=13, value=r["email"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_master.cell(row=idx, column=14, value=r["wbvc_reg_no"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_master.cell(row=idx, column=15, value=r["residential_address"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_master.cell(row=idx, column=16, value=r["notes"] or "").alignment = Alignment(horizontal="left", vertical="center")
+
+        fill_color = zebra_fill if idx % 2 == 0 else plain_fill
+        for c_idx in range(1, 17):
+            cell = ws_master.cell(row=idx, column=c_idx)
+            cell.border = cell_border
+            cell.fill = fill_color
+            cell.font = bold_font if c_idx in [1, 2, 3] else normal_font
+        ws_master.row_dimensions[idx].height = 22
+
+    # =========================================================================
+    # SHEET 10: Directorate_HQ_Roster (37 Verified HQ Deployed Officers)
+    # =========================================================================
+    ws_hq = wb.create_sheet(title="Directorate_HQ_Roster")
+    ws_hq.views.sheetView[0].showGridLines = True
+
+    hq_headers = [
+        "Sl No", "HRMS ID", "Officer Name", "HQ Post Designation", "HQ Date of Joining",
+        "50-Pt Promotee?", "District", "Service Status", "Date of Retirement", 
+        "Mobile", "Email", "Career Posting History / Timeline"
+    ]
+    for c_idx, h in enumerate(hq_headers, 1):
+        cell = ws_hq.cell(row=1, column=c_idx, value=h)
+        cell.fill = teal_header_fill
+        cell.font = white_header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = cell_border
+    ws_hq.row_dimensions[1].height = 28
+
+    c.execute("""
+        SELECT hrms_id, officer_name, 
+               COALESCE(NULLIF(hq_post_title, ''), designation) as hq_desig,
+               hq_doj, is_50pt_candidate, district, service_status, dor,
+               mobile, email, hq_posting_history
+        FROM master_all_cadre_employees
+        WHERE is_hq_deployed = 1
+        ORDER BY hrms_id ASC
+    """)
+    hq_rows = c.fetchall()
+    for idx, r in enumerate(hq_rows, 2):
+        row_sl = idx - 1
+        ws_hq.cell(row=idx, column=1, value=row_sl).alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=2, value=r["hrms_id"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=3, value=r["officer_name"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_hq.cell(row=idx, column=4, value=r["hq_desig"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_hq.cell(row=idx, column=5, value=r["hq_doj"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=6, value="YES" if r["is_50pt_candidate"] else "NO").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=7, value=r["district"] or "Kolkata").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=8, value=r["service_status"] or "In Service").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=9, value=r["dor"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=10, value=r["mobile"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_hq.cell(row=idx, column=11, value=r["email"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_hq.cell(row=idx, column=12, value=r["hq_posting_history"] or "").alignment = Alignment(horizontal="left", vertical="center")
+
+        fill_color = zebra_fill if idx % 2 == 0 else plain_fill
+        for c_idx in range(1, 13):
+            cell = ws_hq.cell(row=idx, column=c_idx)
+            cell.border = cell_border
+            cell.fill = fill_color
+            cell.font = bold_font if c_idx in [1, 2, 3] else normal_font
+        ws_hq.row_dimensions[idx].height = 24
+
+    # =========================================================================
+    # SHEET 11: Excess_Unsanctioned_Deploy (135 Officers beyond Notification 1809)
+    # =========================================================================
+    ws_excess = wb.create_sheet(title="Excess_Unsanctioned_Deploy")
+    ws_excess.views.sheetView[0].showGridLines = True
+
+    excess_headers = [
+        "Sl No", "HRMS ID", "Officer Name", "Designation", "Establishment",
+        "District", "Service Status", "Date of Retirement", "Reason / Classification"
+    ]
+    for c_idx, h in enumerate(excess_headers, 1):
+        cell = ws_excess.cell(row=1, column=c_idx, value=h)
+        cell.fill = amber_header_fill
+        cell.font = white_header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = cell_border
+    ws_excess.row_dimensions[1].height = 28
+
+    c.execute("""
+        SELECT hrms_id, officer_name, designation, establishment, district,
+               service_status, dor, source_notes
+        FROM master_all_cadre_employees
+        WHERE is_unsanctioned_post = 1
+        ORDER BY district ASC, officer_name ASC
+    """)
+    excess_rows = c.fetchall()
+    for idx, r in enumerate(excess_rows, 2):
+        row_sl = idx - 1
+        ws_excess.cell(row=idx, column=1, value=row_sl).alignment = Alignment(horizontal="center", vertical="center")
+        ws_excess.cell(row=idx, column=2, value=r["hrms_id"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_excess.cell(row=idx, column=3, value=r["officer_name"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_excess.cell(row=idx, column=4, value=r["designation"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_excess.cell(row=idx, column=5, value=r["establishment"] or "").alignment = Alignment(horizontal="left", vertical="center")
+        ws_excess.cell(row=idx, column=6, value=r["district"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_excess.cell(row=idx, column=7, value=r["service_status"] or "In Service").alignment = Alignment(horizontal="center", vertical="center")
+        ws_excess.cell(row=idx, column=8, value=r["dor"] or "").alignment = Alignment(horizontal="center", vertical="center")
+        ws_excess.cell(row=idx, column=9, value=r["source_notes"] or "").alignment = Alignment(horizontal="left", vertical="center")
+
+        fill_color = zebra_fill if idx % 2 == 0 else plain_fill
+        for c_idx in range(1, 10):
+            cell = ws_excess.cell(row=idx, column=c_idx)
+            cell.border = cell_border
+            cell.fill = fill_color
+            cell.font = bold_font if c_idx in [1, 2, 3] else normal_font
+        ws_excess.row_dimensions[idx].height = 22
+
     # Column Widths
     col_widths = {
         "50_Pt_Roster_Decisions": {
@@ -634,10 +795,19 @@ def build_workbook():
         },
         "Secretariat_Posting_Order": {
             "A": 8, "B": 45, "C": 18, "D": 28, "E": 52, "F": 32
+        },
+        "Master_Cadre_Directory": {
+            "A": 8, "B": 14, "C": 28, "D": 32, "E": 45, "F": 18, "G": 16, "H": 16, "I": 16, "J": 16, "K": 22, "L": 16, "M": 26, "N": 16, "O": 35, "P": 50
+        },
+        "Directorate_HQ_Roster": {
+            "A": 8, "B": 14, "C": 28, "D": 35, "E": 18, "F": 16, "G": 16, "H": 16, "I": 16, "J": 16, "K": 26, "L": 60
+        },
+        "Excess_Unsanctioned_Deploy": {
+            "A": 8, "B": 14, "C": 28, "D": 32, "E": 35, "F": 18, "G": 16, "H": 16, "I": 40
         }
     }
 
-    all_sheets = [ws_guide, ws_roster, ws_oblit, ws_dd, ws_ad, ws_su, ws_disp, ws_order]
+    all_sheets = [ws_guide, ws_roster, ws_oblit, ws_dd, ws_ad, ws_su, ws_disp, ws_order, ws_master, ws_hq, ws_excess]
     for ws in all_sheets:
         title = ws.title
         if title in col_widths:

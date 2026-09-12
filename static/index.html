@@ -199,6 +199,12 @@
                         <span>District Post Visualizer</span>
                         <span id="badgeVisualGridCount" class="ml-1 text-[11px] bg-emerald-600 text-white font-bold px-2 py-0.2 rounded-full">2,038</span>
                     </button>
+
+                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
+                        <i data-lucide="users" class="w-4 h-4 text-amber-300"></i>
+                        <span>Master Cadre Directory</span>
+                        <span id="badgeMasterCount" class="ml-1 text-[11px] bg-amber-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">1,624</span>
+                    </button>
                 </nav>
             </div>
         </div>
@@ -379,6 +385,15 @@
                         </div>
                         <div class="text-xs text-slate-500 font-medium" id="cadrePaginationInfo">
                             Showing 1 to 100 of 1,794 posts
+                        </div>
+                    </div>
+
+                    <!-- Informational Callout: Sanctioned Posts vs Physical Deployments -->
+                    <div class="bg-blue-50/90 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 flex items-start gap-2.5">
+                        <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                        <div class="space-y-0.5">
+                            <span class="font-semibold text-blue-950">Directorate Headquarters & Statewide Cadre Census Note:</span>
+                            <span class="text-slate-700">Notification No. 1809 sanctions 21 Assistant Director posts at Directorate HQ. However, official returns confirm <strong>37 officers physically deployed</strong> at Directorate HQ & Salt Lake units (including Dr. Sumit Chowdhury, Dr. Atanu Saha, Dr. Ayan Mukherjee, etc.), plus 135 excess district postings. To search all <strong>1,624 statewide officers</strong>, switch to the <button onclick="document.querySelector('[data-tab=tab-master-directory]').click()" class="text-blue-700 underline font-semibold hover:text-blue-950">Master Cadre Directory</button>.</span>
                         </div>
                     </div>
 
@@ -649,6 +664,88 @@
                 </div>
             </div>
         </div>
+
+        <!-- ==================== TAB 8: MASTER CADRE EMPLOYEE DIRECTORY ==================== -->
+        <div id="tab-master-directory" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Header & Search -->
+                <div class="p-5 border-b border-slate-200 bg-slate-50/80 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="users" class="w-5 h-5 text-wbblue-700"></i>
+                                <span>State-Wide Cadre Officer Master Directory (1,624 Officers)</span>
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Complete departmental personnel register including Directorate Headquarters deployed officers, 50-Point Roster promotees, and special cadre deployments.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                                <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                                <span id="masterActiveCountBadge">1,182 Active In-Service</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Controls -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2">
+                        <div class="md:col-span-5 relative">
+                            <input type="text" id="employeeSearchInput" placeholder="Search by name (e.g. Sumit, Atanu, Ayan), HRMS, post, station..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-wbblue-600 focus:outline-none bg-white">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                        </div>
+                        <div class="md:col-span-3">
+                            <select id="employeeDistrictFilter" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-wbblue-600">
+                                <option value="ALL">All Districts & Complexes</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5" id="employeeCategoryChips">
+                            <button data-cat="all" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-wbblue-800 text-white shadow-sm transition">All (1,624)</button>
+                            <button data-cat="hq" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">HQ Deployed (37)</button>
+                            <button data-cat="roster" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">50-Pt Roster (242)</button>
+                            <button data-cat="unsanctioned" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Excess Posts (135)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Content -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase font-semibold text-[11px] border-b border-slate-200">
+                                <th class="py-3 px-3 w-12 text-center">#</th>
+                                <th class="py-3 px-3">HRMS ID</th>
+                                <th class="py-3 px-4">Officer Name & Deployment</th>
+                                <th class="py-3 px-4">Designation & Posting Station</th>
+                                <th class="py-3 px-3">District</th>
+                                <th class="py-3 px-3">Superannuation (DOR)</th>
+                                <th class="py-3 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="masterDirectoryTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated dynamically via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+                    <div class="text-slate-500 font-medium" id="employeePaginationInfo">
+                        Showing 0 to 0 of 0 officers
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btnEmployeePrev" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Previous
+                        </button>
+                        <span id="employeeCurrentPageDisplay" class="px-2 py-1 font-bold text-slate-700">Page 1 of 1</span>
+                        <button id="btnEmployeeNext" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
     </main>
 

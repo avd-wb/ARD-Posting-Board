@@ -930,6 +930,24 @@ class PostingEngine:
         if sim_row:
             officer["current_simulation_assignment"] = dict(sim_row)
 
+        # Master employee directory lookup (covers HQ deployed and unsanctioned officers)
+        cur.execute("SELECT * FROM master_all_cadre_employees WHERE hrms_id = ?", (hrms_id,))
+        m_row = cur.fetchone()
+        if m_row:
+            md = dict(m_row)
+            for k, v in md.items():
+                if v and (k not in officer or not officer[k]):
+                    officer[k] = v
+            if "source_category" not in officer or not officer["source_category"]:
+                if md.get("is_hq_deployed"):
+                    officer["source_category"] = "Directorate Headquarters Deployed Officer"
+                elif md.get("is_unsanctioned_post"):
+                    officer["source_category"] = "Special / Excess Deployed Officer"
+                else:
+                    officer["source_category"] = f"WBAH&VS Cadre Officer ({md.get('designation', '')})"
+            if md.get("hq_posting_history") and ("posting_history" not in officer or not officer["posting_history"] or "Standard" in str(officer["posting_history"])):
+                officer["posting_history"] = md["hq_posting_history"]
+
         # Extended dossier fields (contacts, posting history, addresses, spouse, attention flag)
         cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (hrms_id,))
         ext_row = cur.fetchone()
@@ -1368,6 +1386,103 @@ class PostingEngine:
         WHERE session_id = ? OR session_id = 'CURRENT_SESSION'
         ORDER BY id DESC
         """, (session_id,))
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        return rows
+
+    # --- MASTER EMPLOYEE DIRECTORY & HQ DEPLOYMENTS ---
+    def get_master_employees(
+        self,
+        query: str = "",
+        district: str = "ALL",
+        category: str = "all",
+        page: int = 1,
+        page_size: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Retrieves search filtered and paginated records from the master employee directory.
+        Categories: 'all', 'active', 'hq', 'roster', 'unsanctioned'
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+
+        where_clauses = []
+        params = []
+
+        if query:
+            q = f"%{query.strip().lower()}%"
+            where_clauses.append("(lower(officer_name) LIKE ? OR hrms_id LIKE ? OR lower(designation) LIKE ? OR lower(establishment) LIKE ? OR lower(district) LIKE ?)")
+            params.extend([q, q, q, q, q])
+
+        if district and district != "ALL":
+            where_clauses.append("district = ?")
+            params.append(district)
+
+        if category == "active":
+            where_clauses.append("service_status LIKE '%service%'")
+        elif category == "hq":
+            where_clauses.append("is_hq_deployed = 1")
+        elif category == "roster":
+            where_clauses.append("is_50pt_candidate = 1")
+        elif category == "unsanctioned":
+            where_clauses.append("is_unsanctioned_post = 1")
+
+        where_str = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+
+        # Total count
+        count_sql = f"SELECT COUNT(*) FROM master_all_cadre_employees {where_str}"
+        cur.execute(count_sql, params)
+        total_count = cur.fetchone()[0]
+
+        # Paginated data
+        offset = max(0, (page - 1) * page_size)
+        data_sql = f"""
+            SELECT hrms_id, officer_name, designation, present_posting, establishment,
+                   district, cadre, service_status, dor, avd_member_flag,
+                   is_50pt_candidate, is_hq_deployed, is_unsanctioned_post,
+                   hq_post_title, hq_doj, mobile, email
+            FROM master_all_cadre_employees
+            {where_str}
+            ORDER BY is_hq_deployed DESC, is_50pt_candidate DESC, officer_name ASC
+            LIMIT ? OFFSET ?
+        """
+        cur.execute(data_sql, params + [page_size, offset])
+        rows = [dict(r) for r in cur.fetchall()]
+
+        # KPI counts
+        kpis = {
+            "total": cur.execute("SELECT count(*) FROM master_all_cadre_employees").fetchone()[0],
+            "in_service": cur.execute("SELECT count(*) FROM master_all_cadre_employees WHERE service_status LIKE '%service%'").fetchone()[0],
+            "hq_deployed": cur.execute("SELECT count(*) FROM master_all_cadre_employees WHERE is_hq_deployed = 1").fetchone()[0],
+            "roster_50pt": cur.execute("SELECT count(*) FROM master_all_cadre_employees WHERE is_50pt_candidate = 1").fetchone()[0],
+            "unsanctioned": cur.execute("SELECT count(*) FROM master_all_cadre_employees WHERE is_unsanctioned_post = 1").fetchone()[0]
+        }
+
+        conn.close()
+
+        return {
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count + page_size - 1) // page_size if page_size > 0 else 1,
+            "kpis": kpis,
+            "employees": rows
+        }
+
+    def get_hq_deployed_officers(self) -> List[Dict[str, Any]]:
+        """
+        Returns all officers deployed at Directorate Headquarters & Attached Units.
+        """
+        conn = self.get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT hrms_id, officer_name, designation, present_posting, establishment,
+                   district, dor, hq_post_title, hq_doj, hq_posting_history,
+                   mobile, email, is_50pt_candidate
+            FROM master_all_cadre_employees
+            WHERE is_hq_deployed = 1
+            ORDER BY officer_name ASC
+        """)
         rows = [dict(r) for r in cur.fetchall()]
         conn.close()
         return rows

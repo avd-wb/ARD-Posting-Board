@@ -297,6 +297,33 @@ def get_posts_visual_grid_endpoint(
     """
     return engine.get_posts_visual_grid(session_id=session_id, district_filter=district)
 
+@app.get("/api/employees/master")
+def get_master_employees_api(
+    query: Optional[str] = None,
+    district: Optional[str] = "ALL",
+    category: Optional[str] = "all",
+    page: int = 1,
+    page_size: int = 50
+):
+    """
+    Search and filter the complete state-wide master employee directory (1,624 officers).
+    Categories: 'all', 'active', 'hq', 'roster', 'unsanctioned'
+    """
+    return engine.get_master_employees(
+        query=query or "",
+        district=district or "ALL",
+        category=category or "all",
+        page=page,
+        page_size=page_size
+    )
+
+@app.get("/api/hq/deployed")
+def get_hq_deployed_api():
+    """
+    Returns the complete list of 37 officers deployed at Directorate Headquarters & Attached Units.
+    """
+    return engine.get_hq_deployed_officers()
+
 @app.get("/api/obliterated")
 def get_obliterated_officers(status: Optional[str] = None, search: Optional[str] = None):
     conn = get_db()

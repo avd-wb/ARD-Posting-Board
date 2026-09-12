@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadDisplacedPool();
                 } else if (targetTab === 'tab-visual-grid') {
                     window.renderVisualGrid('visualGridBody', false, null);
+                } else if (targetTab === 'tab-master-directory') {
+                    loadMasterDirectory();
                 }
             });
         });
@@ -1702,4 +1704,190 @@ ${r.statutory_justification}
             alert('Allotment failed: ' + err.message);
         }
     });
+
+    // ==================== TAB 8: MASTER CADRE DIRECTORY ====================
+    let masterDirState = {
+        query: '',
+        district: 'ALL',
+        category: 'all',
+        page: 1,
+        pageSize: 50,
+        totalPages: 1
+    };
+
+    async function loadMasterDirectory(resetPage = false) {
+        if (resetPage) masterDirState.page = 1;
+        const tbody = document.getElementById('masterDirectoryTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">Loading master directory...</td></tr>';
+
+        try {
+            const params = new URLSearchParams({
+                query: masterDirState.query,
+                district: masterDirState.district,
+                category: masterDirState.category,
+                page: masterDirState.page,
+                page_size: masterDirState.pageSize
+            });
+            const res = await fetch(`/api/employees/master?${params.toString()}`);
+            const data = await res.json();
+
+            masterDirState.totalPages = data.total_pages || 1;
+
+            // Update badge & pagination display
+            const badgeCount = document.getElementById('badgeMasterCount');
+            if (badgeCount && data.kpis) badgeCount.innerText = data.kpis.total.toLocaleString();
+
+            const badgeActive = document.getElementById('masterActiveCountBadge');
+            if (badgeActive && data.kpis) badgeActive.innerText = `${data.kpis.in_service.toLocaleString()} Active In-Service`;
+
+            const infoEl = document.getElementById('employeePaginationInfo');
+            if (infoEl) {
+                const start = data.total === 0 ? 0 : (masterDirState.page - 1) * masterDirState.pageSize + 1;
+                const end = Math.min(masterDirState.page * masterDirState.pageSize, data.total);
+                infoEl.innerText = `Showing ${start} to ${end} of ${data.total.toLocaleString()} officers`;
+            }
+
+            const pageEl = document.getElementById('employeeCurrentPageDisplay');
+            if (pageEl) pageEl.innerText = `Page ${masterDirState.page} of ${masterDirState.totalPages}`;
+
+            const prevBtn = document.getElementById('btnEmployeePrev');
+            if (prevBtn) prevBtn.disabled = masterDirState.page <= 1;
+
+            const nextBtn = document.getElementById('btnEmployeeNext');
+            if (nextBtn) nextBtn.disabled = masterDirState.page >= masterDirState.totalPages;
+
+            if (!data.employees || data.employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">No officers found matching search criteria.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.employees.map((emp, idx) => {
+                const globalIdx = (masterDirState.page - 1) * masterDirState.pageSize + idx + 1;
+                let badges = '';
+                if (emp.is_hq_deployed) {
+                    badges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300 text-[10px] font-bold">🏛️ HQ Deployed</span> `;
+                }
+                if (emp.is_50pt_candidate) {
+                    badges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300 text-[10px] font-bold">🎯 50-Pt Roster</span> `;
+                }
+                if (emp.is_unsanctioned_post) {
+                    badges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">⚠️ Excess Post</span> `;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${globalIdx}</td>
+                        <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${emp.hrms_id || '—'}</td>
+                        <td class="py-2.5 px-4">
+                            <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${emp.hrms_id}')" title="Click to view full personnel dossier">
+                                <span>${emp.officer_name}</span>
+                            </div>
+                            <div class="mt-1 flex flex-wrap gap-1">${badges}</div>
+                        </td>
+                        <td class="py-2.5 px-4">
+                            <div class="font-semibold text-slate-800">${emp.designation || 'Officer'}</div>
+                            <div class="text-[11px] text-slate-500">${emp.establishment || emp.present_posting || '—'}</div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[11px] border border-slate-200">
+                                ${emp.district || '—'}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-slate-600">${emp.dor || '—'}</td>
+                        <td class="py-2.5 px-3 text-right">
+                            <button onclick="openOfficerDossier('${emp.hrms_id}')" class="px-2.5 py-1 text-[11px] font-semibold rounded bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 transition">
+                                View Dossier
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
+
+        } catch (err) {
+            console.error('Error loading master directory:', err);
+            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-semibold">Failed to load master directory: ${err.message}</td></tr>`;
+        }
+    }
+
+    // Bind Master Directory controls
+    const searchInput = document.getElementById('employeeSearchInput');
+    let searchDebounce = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                masterDirState.query = e.target.value;
+                loadMasterDirectory(true);
+            }, 300);
+        });
+    }
+
+    const distSelect = document.getElementById('employeeDistrictFilter');
+    if (distSelect) {
+        distSelect.addEventListener('change', (e) => {
+            masterDirState.district = e.target.value;
+            loadMasterDirectory(true);
+        });
+    }
+
+    const catChips = document.querySelectorAll('#employeeCategoryChips .emp-cat-btn');
+    catChips.forEach(btn => {
+        btn.addEventListener('click', () => {
+            catChips.forEach(b => {
+                b.classList.remove('bg-wbblue-800', 'text-white', 'shadow-sm');
+                b.classList.add('bg-white', 'border', 'border-slate-300', 'text-slate-700');
+            });
+            btn.classList.add('bg-wbblue-800', 'text-white', 'shadow-sm');
+            btn.classList.remove('bg-white', 'border', 'border-slate-300', 'text-slate-700');
+
+            masterDirState.category = btn.getAttribute('data-cat');
+            loadMasterDirectory(true);
+        });
+    });
+
+    const prevBtn = document.getElementById('btnEmployeePrev');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (masterDirState.page > 1) {
+                masterDirState.page--;
+                loadMasterDirectory(false);
+            }
+        });
+    }
+
+    const nextBtn = document.getElementById('btnEmployeeNext');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (masterDirState.page < masterDirState.totalPages) {
+                masterDirState.page++;
+                loadMasterDirectory(false);
+            }
+        });
+    }
+
+    // Populate employee district dropdown
+    async function initEmployeeDistricts() {
+        try {
+            const res = await fetch('/api/districts');
+            const data = await res.json();
+            const sel = document.getElementById('employeeDistrictFilter');
+            if (sel && data.districts) {
+                data.districts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    sel.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load employee districts', e);
+        }
+    }
+    initEmployeeDistricts();
+
+    window.loadMasterDirectory = loadMasterDirectory;
 });
