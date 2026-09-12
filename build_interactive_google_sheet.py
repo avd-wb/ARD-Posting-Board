@@ -746,7 +746,10 @@ def build_workbook():
         ws_4col.cell(row=r_idx, column=1).alignment = Alignment(horizontal="center", vertical="center")
         ws_4col.row_dimensions[r_idx].height = 20
 
-    ws_4col.row_dimensions[5].height = 8 # Spacing
+    ws_4col.merge_cells("A5:D5")
+    ws_4col.cell(row=5, column=1, value="Note on Postings: Pure White Background = Confirmed Executive Allocation | Very Light Grey Background = AI Cadre System Recommended Posting").font = Font(name="Times New Roman", size=9.5, italic=True, color="475569")
+    ws_4col.cell(row=5, column=1).alignment = Alignment(horizontal="center", vertical="center")
+    ws_4col.row_dimensions[5].height = 20
 
     col4_headers = [
         "Sl no.",
@@ -754,6 +757,9 @@ def build_workbook():
         "Place of posting on promotion / Transfer (Substantive post)",
         "Service Utilized post (if any)"
     ]
+
+    light_grey_row_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+    white_row_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
     def write_4col_header(ws, row_idx):
         for c_idx, h in enumerate(col4_headers, 1):
@@ -781,7 +787,7 @@ def build_workbook():
     cur_row += 1
 
     c.execute("""
-        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name
+        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name, is_manual_recommendation
         FROM roster_50_point_candidates
         ORDER BY sl_no ASC
     """)
@@ -790,6 +796,8 @@ def build_workbook():
         c2_val = clean_pres(r['officer_name'], r['present_posting'])
         c3_val = clean_sub(r['substantive_post_name'])
         c4_val = clean_su(r['su_post_name'])
+        is_m = bool(r['is_manual_recommendation'])
+        row_fill = white_row_fill if is_m else light_grey_row_fill
 
         ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
         ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
@@ -799,6 +807,7 @@ def build_workbook():
         for col_i in range(1, 5):
             cell = ws_4col.cell(row=cur_row, column=col_i)
             cell.border = black_border
+            cell.fill = row_fill
             cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
         ws_4col.row_dimensions[cur_row].height = 22
         cur_row += 1
@@ -819,7 +828,7 @@ def build_workbook():
     cur_row += 1
 
     c.execute("""
-        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name
+        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name, is_manual_recommendation
         FROM obliterated_posts_1808
         WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
         ORDER BY oblit_sl ASC
@@ -830,6 +839,8 @@ def build_workbook():
         c2_val = clean_pres(r['officer_name'], pres_str)
         c3_val = clean_sub(r['substantive_post_name'])
         c4_val = clean_su(r['su_post_name'])
+        is_m = bool(r['is_manual_recommendation'])
+        row_fill = white_row_fill if is_m else light_grey_row_fill
 
         ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
         ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
@@ -839,11 +850,12 @@ def build_workbook():
         for col_i in range(1, 5):
             cell = ws_4col.cell(row=cur_row, column=col_i)
             cell.border = black_border
+            cell.fill = row_fill
             cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
         ws_4col.row_dimensions[cur_row].height = 22
         cur_row += 1
 
-    # Schedule III: Lateral & Field Transfers (14 Officers)
+    # Schedule III: Lateral & Field Transfers
     cur_row += 1
     ws_4col.merge_cells(f"A{cur_row}:D{cur_row}")
     s3_title = ws_4col.cell(row=cur_row, column=1, value="Schedule III: Consequential Lateral Transfers & Inter-District Field Postings")
@@ -859,7 +871,7 @@ def build_workbook():
     cur_row += 1
 
     c.execute("""
-        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes
+        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes, is_manual_recommendation
         FROM executive_lateral_transfers
         ORDER BY sl_no ASC
     """)
@@ -868,6 +880,8 @@ def build_workbook():
         c2_val = clean_pres(r['officer_name'], r['present_posting'])
         c3_val = clean_sub(r['transferred_post_name'])
         c4_val = clean_su(r['reason_notes'])
+        is_m = bool(r['is_manual_recommendation'])
+        row_fill = white_row_fill if is_m else light_grey_row_fill
 
         ws_4col.cell(row=cur_row, column=1, value=sl_val).alignment = Alignment(horizontal="center", vertical="center")
         ws_4col.cell(row=cur_row, column=2, value=c2_val).alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
@@ -877,6 +891,7 @@ def build_workbook():
         for col_i in range(1, 5):
             cell = ws_4col.cell(row=cur_row, column=col_i)
             cell.border = black_border
+            cell.fill = row_fill
             cell.font = order_4col_bold if (col_i == 1 or (col_i == 4 and c4_val != "Nil")) else order_4col_font
         ws_4col.row_dimensions[cur_row].height = 22
         cur_row += 1

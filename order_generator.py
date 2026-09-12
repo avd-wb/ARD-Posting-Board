@@ -291,7 +291,7 @@ class OrderGenerator:
 
         # Schedule I: 242 Promotees
         cur.execute("""
-            SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name
+            SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name, is_manual_recommendation
             FROM roster_50_point_candidates
             ORDER BY sl_no ASC
         """)
@@ -299,16 +299,16 @@ class OrderGenerator:
 
         # Schedule II: 61 Obliterated Non-Roster Rehabilitations
         cur.execute("""
-            SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name
+            SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name, is_manual_recommendation
             FROM obliterated_posts_1808
             WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
             ORDER BY oblit_sl ASC
         """)
         oblit_rows = cur.fetchall()
 
-        # Schedule III: 14 Consequential Lateral Transfers
+        # Schedule III: Consequential Lateral Transfers
         cur.execute("""
-            SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes
+            SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes, is_manual_recommendation
             FROM executive_lateral_transfers
             ORDER BY sl_no ASC
         """)
@@ -318,6 +318,10 @@ class OrderGenerator:
         def render_table_rows(rows, row_type):
             out = ""
             for idx, r in enumerate(rows, 1):
+                keys = r.keys()
+                is_manual = bool(r["is_manual_recommendation"]) if "is_manual_recommendation" in keys else False
+                bg_style = "background-color: #ffffff;" if is_manual else "background-color: #f1f5f9;"
+
                 if row_type == "roster":
                     sl = str(r["sl_no"])
                     c2 = clean_pres(r["officer_name"], r["present_posting"])
@@ -337,7 +341,7 @@ class OrderGenerator:
 
                 su_style = "text-align: center;" if c4 == "Nil" else "text-align: left; font-weight: bold; color: #047857;"
                 out += f"""
-                <tr>
+                <tr style="{bg_style}">
                     <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">{sl}</td>
                     <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">{c2}</td>
                     <td style="border: 1px solid #000; padding: 6px 8px; text-align: left;">{c3}</td>
@@ -487,6 +491,17 @@ class OrderGenerator:
 
     <div class="preamble">
         The Governor is pleased to order the promotion, placement, and transfer of the following officers of the West Bengal Animal Husbandry & Veterinary Service in the interest of public service, with immediate effect and until further orders, as detailed below:
+    </div>
+
+    <div style="margin-bottom: 14px; padding: 6px 14px; font-size: 8.5pt; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: inline-flex; gap: 20px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;">
+        <span style="display: inline-flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 14px; height: 14px; background: #ffffff; border: 1px solid #94a3b8; border-radius: 2px;"></span>
+            <strong>White Background:</strong> Manually Confirmed / Directed Executive Postings
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 14px; height: 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 2px;"></span>
+            <strong>Light Grey Background:</strong> Algorithmic / System Recommended Postings
+        </span>
     </div>
 
     <div class="sched-title">Schedule I: Promotion to the post of Deputy Director, ARD (Pay Level 19)</div>

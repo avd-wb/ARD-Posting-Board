@@ -188,7 +188,7 @@ def build_order():
             run.font.name = "Times New Roman"
             run.font.size = Pt(9.5)
 
-    def add_row(table, sl_str, col2_str, col3_str, col4_str):
+    def add_row(table, sl_str, col2_str, col3_str, col4_str, is_manual=True):
         row = table.add_row()
         cells = row.cells
         
@@ -231,6 +231,12 @@ def build_order():
         if col4_str != 'Nil':
             r3.bold = True
 
+        # "whatever posts not recommended manually and you have recommended -> just make those with very light grey background colour."
+        if not is_manual:
+            for c in cells:
+                shd = parse_xml(r'<w:shd {} w:fill="F1F5F9"/>'.format(nsdecls('w')))
+                c._tc.get_or_add_tcPr().append(shd)
+
     # =========================================================================
     # PART 1: PROMOTION TO DEPUTY DIRECTOR, ARD (242 Promotees)
     # =========================================================================
@@ -249,7 +255,7 @@ def build_order():
     add_table_header(table1)
 
     cur.execute("""
-        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name
+        SELECT sl_no, officer_name, present_posting, substantive_post_name, su_post_name, is_manual_recommendation
         FROM roster_50_point_candidates
         ORDER BY sl_no ASC
     """)
@@ -259,7 +265,8 @@ def build_order():
         c2 = clean_pres(r['officer_name'], r['present_posting'])
         c3 = clean_sub(r['substantive_post_name'])
         c4 = clean_su(r['su_post_name'])
-        add_row(table1, sl_s, c2, c3, c4)
+        is_m = bool(r['is_manual_recommendation'])
+        add_row(table1, sl_s, c2, c3, c4, is_manual=is_m)
 
     # =========================================================================
     # PART 2: REHABILITATION OF SERVING OFFICERS FROM ABOLISHED POSTS (61 Officers)
@@ -279,7 +286,7 @@ def build_order():
     add_table_header(table2)
 
     cur.execute("""
-        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name
+        SELECT oblit_sl, officer_name, post_name, district, establishment, substantive_post_name, su_post_name, is_manual_recommendation
         FROM obliterated_posts_1808
         WHERE is_vacant = 'No' AND (is_on_roster = 0 OR is_on_roster IS NULL)
         ORDER BY oblit_sl ASC
@@ -291,10 +298,11 @@ def build_order():
         c2 = clean_pres(r['officer_name'], pres_str)
         c3 = clean_sub(r['substantive_post_name'])
         c4 = clean_su(r['su_post_name'])
-        add_row(table2, sl_s, c2, c3, c4)
+        is_m = bool(r['is_manual_recommendation'])
+        add_row(table2, sl_s, c2, c3, c4, is_manual=is_m)
 
     # =========================================================================
-    # PART 3: CONSEQUENTIAL LATERAL & FIELD TRANSFERS (14 Officers)
+    # PART 3: CONSEQUENTIAL LATERAL & FIELD TRANSFERS
     # =========================================================================
     p_t3 = doc.add_paragraph()
     p_t3.paragraph_format.space_before = Pt(14)
@@ -311,7 +319,7 @@ def build_order():
     add_table_header(table3)
 
     cur.execute("""
-        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes
+        SELECT sl_no, officer_name, present_posting, transferred_post_name, reason_notes, is_manual_recommendation
         FROM executive_lateral_transfers
         ORDER BY sl_no ASC
     """)
@@ -321,7 +329,8 @@ def build_order():
         c2 = clean_pres(r['officer_name'], r['present_posting'])
         c3 = clean_sub(r['transferred_post_name'])
         c4 = clean_su(r['reason_notes'])
-        add_row(table3, sl_s, c2, c3, c4)
+        is_m = bool(r['is_manual_recommendation'])
+        add_row(table3, sl_s, c2, c3, c4, is_manual=is_m)
 
     # 5. Signatures & Distribution
     p_close = doc.add_paragraph()
