@@ -1163,7 +1163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const designation = document.getElementById('cadreDesigFilter').value;
         const status = document.getElementById('cadreStatusFilter').value;
         const tenureOver = document.getElementById('cadreTenureFilter').value;
-        const avd = document.getElementById('cadreAVDFilter').value;
 
         let url = `/api/cadre?limit=${state.cadreLimit}&offset=${state.cadreOffset}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -1171,7 +1170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (designation && designation !== 'ALL') url += `&designation=${encodeURIComponent(designation)}`;
         if (status && status !== 'ALL') url += `&status=${encodeURIComponent(status)}`;
         if (tenureOver && tenureOver !== 'ALL') url += `&tenure_over=${encodeURIComponent(tenureOver)}`;
-        if (avd && avd !== 'ALL') url += `&avd_member=${encodeURIComponent(avd)}`;
 
         try {
             const res = await fetch(url);
@@ -1195,7 +1193,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = json.data.map(p => {
                 const isVacant = p.occupancy_status === 'Vacant';
                 const isTenureOver = p.tenure_over_flag === 'Yes';
-                const isAVD = p.avd_member === 'Yes';
 
                 let occBadge = isVacant
                     ? `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>`
@@ -1203,10 +1200,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let tenureBadge = isTenureOver
                     ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">Over-Tenure</span>`
-                    : '';
-
-                let avdBadge = isAVD
-                    ? `<span class="badge-avd px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">AVD</span>`
                     : '';
 
                 return `
@@ -1221,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="py-2.5 px-3">${occBadge}</td>
                         <td class="py-2.5 px-4">
                             ${isVacant ? '<span class="text-emerald-700 font-semibold italic text-xs">Clear Vacancy</span>' : `
-                                <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">${p.incumbent_name} ${avdBadge}</div>
+                                <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">${p.incumbent_name}</div>
                                 <div class="text-[11px] font-mono text-slate-500">HRMS: ${p.incumbent_hrms || 'N/A'}</div>
                             `}
                         </td>
@@ -1256,7 +1249,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 cardsEl.innerHTML = json.data.map(p => {
                     const isVacant = p.occupancy_status === 'Vacant';
                     const isTenureOver = p.tenure_over_flag === 'Yes';
-                    const isAVD = p.avd_member === 'Yes';
 
                     let occBadge = isVacant
                         ? `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Clear Vacancy</span>`
@@ -1264,10 +1256,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let tenureBadge = isTenureOver
                         ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">Over-Tenure</span>`
-                        : '';
-
-                    let avdBadge = isAVD
-                        ? `<span class="badge-avd px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">AVD</span>`
                         : '';
 
                     const isApexLocked = !isVacant && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
@@ -1307,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 ` : `
                                     <div class="font-bold text-wbblue-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${p.incumbent_hrms}')">
-                                        ${p.incumbent_name} ${avdBadge}
+                                        ${p.incumbent_name}
                                     </div>
                                     <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
                                         <span>HRMS: <strong>${p.incumbent_hrms || 'N/A'}</strong></span>
@@ -1370,11 +1358,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    ['cadreDistrictFilter', 'cadreDesigFilter', 'cadreStatusFilter', 'cadreTenureFilter', 'cadreAVDFilter'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
-            state.cadreOffset = 0;
-            loadCadre();
-        });
+    ['cadreDistrictFilter', 'cadreDesigFilter', 'cadreStatusFilter', 'cadreTenureFilter'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                state.cadreOffset = 0;
+                loadCadre();
+            });
+        }
     });
     document.getElementById('cadreSearchInput').addEventListener('input', debounce(() => {
         state.cadreOffset = 0;
@@ -2711,13 +2702,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
                 const tenureF = document.getElementById('cadreTenureFilter');
-                const avdF = document.getElementById('cadreAVDFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'ALL';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
-                if (avdF) avdF.value = 'ALL';
                 if (searchF) searchF.value = '';
                 state.cadreOffset = 0;
                 loadCadre();
@@ -2735,13 +2724,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
                 const tenureF = document.getElementById('cadreTenureFilter');
-                const avdF = document.getElementById('cadreAVDFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'vacant';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
-                if (avdF) avdF.value = 'ALL';
                 if (searchF) searchF.value = '';
                 state.cadreOffset = 0;
                 loadCadre();
@@ -2759,14 +2746,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
                 const tenureF = document.getElementById('cadreTenureFilter');
-                const avdF = document.getElementById('cadreAVDFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'vacant';
                 if (searchF) searchF.value = 'Deputy Director';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
-                if (avdF) avdF.value = 'ALL';
                 state.cadreOffset = 0;
                 loadCadre();
                 document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2783,14 +2768,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
                 const tenureF = document.getElementById('cadreTenureFilter');
-                const avdF = document.getElementById('cadreAVDFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'vacant';
                 if (searchF) searchF.value = 'Assistant Director';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
-                if (avdF) avdF.value = 'ALL';
                 state.cadreOffset = 0;
                 loadCadre();
                 document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2839,13 +2822,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tenureF = document.getElementById('cadreTenureFilter');
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
-                const avdF = document.getElementById('cadreAVDFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'occupied';
                 if (tenureF) tenureF.value = 'Yes';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
-                if (avdF) avdF.value = 'ALL';
                 if (searchF) searchF.value = '';
                 state.cadreOffset = 0;
                 loadCadre();
