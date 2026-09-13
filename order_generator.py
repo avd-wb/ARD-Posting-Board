@@ -472,8 +472,7 @@ class OrderGenerator:
 </head>
 <body>
     <div class="no-print">
-        <a href="/api/simulation/export-docx" class="btn btn-doc">Download Word Doc (.docx)</a>
-        <button onclick="window.print()" class="btn">Print / Save as PDF</button>
+        <button onclick="window.print()" class="btn">Print Gazette Notification</button>
     </div>
 
     <div class="header">

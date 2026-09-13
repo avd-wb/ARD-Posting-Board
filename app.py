@@ -832,15 +832,13 @@ def get_displaced_pool_endpoint(session_id: str = "CURRENT_SESSION"):
 
 @app.get("/api/simulation/export-excel")
 def export_simulation_excel(session_id: str = "CURRENT_SESSION"):
-    """Exports official Excel order with strict required 6 columns."""
-    file_path = generate_excel_order(session_id)
-    return FileResponse(file_path, filename=os.path.basename(file_path), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    """Administratively disabled download endpoint."""
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/simulation/export-docx")
 def export_simulation_docx(session_id: str = "CURRENT_SESSION"):
-    """Exports official Secretariat Government Notification in Word .docx format (Memo 391 standard)."""
-    file_path = generate_docx_order(session_id)
-    return FileResponse(file_path, filename=os.path.basename(file_path), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    """Administratively disabled download endpoint."""
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 # --- DEPARTMENTAL DATA EXPORTER & REPORT BUILDER ENDPOINTS ---
 
@@ -868,107 +866,19 @@ def export_preview_endpoint(req: ExportQueryRequest):
 
 @app.post("/api/export/excel")
 def export_excel_endpoint(req: ExportQueryRequest):
-    """Generates and downloads styled Excel (.xlsx) file based on filters and columns."""
-    filters = req.filters or {}
-    file_path = data_exporter.generate_excel_report(
-        dataset=req.dataset,
-        filters=filters,
-        sort_by=req.sort_by,
-        sort_order=req.sort_order or "asc",
-        selected_columns=req.selected_columns
-    )
-    return FileResponse(
-        file_path,
-        filename=os.path.basename(file_path),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/export/excel")
-def export_excel_get_endpoint(
-    dataset: str = "cadre_posts",
-    district: Optional[str] = None,
-    designation: Optional[str] = None,
-    occupancy_status: Optional[str] = None,
-    tenure_filter: Optional[str] = None,
-    superannuation_filter: Optional[str] = None,
-    roster_quota: Optional[str] = None,
-    allotment_status: Optional[str] = None,
-    sort_by: Optional[str] = None,
-    sort_order: str = "asc"
-):
-    """GET endpoint for direct browser Excel downloads."""
-    filters = {}
-    if district: filters["district"] = district
-    if designation: filters["designation"] = designation
-    if occupancy_status: filters["occupancy_status"] = occupancy_status
-    if tenure_filter: filters["tenure_filter"] = tenure_filter
-    if superannuation_filter: filters["superannuation_filter"] = superannuation_filter
-    if roster_quota: filters["roster_quota"] = roster_quota
-    if allotment_status: filters["allotment_status"] = allotment_status
-
-    file_path = data_exporter.generate_excel_report(
-        dataset=dataset,
-        filters=filters,
-        sort_by=sort_by,
-        sort_order=sort_order
-    )
-    return FileResponse(
-        file_path,
-        filename=os.path.basename(file_path),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+def export_excel_get_endpoint():
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.post("/api/export/docx")
 def export_docx_endpoint(req: ExportQueryRequest):
-    """Generates and downloads official Word (.docx) file based on filters and columns."""
-    filters = req.filters or {}
-    file_path = data_exporter.generate_docx_report(
-        dataset=req.dataset,
-        filters=filters,
-        sort_by=req.sort_by,
-        sort_order=req.sort_order or "asc",
-        selected_columns=req.selected_columns
-    )
-    return FileResponse(
-        file_path,
-        filename=os.path.basename(file_path),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/export/docx")
-def export_docx_get_endpoint(
-    dataset: str = "cadre_posts",
-    district: Optional[str] = None,
-    designation: Optional[str] = None,
-    occupancy_status: Optional[str] = None,
-    tenure_filter: Optional[str] = None,
-    superannuation_filter: Optional[str] = None,
-    roster_quota: Optional[str] = None,
-    allotment_status: Optional[str] = None,
-    sort_by: Optional[str] = None,
-    sort_order: str = "asc"
-):
-    """GET endpoint for direct browser Word (.docx) downloads."""
-    filters = {}
-    if district: filters["district"] = district
-    if designation: filters["designation"] = designation
-    if occupancy_status: filters["occupancy_status"] = occupancy_status
-    if tenure_filter: filters["tenure_filter"] = tenure_filter
-    if superannuation_filter: filters["superannuation_filter"] = superannuation_filter
-    if roster_quota: filters["roster_quota"] = roster_quota
-    if allotment_status: filters["allotment_status"] = allotment_status
-
-    file_path = data_exporter.generate_docx_report(
-        dataset=dataset,
-        filters=filters,
-        sort_by=sort_by,
-        sort_order=sort_order
-    )
-    return FileResponse(
-        file_path,
-        filename=os.path.basename(file_path),
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
+def export_docx_get_endpoint():
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/simulation/view-order-html", response_class=HTMLResponse)
 def view_simulation_order_html(session_id: str = "CURRENT_SESSION"):
@@ -1190,50 +1100,19 @@ def get_cascading_backfills_endpoint():
 
 @app.get("/api/download/google-sheets-version")
 def download_google_sheets_version():
-    file_path = os.path.join(BASE_DIR, "WB_ARD_Interactive_Posting_Board_GoogleSheets_Ready.xlsx")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Google Sheets version workbook not found.")
-    return FileResponse(
-        file_path,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename="WB_ARD_Interactive_Posting_Board_GoogleSheets_Ready.xlsx"
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/download/11-column-master-sheet")
 def download_11_column_master_sheet():
-    from generate_11col_posting_order import build_standalone_and_inject_master
-    file_path = build_standalone_and_inject_master()
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Master sheet not found.")
-    return FileResponse(
-        file_path,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=os.path.basename(file_path)
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/download/authoritative-master-ag")
 def download_authoritative_master_ag():
-    import glob
-    files = sorted(glob.glob(os.path.join(BASE_DIR, "Promotion_242_Final_List_*AG.xlsx")), reverse=True)
-    if not files:
-        raise HTTPException(status_code=404, detail="Authoritative master Excel not found.")
-    target_file = files[0]
-    return FileResponse(
-        target_file,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=os.path.basename(target_file)
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 @app.get("/api/download/live-synced-datasheet")
 def download_live_synced_datasheet():
-    file_path = os.path.join(BASE_DIR, "<00_LIVE_SYNCED>_<DATASHEET>_<ARD_POSTING_BOARD>_<AG>.xlsx")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Live synced backup data sheet not found.")
-    return FileResponse(
-        file_path,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename="<00_LIVE_SYNCED>_<DATASHEET>_<ARD_POSTING_BOARD>_<AG>.xlsx"
-    )
+    raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
 # --- SERVE FRONTEND ---
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
