@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initShareModal();
     initAICopilot();
     initBetaSyncCountdown();
+    initKPICardClickHandlers();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -76,6 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const activeContent = document.getElementById(targetTab);
                 if (activeContent) {
                     activeContent.classList.remove('hidden');
+                }
+
+                if (window.setActiveKPICard) {
+                    if (targetTab === 'tab-roster') window.setActiveKPICard('kpiCardRoster');
+                    else if (targetTab === 'tab-obliterated') window.setActiveKPICard('kpiCardObliterated');
+                    else if (targetTab === 'tab-cadre') window.setActiveKPICard('kpiCardTotalPosts');
+                    else if (targetTab === 'tab-displaced') window.setActiveKPICard('kpiCardCollisions');
                 }
 
                 if (targetTab === 'tab-master-orders') {
@@ -1499,9 +1507,197 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnCloseWaterfallFooter')?.addEventListener('click', () => {
         document.getElementById('waterfallModal').classList.add('hidden');
     });
-    const kpiTotalCard = document.getElementById('kpiCardTotalPosts');
-    if (kpiTotalCard) {
-        kpiTotalCard.addEventListener('click', window.openWaterfallModal);
+    // --- TOP KPI STATUS CARDS INTERACTION ---
+    function initKPICardClickHandlers() {
+        window.setActiveKPICard = function(cardId) {
+            document.querySelectorAll('.kpi-card').forEach(c => {
+                c.classList.remove('ring-2', 'ring-offset-2', 'shadow-md', 'scale-[1.02]');
+                c.classList.remove('ring-wbblue-600', 'ring-emerald-600', 'ring-blue-600', 'ring-teal-600', 'ring-amber-600', 'ring-rose-600', 'ring-red-600', 'ring-purple-600');
+            });
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.classList.add('ring-2', 'ring-offset-2', 'shadow-md', 'scale-[1.02]');
+                if (cardId === 'kpiCardTotalPosts') card.classList.add('ring-wbblue-600');
+                else if (cardId === 'kpiCardTotalVacancies') card.classList.add('ring-emerald-600');
+                else if (cardId === 'kpiCardVacantDD') card.classList.add('ring-blue-600');
+                else if (cardId === 'kpiCardVacantAD') card.classList.add('ring-teal-600');
+                else if (cardId === 'kpiCardRoster') card.classList.add('ring-amber-600');
+                else if (cardId === 'kpiCardObliterated') card.classList.add('ring-rose-600');
+                else if (cardId === 'kpiCardOverTenure') card.classList.add('ring-red-600');
+                else if (cardId === 'kpiCardCollisions') card.classList.add('ring-purple-600');
+            }
+        };
+
+        const triggerTab = (tabId) => {
+            const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            if (btn) btn.click();
+        };
+
+        // 1. Total Posts -> Department Cadre (All 1,794 posts)
+        const cardTotal = document.getElementById('kpiCardTotalPosts');
+        if (cardTotal) {
+            cardTotal.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardTotalPosts');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const avdF = document.getElementById('cadreAVDFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'ALL';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (avdF) avdF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 2. Clear Vacancies -> Department Cadre (Clear Vacancies only: 747)
+        const cardVac = document.getElementById('kpiCardTotalVacancies');
+        if (cardVac) {
+            cardVac.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardTotalVacancies');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const avdF = document.getElementById('cadreAVDFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'vacant';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (avdF) avdF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 3. Available DD Posts -> Department Cadre (Vacant Deputy Director posts)
+        const cardDD = document.getElementById('kpiCardVacantDD');
+        if (cardDD) {
+            cardDD.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardVacantDD');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const avdF = document.getElementById('cadreAVDFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'vacant';
+                if (searchF) searchF.value = 'Deputy Director';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (avdF) avdF.value = 'ALL';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 4. AD Vacancies -> Department Cadre (Vacant Assistant Director posts)
+        const cardAD = document.getElementById('kpiCardVacantAD');
+        if (cardAD) {
+            cardAD.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardVacantAD');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const avdF = document.getElementById('cadreAVDFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'vacant';
+                if (searchF) searchF.value = 'Assistant Director';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (avdF) avdF.value = 'ALL';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 5. 50-Point Roster -> 50-Point Roster Panel
+        const cardRoster = document.getElementById('kpiCardRoster');
+        if (cardRoster) {
+            cardRoster.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardRoster');
+                triggerTab('tab-roster');
+                const catF = document.getElementById('rosterCategoryFilter');
+                const statF = document.getElementById('rosterStatusFilter');
+                const searchF = document.getElementById('rosterSearchInput');
+                if (catF) catF.value = 'ALL';
+                if (statF) statF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                loadRoster();
+                document.getElementById('tab-roster')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 6. Obliterated Posts -> Obliterated Posts Memo 1808
+        const cardOblit = document.getElementById('kpiCardObliterated');
+        if (cardOblit) {
+            cardOblit.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardObliterated');
+                triggerTab('tab-obliterated');
+                const statF = document.getElementById('oblitStatusFilter');
+                const searchF = document.getElementById('oblitSearchInput');
+                if (statF) statF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                loadObliterated();
+                document.getElementById('tab-obliterated')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 7. Tenure Over (>4/5y) -> Department Cadre (Tenure norm exceeded: 321)
+        const cardTenure = document.getElementById('kpiCardOverTenure');
+        if (cardTenure) {
+            cardTenure.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardOverTenure');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const avdF = document.getElementById('cadreAVDFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'occupied';
+                if (tenureF) tenureF.value = 'Yes';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (avdF) avdF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 8. Collisions / Displaced -> Displaced Queue Pool
+        const cardColl = document.getElementById('kpiCardCollisions');
+        if (cardColl) {
+            cardColl.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardCollisions');
+                triggerTab('tab-displaced');
+                loadDisplacedPool();
+                document.getElementById('tab-displaced')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // Initial default active card matching default tab (tab-roster)
+        window.setActiveKPICard('kpiCardRoster');
     }
 
     // --- OFFICER PERSONNEL DOSSIER MODAL LOGIC ---
