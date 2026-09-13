@@ -181,6 +181,9 @@ class PostingEngine:
                  ', ' || district) AS display_label
             FROM cadre_1794_posts
             WHERE occupancy_status = 'Vacant'
+              AND id != 1
+              AND (pay_level IS NULL OR pay_level NOT IN ('Level-22', 'Level-21'))
+              AND designation NOT LIKE '%Director of AH%'
               AND id NOT IN (
                   SELECT substantive_post_id FROM simulation_assignments
                   WHERE session_id = ? AND substantive_post_id IS NOT NULL AND officer_type != 'roster'
@@ -199,7 +202,7 @@ class PostingEngine:
     def get_available_su_posts(self, session_id: str = "CURRENT_SESSION", search: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Dynamically returns posts available for Service Utilization (SU),
-        excluding posts already blocked as SU in this session.
+        excluding posts already blocked as SU in this session and excluding apex posts (Director).
         Can be vacant OR filled (if filled, marks collision risk).
         """
         conn = self.get_connection()
@@ -225,6 +228,10 @@ class PostingEngine:
             SELECT su_post_id FROM simulation_assignments
             WHERE session_id = ? AND su_post_id IS NOT NULL
         )
+          AND id != 1
+          AND (pay_level IS NULL OR pay_level NOT IN ('Level-22', 'Level-21'))
+          AND designation NOT LIKE '%Director of AH%'
+          AND (incumbent_hrms IS NULL OR incumbent_hrms != '1992005664')
         """
         params = [session_id]
 
@@ -258,6 +265,22 @@ class PostingEngine:
         """
         conn = self.get_connection()
         cur = conn.cursor()
+
+        # CRITICAL CONSTITUTIONAL & ADMINISTRATIVE SAFEGUARD:
+        # The Director of AH&VS, West Bengal (Dr. Nikhil Kumar Shit, Level-22) is the apex head of the department.
+        # The Director post and apex executive posts CAN NEVER be replaced, displaced, or utilized for SU allotments.
+        if int(substantive_post_id) in [1] or (su_post_id and int(su_post_id) in [1]):
+            conn.close()
+            return {
+                "success": False,
+                "error": "CRITICAL ADMINISTRATIVE PROHIBITION: The Director of AH&VS, West Bengal (Dr. Nikhil Kumar Shit, Level-22) is the apex head of the department and can NEVER be replaced, displaced, or utilized for SU allotments."
+            }
+        if str(officer_hrms).strip() == "1992005664":
+            conn.close()
+            return {
+                "success": False,
+                "error": "CRITICAL ADMINISTRATIVE PROHIBITION: Dr. Nikhil Kumar Shit is the Director of AH&VS and cannot be transferred or displaced in this cadre simulation."
+            }
 
         # 1. Fetch Officer details
         officer_data = {}
@@ -330,13 +353,25 @@ class PostingEngine:
             cur.execute("SELECT * FROM cadre_1794_posts WHERE id = ?", (su_post_id,))
             su_row = cur.fetchone()
             if su_row:
+                su_hrms = str(su_row["incumbent_hrms"] or "").strip()
+                su_desig = str(su_row["designation"] or "").lower()
+                su_pay = str(su_row["pay_level"] or "")
+                if su_hrms == "1992005664" or "director of ah" in su_desig or su_pay in ["Level-22", "Level-21"] or su_row["id"] == 1:
+                    conn.close()
+                    return {
+                        "success": False,
+                        "error": "CRITICAL ADMINISTRATIVE PROHIBITION: Target post belongs to Director of AH&VS / Apex Directorate Executive and cannot be targeted for Service Utilization or displacement."
+                    }
+
                 su_name = f"[SU] {su_row['designation']}, {su_row['establishment']} ({su_row['district']})"
                 if su_row["occupancy_status"] not in ["Vacant", None, ""]:
                     if su_row["incumbent_hrms"] and str(su_row["incumbent_hrms"]).strip() != str(officer_hrms).strip():
-                        is_collision = True
-                        displaced_officer = su_row["incumbent_name"]
-                        displaced_hrms = str(su_row["incumbent_hrms"]).strip()
-                        displaced_row_data = dict(su_row)
+                        inc_hrms = str(su_row["incumbent_hrms"]).strip()
+                        if inc_hrms != "1992005664" and "director of ah" not in su_desig:
+                            is_collision = True
+                            displaced_officer = su_row["incumbent_name"]
+                            displaced_hrms = inc_hrms
+                            displaced_row_data = dict(su_row)
 
         # 4. Evaluate Statutory Rules against substantive post
         rule_checks = self.check_officer_rules(officer_data, target_post_for_rules)
@@ -428,7 +463,8 @@ class PostingEngine:
             """, (officer_hrms, officer_name, su_post_id))
 
         # 8. Handle Displaced Officer Queue Placement
-        if is_collision and displaced_hrms:
+        # APEX SAFEGUARD: Dr. Nikhil Kumar Shit / Director of AH&VS can NEVER be queued as displaced
+        if is_collision and displaced_hrms and str(displaced_hrms).strip() != "1992005664":
             cur.execute("SELECT id FROM displaced_officers_pool WHERE session_id = ? AND officer_hrms = ?", (session_id, displaced_hrms))
             existing_disp = cur.fetchone()
             if not existing_disp:
@@ -538,6 +574,7 @@ class PostingEngine:
 
         # Reset simulation state for this session
         cur.execute("DELETE FROM simulation_assignments WHERE session_id = ?", (session_id,))
+        cur.execute("DELETE FROM displaced_officers_pool WHERE session_id = ? OR officer_hrms = '1992005664'", (session_id,))
         cur.execute("""
         UPDATE roster_50_point_candidates 
         SET substantive_post_id = NULL, substantive_post_name = NULL, 
@@ -1495,7 +1532,9 @@ class PostingEngine:
         cur = conn.cursor()
         cur.execute("""
         SELECT * FROM displaced_officers_pool 
-        WHERE session_id = ? OR session_id = 'CURRENT_SESSION'
+        WHERE (session_id = ? OR session_id = 'CURRENT_SESSION')
+          AND officer_hrms NOT IN ('1992005664')
+          AND lower(from_post_name) NOT LIKE '%director of ah%'
         ORDER BY id DESC
         """, (session_id,))
         rows = [dict(r) for r in cur.fetchall()]

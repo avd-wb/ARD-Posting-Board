@@ -603,7 +603,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="py-2.5 px-3 text-slate-700">${p.incumbent_tenure || '-'} ${tenureBadge}</td>
                         <td class="py-2.5 px-3 font-mono text-xs text-slate-600">${p.incumbent_dor || '-'}</td>
                         <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                            ${!isVacant ? `
+                            ${!isVacant ? (
+                                (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah'))) ? `
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded bg-slate-100 text-slate-500 border border-slate-300 shadow-sm" title="Apex Cadre Post: Protected from transfer / displacement">
+                                        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Apex Post</span>
+                                    </span>
+                                ` : `
                                 <div class="flex items-center justify-end gap-1.5">
                                     <button onclick="openDualAllotModal('${p.incumbent_hrms}', 'displaced')" class="px-2 py-1 text-[11px] font-medium rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
                                         Allot
@@ -613,7 +619,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span>AI Allot</span>
                                     </button>
                                 </div>
-                            ` : '-'}
+                                `
+                            ) : '-'}
                         </td>
                     </tr>
                 `;
@@ -896,6 +903,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DUAL ALLOTMENT MODAL LOGIC WITH DYNAMIC OPTION REDUCTION ---
     window.openDualAllotModal = async function(hrmsId, source) {
+        if (hrmsId === '1992005664') {
+            alert('Administrative Protection: Dr. Nikhil Kumar Shit is the Director of AH&VS (Level-22) and cannot be replaced, displaced, or transferred.');
+            return;
+        }
         const modal = document.getElementById('allotModal');
         const subSelect = document.getElementById('modalSubstantivePostSelect');
         const suSelect = document.getElementById('modalSUPostSelect');
@@ -1364,7 +1375,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/displaced-pool?session_id=CURRENT_SESSION');
             const json = await res.json();
-            const pool = json.data || [];
+            const rawPool = json.data || [];
+            const pool = rawPool.filter(o => 
+                o.officer_hrms !== '1992005664' && 
+                !((o.from_post_name || '').toLowerCase().includes('director of ah')) &&
+                !((o.officer_name || '').toLowerCase().includes('nikhil kumar shit'))
+            );
 
             if (navBadge) navBadge.innerText = pool.length;
             if (badge) badge.innerText = `${pool.length} Displaced Officers Pending Placement`;
@@ -2416,6 +2432,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAIRecommendation = null;
 
     window.openAIAllotModal = async function(hrmsId, source = 'roster') {
+        if (hrmsId === '1992005664') {
+            alert('Administrative Protection: Dr. Nikhil Kumar Shit is the Director of AH&VS (Level-22) and cannot be replaced, displaced, or transferred.');
+            return;
+        }
         const modal = document.getElementById('aiAllotModal');
         const container = document.getElementById('aiAllotContent');
         const subtitle = document.getElementById('aiAllotSubtitle');

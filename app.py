@@ -428,6 +428,11 @@ def get_orders(search: Optional[str] = None, category: Optional[str] = None):
 
 @app.post("/api/simulation/allot")
 def simulate_allot(req: AllotRequest):
+    if req.substantive_post_id == 1 or req.su_post_id == 1 or str(req.officer_hrms).strip() == "1992005664":
+        return {
+            "success": False,
+            "error": "CRITICAL ADMINISTRATIVE PROHIBITION: The Director of AH&VS (Dr. Nikhil Kumar Shit, Level-22) is the apex head of the department and cannot be replaced, displaced, or targeted for Service Utilization."
+        }
     res = engine.simulate_dual_allotment(
         session_id=req.session_id,
         officer_hrms=req.officer_hrms,
@@ -448,6 +453,7 @@ def reset_simulation(session_id: str = "CURRENT_SESSION"):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("DELETE FROM simulation_assignments WHERE session_id = ?", (session_id,))
+    cur.execute("DELETE FROM displaced_officers_pool WHERE session_id = ? OR officer_hrms = '1992005664'", (session_id,))
     cur.execute("""
     UPDATE roster_50_point_candidates 
     SET substantive_post_id = NULL, substantive_post_name = NULL, 
