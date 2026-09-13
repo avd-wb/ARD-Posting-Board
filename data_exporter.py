@@ -513,15 +513,15 @@ class DepartmentDataExporter:
         ws.title = schema["label"][:30].replace("/", "-")
         ws.views.sheetView[0].showGridLines = True
 
-        navy_fill = PatternFill(start_color="1C1C1E", end_color="1C1C1E", fill_type="solid")
-        light_gray_fill = PatternFill(start_color="F5F5F7", end_color="F5F5F7", fill_type="solid")
+        navy_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        light_gray_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
         soft_green_fill = PatternFill(start_color="E6F4EA", end_color="E6F4EA", fill_type="solid")
         soft_red_fill = PatternFill(start_color="FCE8E6", end_color="FCE8E6", fill_type="solid")
         soft_yellow_fill = PatternFill(start_color="FEF7E0", end_color="FEF7E0", fill_type="solid")
         soft_blue_fill = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
 
         header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-        title_font = Font(name="Arial", size=14, bold=True, color="1C1C1E")
+        title_font = Font(name="Arial", size=14, bold=True, color="0F172A")
         dept_font = Font(name="Arial", size=11, bold=True, color="3C4043")
         meta_font = Font(name="Arial", size=9, italic=True, color="5F6368")
         data_font = Font(name="Arial", size=9, color="202124")
@@ -721,7 +721,7 @@ class DepartmentDataExporter:
         for c_idx, col in enumerate(active_cols):
             cell = hdr_row.cells[c_idx]
             cell.text = col["label"]
-            shading = parse_xml(r'<w:shd %s w:fill="1C1C1E"/>' % nsdecls('w'))
+            shading = parse_xml(r'<w:shd %s w:fill="1E293B"/>' % nsdecls('w'))
             cell._tc.get_or_add_tcPr().append(shading)
 
             p = cell.paragraphs[0]
@@ -767,18 +767,18 @@ class DepartmentDataExporter:
                     run.font.color.rgb = RGBColor(32, 33, 36)
 
                 if not is_even:
-                    shading = parse_xml(r'<w:shd %s w:fill="F5F5F7"/>' % nsdecls('w'))
+                    shading = parse_xml(r'<w:shd %s w:fill="F8FAFC"/>' % nsdecls('w'))
                     cell._tc.get_or_add_tcPr().append(shading)
 
         # Set subtle table border
         tblPr = table._tbl.tblPr
         borders = parse_xml(
             r'<w:tblBorders %s>'
-            r'  <w:top w:val="single" w:sz="4" w:space="0" w:color="DADCE0"/>'
+            r'  <w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
             r'  <w:left w:val="none"/>'
-            r'  <w:bottom w:val="single" w:sz="6" w:space="0" w:color="1C1C1E"/>'
+            r'  <w:bottom w:val="single" w:sz="6" w:space="0" w:color="1E293B"/>'
             r'  <w:right w:val="none"/>'
-            r'  <w:insideH w:val="single" w:sz="4" w:space="0" w:color="E8EAED"/>'
+            r'  <w:insideH w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/>'
             r'  <w:insideV w:val="none"/>'
             r'</w:tblBorders>' % nsdecls('w')
         )

@@ -178,39 +178,39 @@
 <body class="bg-[#f5f5f7] text-[#1d1d1f] antialiased min-h-screen flex flex-col font-sans">
 
     <!-- Top Executive Header with Sticky Wrapper -->
-    <header class="bg-black/95 backdrop-blur-xl border-b border-neutral-800 text-white shadow-md sticky top-0 z-40">
+    <header class="bg-slate-800 backdrop-blur-xl border-b border-slate-700 text-white shadow-sm sticky top-0 z-40">
         <!-- Animated Confidential Beta & 84h Sync Countdown Banner -->
-        <div id="betaSyncBanner" class="bg-neutral-950 border-b border-neutral-800/80 px-3 sm:px-6 py-1.5 shadow-inner relative overflow-hidden">
+        <div id="betaSyncBanner" class="bg-slate-900 border-b border-slate-700/80 px-3 sm:px-6 py-1.5 shadow-inner relative overflow-hidden">
             <div class="absolute inset-0 pointer-events-none shimmer-bg opacity-25"></div>
             <div class="max-w-7xl mx-auto hidden sm:flex items-center justify-between gap-2 text-xs relative z-10">
                 <!-- Left: Beta Version -->
                 <div class="flex items-center gap-2 flex-wrap justify-start">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-900 text-neutral-300 border border-neutral-700 shadow-xs">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shadow-xs">
                         <span class="relative flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
                         <span>Beta Version · Active Departmental Verification</span>
                     </span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-neutral-900 text-neutral-400 border border-neutral-800 shadow-xs">
-                        <i data-lucide="lock" class="w-3 h-3 text-neutral-400"></i>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700 shadow-xs">
+                        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
                         <span>Confidential · Internal Administrative Board</span>
                     </span>
                 </div>
 
                 <!-- Center: Animated Data Syncing -->
                 <div class="flex items-center gap-2 justify-center">
-                    <div class="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300">
-                        <i data-lucide="refresh-cw" class="w-3 h-3 text-neutral-400 animate-spin" style="animation-duration: 3s;"></i>
+                    <div class="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 text-slate-400 animate-spin" style="animation-duration: 3s;"></i>
                         <span class="tracking-wider text-[11px] font-medium uppercase">Data Synchronized</span>
                     </div>
                 </div>
 
                 <!-- Right: 84h Countdown Clock -->
                 <div class="flex items-center gap-2 justify-end">
-                    <div class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider hidden md:inline">84h Sync Window:</div>
-                    <div id="countdownCard" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800 font-mono text-neutral-200 cursor-pointer hover:border-neutral-600 transition" title="84-Hour Processing Window starting from 15:45 IST">
-                        <i data-lucide="timer" class="w-3 h-3 text-neutral-400 shrink-0"></i>
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider hidden md:inline">84h Sync Window:</div>
+                    <div id="countdownCard" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 font-mono text-slate-200 cursor-pointer hover:border-slate-500 transition" title="84-Hour Processing Window starting from 15:45 IST">
+                        <i data-lucide="timer" class="w-3 h-3 text-slate-400 shrink-0"></i>
                         <div class="flex items-center gap-1 text-xs">
                             <span id="countdownHours" class="font-bold">84</span>h:
                             <span id="countdownMinutes" class="font-bold">00</span>m:
@@ -222,12 +222,12 @@
 
             <!-- Mobile View -->
             <div class="sm:hidden flex items-center justify-between w-full text-[11px] relative z-10 px-0.5">
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-900 text-neutral-300 border border-neutral-700 flex items-center gap-1">
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     Beta
                 </span>
-                <div id="countdownCardMobile" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 font-mono text-[10px] text-neutral-300">
-                    <i data-lucide="timer" class="w-3 h-3 text-neutral-400"></i>
+                <div id="countdownCardMobile" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300">
+                    <i data-lucide="timer" class="w-3 h-3 text-slate-400"></i>
                     <span><span id="countdownHoursMobile">84</span>h:<span id="countdownMinutesMobile">00</span>m:<span id="countdownSecondsMobile">00</span>s</span>
                 </div>
             </div>
@@ -238,29 +238,29 @@
             <div class="flex items-center justify-between h-14 sm:h-16 gap-3">
                 <!-- Left: Government Branding -->
                 <div class="flex items-center space-x-3 shrink-0">
-                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-900 flex items-center justify-center border border-neutral-800 shadow-inner shrink-0">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-700 flex items-center justify-center border border-slate-600 shadow-inner shrink-0">
                         <i data-lucide="shield-check" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
                     </div>
                     <div>
                         <div class="flex items-center space-x-1.5">
-                            <span class="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase text-neutral-400">Govt. of West Bengal</span>
-                            <span class="text-[9px] sm:text-[10px] text-neutral-500 hidden xs:inline">| ARD Dept</span>
+                            <span class="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase text-slate-400">Govt. of West Bengal</span>
+                            <span class="text-[9px] sm:text-[10px] text-slate-500 hidden xs:inline">| ARD Dept</span>
                         </div>
                         <h1 class="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-1.5 leading-tight">
                             <span>Smart Posting Decision Board</span>
-                            <span class="text-[9px] bg-neutral-800 text-neutral-300 border border-neutral-700 px-1.5 py-0.2 rounded font-mono hidden md:inline">Decision Maker</span>
+                            <span class="text-[9px] bg-slate-700 text-slate-300 border border-slate-600 px-1.5 py-0.2 rounded font-mono hidden md:inline">Decision Maker</span>
                         </h1>
                     </div>
                 </div>
 
                 <!-- Center: Dedicated Universal Semantic Search Bar (Spotlight) -->
                 <div class="flex-1 max-w-md lg:max-w-lg mx-2 sm:mx-4">
-                    <div id="btnOpenSpotlightHeader" class="w-full flex items-center justify-between bg-neutral-900 hover:bg-neutral-800/90 text-neutral-300 border border-neutral-800 hover:border-neutral-600 rounded-full px-3.5 py-1.5 sm:py-2 cursor-pointer transition group shadow-xs">
+                    <div id="btnOpenSpotlightHeader" class="w-full flex items-center justify-between bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600 hover:border-slate-500 rounded-full px-3.5 py-1.5 sm:py-2 cursor-pointer transition group shadow-xs">
                         <div class="flex items-center gap-2 truncate">
-                            <i data-lucide="search" class="w-4 h-4 text-neutral-400 group-hover:text-white transition shrink-0"></i>
-                            <span class="text-xs text-neutral-400 group-hover:text-neutral-200 truncate select-none">Search anything: officer, post, district, order, policy rule...</span>
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 group-hover:text-white transition shrink-0"></i>
+                            <span class="text-xs text-slate-300 group-hover:text-white truncate select-none">Search anything: officer, post, district, order, policy rule...</span>
                         </div>
-                        <kbd class="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-semibold text-neutral-400 bg-neutral-800 border border-neutral-700 rounded shadow-xs ml-2 shrink-0">
+                        <kbd class="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-300 bg-slate-800 border border-slate-600 rounded shadow-xs ml-2 shrink-0">
                             <span>⌘K</span>
                         </kbd>
                     </div>
@@ -268,138 +268,138 @@
 
                 <!-- Right: Header Actions -->
                 <div class="flex items-center space-x-2 shrink-0">
-                    <button id="btnOpenExportModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs rounded-full border border-neutral-800 hover:border-neutral-700 transition active:scale-95 touch-target" title="Export Excel & Word Reports">
-                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <button id="btnOpenExportModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs rounded-full border border-slate-600 transition active:scale-95 touch-target" title="Export Excel & Word Reports">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-300"></i>
                         <span class="hidden sm:inline text-[11px]">Export Reports</span>
                     </button>
 
-                    <button id="btnOpenInstallModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs rounded-full border border-neutral-800 hover:border-neutral-700 transition active:scale-95 touch-target" title="Install App">
-                        <i data-lucide="download" class="w-3.5 h-3.5 text-neutral-300"></i>
+                    <button id="btnOpenInstallModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs rounded-full border border-slate-600 transition active:scale-95 touch-target" title="Install App">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-slate-300"></i>
                         <span class="hidden sm:inline text-[11px]">Install</span>
                     </button>
 
-                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-black hover:bg-neutral-200 font-semibold text-xs rounded-full shadow transition active:scale-95 touch-target">
-                        <i data-lucide="bot" class="w-3.5 h-3.5 text-black"></i>
+                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-full shadow-xs border border-slate-200 transition active:scale-95 touch-target">
+                        <i data-lucide="bot" class="w-3.5 h-3.5 text-slate-800"></i>
                         <span class="hidden sm:inline text-[11px]">AI Copilot</span>
                     </button>
 
-                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-neutral-900 text-neutral-300 touch-target flex items-center justify-center border border-neutral-800" title="Open All Modules">
+                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-slate-700 text-slate-200 touch-target flex items-center justify-center border border-slate-600" title="Open All Modules">
                         <i data-lucide="menu" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Navigation Tabs (Apple Monochrome Pills) -->
-        <div class="bg-black/90 border-t border-neutral-800/80">
+        <!-- Navigation Tabs (Dignified Grey/White Pills) -->
+        <div class="bg-slate-900 border-t border-slate-700/80">
             <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
                 <nav class="flex space-x-1 sm:space-x-1.5 overflow-x-auto py-2 no-scrollbar" id="navTabs">
-                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-black bg-white flex items-center gap-1.5 transition shadow-xs">
+                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-900 bg-white flex items-center gap-1.5 transition shadow-xs">
                         <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
                         <span>50-Point Roster</span>
-                        <span id="badgeRosterCount" class="text-[10px] bg-neutral-200 text-neutral-800 font-bold px-1.5 py-0.2 rounded-full">242</span>
+                        <span id="badgeRosterCount" class="text-[10px] bg-slate-200 text-slate-800 font-bold px-1.5 py-0.2 rounded-full">242</span>
                     </button>
 
-                    <button data-tab="tab-master-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                    <button data-tab="tab-master-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
                         <i data-lucide="award" class="w-3.5 h-3.5 text-emerald-400"></i>
                         <span>Master Schedule</span>
-                        <span id="badgeMasterOrdersCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">328</span>
+                        <span id="badgeMasterOrdersCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">328</span>
                     </button>
 
-                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
                         <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i>
                         <span>Obliterated Posts (1808)</span>
                         <span id="badgeOblitCount" class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-bold px-1.5 py-0.2 rounded-full">106</span>
                     </button>
 
-                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
                         <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-400"></i>
                         <span>Department Cadre (1809)</span>
-                        <span id="badgeCadreTotal" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">1,794</span>
+                        <span id="badgeCadreTotal" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">1,794</span>
                     </button>
 
-                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
                         <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
                         <span>Displaced Pool</span>
-                        <span id="badgeDisplacedCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">0</span>
+                        <span id="badgeDisplacedCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
                         <i data-lucide="git-merge" class="w-3.5 h-3.5 text-sky-400"></i>
                         <span>Cascades & Simulation</span>
-                        <span id="badgeSimCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">0</span>
+                        <span id="badgeSimCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-neutral-400"></i>
+                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-300"></i>
                         <span>Official Orders</span>
-                        <span class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">470</span>
+                        <span class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">470</span>
                     </button>
 
-                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="grid" class="w-3.5 h-3.5 text-neutral-400"></i>
+                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="grid" class="w-3.5 h-3.5 text-slate-300"></i>
                         <span>Visualizer</span>
-                        <span id="badgeVisualGridCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">2,038</span>
+                        <span id="badgeVisualGridCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">2,038</span>
                     </button>
 
-                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="book-user" class="w-3.5 h-3.5 text-neutral-400"></i>
+                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="book-user" class="w-3.5 h-3.5 text-slate-300"></i>
                         <span>Directory</span>
-                        <span id="badgeMasterCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">1,624</span>
+                        <span id="badgeMasterCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">1,624</span>
                     </button>
 
-                    <button data-tab="tab-organogram" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="network" class="w-3.5 h-3.5 text-neutral-400"></i>
+                    <button data-tab="tab-organogram" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="network" class="w-3.5 h-3.5 text-slate-300"></i>
                         <span>Organogram</span>
-                        <span class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">7 Tiers</span>
+                        <span class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">7 Tiers</span>
                     </button>
                 </nav>
             </div>
         </div>
 
         <!-- ==================== UNIVERSAL COLOR INDICATOR PERSISTENT LEGEND BAR ==================== -->
-        <div id="universalColorLegendBar" class="bg-neutral-950 border-t border-neutral-800/80 px-3 sm:px-6 py-1.5 text-xs">
+        <div id="universalColorLegendBar" class="bg-slate-100 border-t border-b border-slate-200 px-3 sm:px-6 py-1.5 text-xs text-slate-700 shadow-2xs">
             <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap text-[11px]">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 shrink-0">Color Indicator:</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 shrink-0">Universal Indicator:</span>
                     
                     <!-- GREEN -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-[11px]" title="OK: Policy Compliant, Finalized Allotment, Clear Vacancy">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-                        <strong class="text-white">GREEN:</strong>
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-900 text-[10px] sm:text-[11px] font-medium" title="OK: Policy Compliant, Finalized Allotment, Clear Vacancy">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                        <strong class="text-emerald-950">GREEN:</strong>
                         <span>OK · Complied · Finalized · Vacant</span>
                     </div>
 
                     <!-- RED -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 text-[10px] sm:text-[11px]" title="Needs Attention: Policy Violation, Over-Tenure, Obliterated Post Pending, Collision Risk">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
-                        <strong class="text-white">RED:</strong>
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-300 text-rose-900 text-[10px] sm:text-[11px] font-medium" title="Needs Attention: Policy Violation, Over-Tenure, Obliterated Post Pending, Collision Risk">
+                        <span class="w-2 h-2 rounded-full bg-rose-600 shrink-0 animate-pulse"></span>
+                        <strong class="text-rose-950">RED:</strong>
                         <span>Needs Attention · Policy Violation · Over-Tenure</span>
                     </div>
 
                     <!-- YELLOW -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] sm:text-[11px]" title="Draft / Advisory: Pending Allotment, Administrative Advisory, Exemption Review">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
-                        <strong class="text-white">YELLOW:</strong>
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-[10px] sm:text-[11px] font-medium" title="Draft / Advisory: Pending Allotment, Administrative Advisory, Exemption Review">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                        <strong class="text-amber-950">YELLOW:</strong>
                         <span>Draft · Pending Allotment · Advisory</span>
                     </div>
 
                     <!-- GREY -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 text-[10px] sm:text-[11px]" title="Unavailable: Abolished Post, Statutorily Locked, Inactive">
-                        <span class="w-2 h-2 rounded-full bg-neutral-400 shrink-0"></span>
-                        <strong class="text-white">GREY:</strong>
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 border border-slate-300 text-slate-800 text-[10px] sm:text-[11px] font-medium" title="Unavailable: Abolished Post, Statutorily Locked, Inactive">
+                        <span class="w-2 h-2 rounded-full bg-slate-500 shrink-0"></span>
+                        <strong class="text-slate-900">GREY:</strong>
                         <span>Not Available · Abolished · Locked</span>
                     </div>
 
                     <!-- BLUE -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-950/60 border border-sky-500/40 text-sky-300 text-[10px] sm:text-[11px]" title="Administrative: Substantive Post, Official Order, Info">
-                        <span class="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
-                        <strong class="text-white">BLUE:</strong>
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-300 text-sky-900 text-[10px] sm:text-[11px] font-medium" title="Administrative: Substantive Post, Official Order, Info">
+                        <span class="w-2 h-2 rounded-full bg-sky-600 shrink-0"></span>
+                        <strong class="text-sky-950">BLUE:</strong>
                         <span>Administrative · Substantive · Info</span>
                     </div>
                 </div>
 
-                <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 px-2.5 py-0.5 rounded-full transition shrink-0 whitespace-nowrap">
+                <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 px-2.5 py-0.5 rounded-full shadow-2xs transition shrink-0 whitespace-nowrap">
                     <span>Transfer Policy 219/2009 Criteria</span>
                     <span class="text-xs">⚖</span>
                 </button>
@@ -1353,66 +1353,66 @@
     </main>
 
     <!-- ==================== UNIVERSAL SPOTLIGHT SEMANTIC SEARCH MODAL ==================== -->
-    <div id="spotlightModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-start justify-center p-3 sm:p-6 pt-12 sm:pt-20">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-neutral-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+    <div id="spotlightModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-start justify-center p-3 sm:p-6 pt-12 sm:pt-20">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
             <!-- Top Search Input Bar -->
-            <div class="p-3.5 sm:p-4 border-b border-neutral-200 bg-neutral-50/70 flex items-center gap-3">
-                <i data-lucide="search" class="w-5 h-5 text-neutral-400 shrink-0"></i>
+            <div class="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 shrink-0"></i>
                 <input id="spotlightInput" type="text" placeholder="Type anything: officer name, HRMS, post title, district, block, order, policy rule..."
-                    class="w-full bg-transparent border-none outline-none text-sm sm:text-base text-neutral-900 placeholder-neutral-400 font-medium focus:ring-0">
-                <span id="spotlightSpinner" class="hidden text-neutral-400 animate-spin shrink-0">
+                    class="w-full bg-transparent border-none outline-none text-sm sm:text-base text-slate-800 placeholder-slate-400 font-medium focus:ring-0">
+                <span id="spotlightSpinner" class="hidden text-slate-400 animate-spin shrink-0">
                     <i data-lucide="loader-2" class="w-4 h-4"></i>
                 </span>
-                <kbd class="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-200/80 rounded">ESC</kbd>
-                <button id="btnCloseSpotlightModal" class="p-1 text-neutral-400 hover:text-neutral-700 rounded-lg hover:bg-neutral-200/60 transition">
+                <kbd class="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-slate-500 bg-slate-200/80 rounded">ESC</kbd>
+                <button id="btnCloseSpotlightModal" class="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/60 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <!-- Category Filter Pills -->
-            <div class="px-4 py-2 border-b border-neutral-100 bg-white flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-                <button data-spotlight-filter="all" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-bold bg-black text-white shadow-xs">All Results</button>
-                <button data-spotlight-filter="officers" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">👤 Officers (<span id="spotlightCountOfficers">0</span>)</button>
-                <button data-spotlight-filter="posts" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">🏛️ Posts (<span id="spotlightCountPosts">0</span>)</button>
-                <button data-spotlight-filter="orders" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">📜 Orders (<span id="spotlightCountOrders">0</span>)</button>
-                <button data-spotlight-filter="rules" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">⚖️ Policy Rules (<span id="spotlightCountRules">0</span>)</button>
+            <div class="px-4 py-2 border-b border-slate-100 bg-white flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
+                <button data-spotlight-filter="all" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-white shadow-xs">All Results</button>
+                <button data-spotlight-filter="officers" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 hover:bg-slate-100">👤 Officers (<span id="spotlightCountOfficers">0</span>)</button>
+                <button data-spotlight-filter="posts" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 hover:bg-slate-100">🏛️ Posts (<span id="spotlightCountPosts">0</span>)</button>
+                <button data-spotlight-filter="orders" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 hover:bg-slate-100">📜 Orders (<span id="spotlightCountOrders">0</span>)</button>
+                <button data-spotlight-filter="rules" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-600 hover:bg-slate-100">⚖️ Policy Rules (<span id="spotlightCountRules">0</span>)</button>
             </div>
 
             <!-- Results Scrollable Area -->
-            <div id="spotlightResultsContainer" class="p-3 sm:p-4 overflow-y-auto flex-1 divide-y divide-neutral-100 space-y-1">
-                <div class="py-12 text-center text-neutral-400 text-xs">
-                    <i data-lucide="sparkles" class="w-8 h-8 text-neutral-300 mx-auto mb-2"></i>
-                    <p class="font-semibold text-neutral-600">Universal Semantic Search</p>
-                    <p class="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
+            <div id="spotlightResultsContainer" class="p-3 sm:p-4 overflow-y-auto flex-1 divide-y divide-slate-100 space-y-1">
+                <div class="py-12 text-center text-slate-400 text-xs">
+                    <i data-lucide="sparkles" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                    <p class="font-semibold text-slate-700">Universal Semantic Search</p>
+                    <p class="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
                 </div>
             </div>
 
             <!-- Spotlight Footer Hint -->
-            <div class="p-2.5 px-4 border-t border-neutral-200 bg-neutral-50/80 flex items-center justify-between text-[11px] text-neutral-500">
+            <div class="p-2.5 px-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-[11px] text-slate-500">
                 <div class="flex items-center gap-3">
-                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">↑↓</kbd> Navigate</span>
-                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">↵</kbd> Select</span>
-                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">ESC</kbd> Close</span>
+                    <span><kbd class="font-mono bg-slate-200 px-1 rounded text-[10px]">↑↓</kbd> Navigate</span>
+                    <span><kbd class="font-mono bg-slate-200 px-1 rounded text-[10px]">↵</kbd> Select</span>
+                    <span><kbd class="font-mono bg-slate-200 px-1 rounded text-[10px]">ESC</kbd> Close</span>
                 </div>
-                <div class="font-semibold text-neutral-600">WB ARD Decision Board</div>
+                <div class="font-semibold text-slate-700">WB ARD Decision Board</div>
             </div>
         </div>
     </div>
 
     <!-- ==================== TRANSFER POLICY 2009 NORMS MODAL ==================== -->
-    <div id="policyInfoModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-6">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-neutral-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
-            <div class="p-4 border-b border-neutral-200 bg-black text-white flex items-center justify-between">
+    <div id="policyInfoModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-slate-700 bg-slate-800 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center">
                         <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
                     </div>
                     <div>
                         <h3 class="font-bold text-sm">Transfer Policy 2009 (Memo 291-AR & AH)</h3>
-                        <p class="text-[10px] text-neutral-400">Statutory Rules & Criteria for ARD Department Transfers & Promotions</p>
+                        <p class="text-[10px] text-slate-300">Statutory Rules & Criteria for ARD Department Transfers & Promotions</p>
                     </div>
                 </div>
-                <button id="btnClosePolicyInfoModal" class="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition">
+                <button id="btnClosePolicyInfoModal" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -1491,9 +1491,9 @@
                 </div>
             </div>
 
-            <div class="p-3.5 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs">
-                <span class="text-[11px] text-neutral-500">Government of West Bengal • ARD Department</span>
-                <button id="btnClosePolicyInfoFooter" class="px-4 py-1.5 text-xs font-semibold text-neutral-800 hover:text-black rounded-lg border border-neutral-300 hover:bg-neutral-100 transition">
+            <div class="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+                <span class="text-[11px] text-slate-500">Government of West Bengal • ARD Department</span>
+                <button id="btnClosePolicyInfoFooter" class="px-4 py-1.5 text-xs font-semibold text-slate-800 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
                     Close Guide
                 </button>
             </div>
@@ -1501,50 +1501,50 @@
     </div>
 
     <!-- ==================== EXECUTIVE DATA EXPORTER & REPORT BUILDER MODAL ==================== -->
-    <div id="dataExportModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-neutral-200 overflow-hidden flex flex-col max-h-[94vh] animate-in fade-in zoom-in duration-200 my-auto">
+    <div id="dataExportModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[94vh] animate-in fade-in zoom-in duration-200 my-auto">
             <!-- Modal Header -->
-            <div class="px-5 py-3.5 bg-black text-white border-b border-neutral-800 flex items-center justify-between shrink-0">
+            <div class="px-5 py-3.5 bg-slate-800 text-white border-b border-slate-700 flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+                    <div class="w-9 h-9 rounded-xl bg-slate-700 border border-slate-600 flex items-center justify-center shrink-0">
                         <i data-lucide="file-spreadsheet" class="w-5 h-5 text-emerald-400"></i>
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
                             <h3 class="font-bold text-sm sm:text-base text-white">Executive Data Exporter & Report Builder</h3>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-800">Excel (.xlsx) & Word (.docx)</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-700 text-slate-200 border border-slate-600">Excel (.xlsx) & Word (.docx)</span>
                         </div>
-                        <p class="text-[11px] text-neutral-400 mt-0.5">Filter, sort, select columns, and download authenticated departmental datasets.</p>
+                        <p class="text-[11px] text-slate-300 mt-0.5">Filter, sort, select columns, and download authenticated departmental datasets.</p>
                     </div>
                 </div>
-                <button id="btnCloseExportModal" class="text-neutral-400 hover:text-white p-2 rounded-full hover:bg-neutral-900 transition">
+                <button id="btnCloseExportModal" class="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-700 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <!-- Modal Scrollable Content -->
-            <div class="overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-neutral-800 flex-1">
+            <div class="overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-800 flex-1">
                 <!-- STEP 1: DATASET SELECTOR -->
                 <div>
-                    <label class="block text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-1.5">1. Select Target Dataset</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-neutral-100 rounded-xl border border-neutral-200" id="exportDatasetTabs">
-                        <button type="button" data-export-dataset="cadre_posts" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs transition bg-black text-white shadow-xs">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">1. Select Target Dataset</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200" id="exportDatasetTabs">
+                        <button type="button" data-export-dataset="cadre_posts" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs transition bg-slate-800 text-white shadow-xs">
                             <span>Cadre Posts</span>
                             <span class="block text-[10px] opacity-75 font-normal">1,794 Posts</span>
                         </button>
-                        <button type="button" data-export-dataset="employees" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-neutral-600 hover:text-black transition">
+                        <button type="button" data-export-dataset="employees" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition">
                             <span>Employees</span>
                             <span class="block text-[10px] opacity-75 font-normal">1,624 Staff</span>
                         </button>
-                        <button type="button" data-export-dataset="roster" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-neutral-600 hover:text-black transition">
+                        <button type="button" data-export-dataset="roster" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition">
                             <span>50-Pt Roster</span>
                             <span class="block text-[10px] opacity-75 font-normal">242 Candidates</span>
                         </button>
-                        <button type="button" data-export-dataset="obliterated" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-neutral-600 hover:text-black transition">
+                        <button type="button" data-export-dataset="obliterated" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition">
                             <span>Obliterated</span>
                             <span class="block text-[10px] opacity-75 font-normal">76 Posts</span>
                         </button>
-                        <button type="button" data-export-dataset="posts_with_employees" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-neutral-600 hover:text-black transition col-span-2 sm:col-span-1">
+                        <button type="button" data-export-dataset="posts_with_employees" class="export-ds-tab py-2 px-2 text-center rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition col-span-2 sm:col-span-1">
                             <span>Unified Match</span>
                             <span class="block text-[10px] opacity-75 font-normal">Full Census</span>
                         </button>
@@ -1554,8 +1554,8 @@
                 <!-- STEP 2: QUICK PRESETS -->
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-500">2. Quick 1-Tap Presets</label>
-                        <button type="button" id="btnExportResetFilters" class="text-[11px] text-neutral-500 hover:text-black font-semibold flex items-center gap-1">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-600">2. Quick 1-Tap Presets</label>
+                        <button type="button" id="btnExportResetFilters" class="text-[11px] text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1">
                             <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
                             <span>Reset All Filters</span>
                         </button>
@@ -1581,37 +1581,37 @@
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                             <span>76 Obliterated Posts</span>
                         </button>
-                        <button type="button" data-preset="hq_deployments" class="export-preset-pill inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-neutral-300 bg-neutral-100 text-neutral-800 hover:bg-neutral-200 transition">
-                            <span class="w-2 h-2 rounded-full bg-neutral-500"></span>
+                        <button type="button" data-preset="hq_deployments" class="export-preset-pill inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 transition">
+                            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
                             <span>37 HQ Deployments</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- STEP 3: FILTER MATRIX -->
-                <div class="p-4 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-3">
-                    <label class="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">3. Filter Matrix (Combine Any Criteria)</label>
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/80 space-y-3">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">3. Filter Matrix (Combine Any Criteria)</label>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <!-- District -->
                         <div>
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">District</label>
-                            <select id="exportFltDistrict" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">District</label>
+                            <select id="exportFltDistrict" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All Districts (Statewide)</option>
                             </select>
                         </div>
 
                         <!-- Designation / Rank -->
                         <div>
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">Designation / Cadre Rank</label>
-                            <select id="exportFltDesignation" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Designation / Cadre Rank</label>
+                            <select id="exportFltDesignation" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All Designations</option>
                             </select>
                         </div>
 
                         <!-- Occupancy / Status -->
                         <div id="exportFltOccupancyContainer">
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">Occupancy Status</label>
-                            <select id="exportFltOccupancy" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Occupancy Status</label>
+                            <select id="exportFltOccupancy" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All (Occupied & Vacant)</option>
                                 <option value="Vacant">Clear Vacancies Only</option>
                                 <option value="Occupied">Occupied Posts Only</option>
@@ -1620,8 +1620,8 @@
 
                         <!-- Tenure Filter -->
                         <div id="exportFltTenureContainer">
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">Tenure Norm (Memo 291)</label>
-                            <select id="exportFltTenure" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Tenure Norm (Memo 291)</label>
+                            <select id="exportFltTenure" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All Tenures</option>
                                 <option value="over_tenure">Over-Tenure (>4/5 Yrs Norm)</option>
                                 <option value="normal">Normal (Within Norm)</option>
@@ -1630,8 +1630,8 @@
 
                         <!-- Superannuation Horizon -->
                         <div id="exportFltSuperannuationContainer">
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">Superannuation Horizon</label>
-                            <select id="exportFltSuperannuation" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Superannuation Horizon</label>
+                            <select id="exportFltSuperannuation" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All Retirement Horizons</option>
                                 <option value="within_1_yr">Retiring in ≤ 1 Year</option>
                                 <option value="within_2_yrs">Retiring in ≤ 2 Years (Protected)</option>
@@ -1641,8 +1641,8 @@
 
                         <!-- Roster Quota -->
                         <div id="exportFltQuotaContainer">
-                            <label class="block text-[10px] font-bold text-neutral-600 mb-1">50-Pt Roster Quota</label>
-                            <select id="exportFltQuota" class="w-full bg-white border border-neutral-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">50-Pt Roster Quota</label>
+                            <select id="exportFltQuota" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                                 <option value="">All Quotas</option>
                                 <option value="UR">UR (Unreserved)</option>
                                 <option value="SC">SC (Scheduled Caste)</option>
@@ -1655,37 +1655,37 @@
 
                     <!-- Keyword Search -->
                     <div class="pt-1">
-                        <label class="block text-[10px] font-bold text-neutral-600 mb-1">Keyword / Free-Text Filter</label>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Keyword / Free-Text Filter</label>
                         <div class="relative">
-                            <input type="text" id="exportFltSearch" placeholder="Filter by officer name, HRMS ID, block, office..." class="w-full bg-white border border-neutral-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-neutral-800 focus:ring-1 focus:ring-black focus:border-black">
-                            <i data-lucide="search" class="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5"></i>
+                            <input type="text" id="exportFltSearch" placeholder="Filter by officer name, HRMS ID, block, office..." class="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- STEP 4: SORTING & COLUMN CUSTOMIZER -->
-                <div class="p-4 rounded-xl border border-neutral-200 bg-white space-y-3">
+                <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
                     <div class="flex items-center justify-between flex-wrap gap-2">
-                        <label class="text-[11px] font-bold uppercase tracking-wider text-neutral-700">4. Sorting & Selectable Columns</label>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-700">4. Sorting & Selectable Columns</label>
                         <div class="flex items-center gap-2">
-                            <button type="button" id="btnExportColsSelectAll" class="text-[10px] text-neutral-600 hover:text-black font-semibold underline">Select All</button>
-                            <span class="text-neutral-300">•</span>
-                            <button type="button" id="btnExportColsResetDefault" class="text-[10px] text-neutral-600 hover:text-black font-semibold underline">Standard Default</button>
+                            <button type="button" id="btnExportColsSelectAll" class="text-[10px] text-slate-600 hover:text-slate-900 font-semibold underline">Select All</button>
+                            <span class="text-slate-300">•</span>
+                            <button type="button" id="btnExportColsResetDefault" class="text-[10px] text-slate-600 hover:text-slate-900 font-semibold underline">Standard Default</button>
                         </div>
                     </div>
 
                     <!-- Sorting Controls -->
-                    <div class="flex items-center gap-3 flex-wrap pb-2 border-b border-neutral-100">
+                    <div class="flex items-center gap-3 flex-wrap pb-2 border-b border-slate-100">
                         <div class="flex items-center gap-1.5">
-                            <span class="text-[10px] font-bold text-neutral-500 uppercase">Sort By:</span>
-                            <select id="exportSortBy" class="bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-neutral-800">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Sort By:</span>
+                            <select id="exportSortBy" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800">
                                 <!-- Options populated dynamically based on dataset -->
                             </select>
                         </div>
 
                         <div class="flex items-center gap-1">
-                            <button type="button" id="btnExportSortAsc" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-black bg-black text-white">Ascending</button>
-                            <button type="button" id="btnExportSortDesc" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100">Descending</button>
+                            <button type="button" id="btnExportSortAsc" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-800 bg-slate-800 text-white">Ascending</button>
+                            <button type="button" id="btnExportSortDesc" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-white text-slate-700 hover:bg-slate-100">Descending</button>
                         </div>
                     </div>
 
@@ -1696,21 +1696,21 @@
                 </div>
 
                 <!-- STEP 5: LIVE PREVIEW STRIP -->
-                <div class="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                    <div class="p-3 bg-neutral-100 border-b border-neutral-200 flex items-center justify-between flex-wrap gap-2">
+                <div class="rounded-xl border border-slate-200 overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span class="text-xs font-bold text-neutral-900" id="exportPreviewCount">Matching Records: Calculating...</span>
-                            <span class="text-[10px] text-neutral-500" id="exportPreviewFiltersSummary">(Active filters)</span>
+                            <span class="text-xs font-bold text-slate-900" id="exportPreviewCount">Matching Records: Calculating...</span>
+                            <span class="text-[10px] text-slate-500" id="exportPreviewFiltersSummary">(Active filters)</span>
                         </div>
-                        <span class="text-[10px] text-neutral-400">Live 5-Row Data Preview</span>
+                        <span class="text-[10px] text-slate-400">Live 5-Row Data Preview</span>
                     </div>
                     <div class="overflow-x-auto max-h-44 overflow-y-auto">
                         <table class="w-full text-left border-collapse text-[11px]" id="exportPreviewTable">
-                            <thead class="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-bold sticky top-0" id="exportPreviewTableHead">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold sticky top-0" id="exportPreviewTableHead">
                                 <!-- Dynamic Headers -->
                             </thead>
-                            <tbody class="divide-y divide-neutral-100 font-mono text-neutral-700" id="exportPreviewTableBody">
+                            <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="exportPreviewTableBody">
                                 <!-- Dynamic Sample Rows -->
                             </tbody>
                         </table>
@@ -1719,23 +1719,23 @@
             </div>
 
             <!-- Modal Action Footer -->
-            <div class="p-3.5 sm:p-4 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between flex-wrap gap-3 shrink-0">
-                <div class="text-[11px] text-neutral-500 flex items-center gap-1.5">
+            <div class="p-3.5 sm:p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-wrap gap-3 shrink-0">
+                <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
                     <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
                     <span>Authenticated Government Extract • Memo 291 & Notif 1809 Compliant</span>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <button type="button" id="btnCloseExportModalFooter" class="px-4 py-2 text-xs font-semibold text-neutral-700 hover:text-black rounded-xl border border-neutral-300 hover:bg-neutral-100 transition">
+                    <button type="button" id="btnCloseExportModalFooter" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-xl border border-slate-300 hover:bg-slate-100 transition">
                         Cancel
                     </button>
 
-                    <button type="button" id="btnDownloadExportExcel" class="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition active:scale-95">
+                    <button type="button" id="btnDownloadExportExcel" class="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs flex items-center gap-1.5 transition active:scale-95">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-100"></i>
                         <span>Download Excel (.xlsx)</span>
                     </button>
 
-                    <button type="button" id="btnDownloadExportDocx" class="px-4 py-2 text-xs font-bold rounded-xl bg-black hover:bg-neutral-800 text-white shadow-sm flex items-center gap-1.5 transition active:scale-95">
+                    <button type="button" id="btnDownloadExportDocx" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-white shadow-xs flex items-center gap-1.5 transition active:scale-95">
                         <i data-lucide="file-text" class="w-4 h-4 text-sky-300"></i>
                         <span>Download Word (.docx)</span>
                     </button>
@@ -2660,7 +2660,7 @@
 
                 <!-- Section 3: Quick Utilities & Actions -->
                 <div class="pt-2 border-t border-slate-100 space-y-2">
-                    <button id="btnMobileDrawerExportReports" class="w-full py-3 px-4 rounded-xl bg-neutral-900 hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 border border-neutral-800 shadow-md transition active:scale-95 touch-target">
+                    <button id="btnMobileDrawerExportReports" class="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 shadow-sm transition active:scale-95 touch-target">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
                         <span>Executive Data Exporter (Excel & Word)</span>
                     </button>

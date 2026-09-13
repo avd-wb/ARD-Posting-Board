@@ -68,15 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!targetTab) return;
         state.currentTab = targetTab;
 
-        // 1. Desktop Tab Buttons (Apple Monochrome Pills)
+        // 1. Desktop Tab Buttons (Executive Slate Pills)
         const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(b => {
             if (b.getAttribute('data-tab') === targetTab) {
-                b.classList.add('bg-white', 'text-black', 'shadow-xs');
-                b.classList.remove('text-neutral-400', 'hover:text-white', 'hover:bg-neutral-800/60');
+                b.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
+                b.classList.remove('text-slate-300', 'text-neutral-400', 'hover:text-white', 'hover:bg-slate-800/60', 'hover:bg-neutral-800/60');
             } else {
-                b.classList.remove('bg-white', 'text-black', 'shadow-xs');
-                b.classList.add('text-neutral-400', 'hover:text-white', 'hover:bg-neutral-800/60');
+                b.classList.remove('bg-white', 'text-slate-900', 'text-black', 'shadow-xs');
+                b.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800/60');
             }
         });
 
@@ -1855,11 +1855,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentFilter = filter;
                 filterBtns.forEach(b => {
                     if (b === btn) {
-                        b.classList.add('bg-black', 'text-white');
-                        b.classList.remove('text-neutral-600', 'hover:bg-neutral-100');
+                        b.classList.add('bg-slate-800', 'text-white');
+                        b.classList.remove('text-slate-600', 'text-neutral-600', 'hover:bg-slate-100', 'hover:bg-neutral-100');
                     } else {
-                        b.classList.remove('bg-black', 'text-white');
-                        b.classList.add('text-neutral-600', 'hover:bg-neutral-100');
+                        b.classList.remove('bg-slate-800', 'bg-black', 'text-white');
+                        b.classList.add('text-slate-600', 'hover:bg-slate-100');
                     }
                 });
                 renderResults();
@@ -1967,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100">
-                                <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-black text-white hover:bg-neutral-800 transition shadow-xs" title="Open Allotment Modal">
+                                <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 text-white hover:bg-slate-700 transition shadow-xs" title="Open Allotment Modal">
                                     Allot
                                 </button>
                             </div>
@@ -2005,7 +2005,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="shrink-0">
-                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-black transition"></i>
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-slate-900 transition"></i>
                             </div>
                         </div>
                     `;
@@ -2038,7 +2038,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                             <div class="shrink-0">
-                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-black transition"></i>
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-slate-900 transition"></i>
                             </div>
                         </div>
                     `;
@@ -2220,11 +2220,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Tab styling
             datasetTabs.forEach(tab => {
                 if (tab.getAttribute('data-export-dataset') === datasetKey) {
-                    tab.classList.add('bg-black', 'text-white', 'shadow-xs');
-                    tab.classList.remove('text-neutral-600', 'hover:text-black');
+                    tab.classList.add('bg-slate-800', 'text-white', 'shadow-xs');
+                    tab.classList.remove('text-slate-600', 'hover:text-slate-900', 'text-neutral-600', 'hover:text-black');
                 } else {
-                    tab.classList.remove('bg-black', 'text-white', 'shadow-xs');
-                    tab.classList.add('text-neutral-600', 'hover:text-black');
+                    tab.classList.remove('bg-slate-800', 'bg-black', 'text-white', 'shadow-xs');
+                    tab.classList.add('text-slate-600', 'hover:text-slate-900');
                 }
             });
 
@@ -2294,9 +2294,9 @@ document.addEventListener('DOMContentLoaded', () => {
             columnsContainer.innerHTML = allColumns.map(col => {
                 const isChecked = selectedKeys.includes(col.key);
                 return `
-                    <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 transition cursor-pointer text-[11px] select-none">
-                        <input type="checkbox" value="${col.key}" ${isChecked ? 'checked' : ''} class="export-col-checkbox rounded border-neutral-300 text-black focus:ring-black">
-                        <span class="truncate text-neutral-800">${col.label}</span>
+                    <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer text-[11px] select-none">
+                        <input type="checkbox" value="${col.key}" ${isChecked ? 'checked' : ''} class="export-col-checkbox rounded border-slate-300 text-slate-800 focus:ring-slate-700">
+                        <span class="truncate text-slate-800">${col.label}</span>
                     </label>
                 `;
             }).join('');
@@ -2312,15 +2312,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updateSortButtons() {
             if (currentExport.sort_order === 'asc') {
-                btnSortAsc?.classList.add('bg-black', 'text-white');
-                btnSortAsc?.classList.remove('bg-white', 'text-neutral-700');
-                btnSortDesc?.classList.add('bg-white', 'text-neutral-700');
-                btnSortDesc?.classList.remove('bg-black', 'text-white');
+                btnSortAsc?.classList.add('bg-slate-800', 'text-white');
+                btnSortAsc?.classList.remove('bg-white', 'text-slate-700', 'text-neutral-700');
+                btnSortDesc?.classList.add('bg-white', 'text-slate-700');
+                btnSortDesc?.classList.remove('bg-slate-800', 'bg-black', 'text-white');
             } else {
-                btnSortDesc?.classList.add('bg-black', 'text-white');
-                btnSortDesc?.classList.remove('bg-white', 'text-neutral-700');
-                btnSortAsc?.classList.add('bg-white', 'text-neutral-700');
-                btnSortAsc?.classList.remove('bg-black', 'text-white');
+                btnSortDesc?.classList.add('bg-slate-800', 'text-white');
+                btnSortDesc?.classList.remove('bg-white', 'text-slate-700', 'text-neutral-700');
+                btnSortAsc?.classList.add('bg-white', 'text-slate-700');
+                btnSortAsc?.classList.remove('bg-slate-800', 'bg-black', 'text-white');
             }
         }
 
@@ -2357,7 +2357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 // Update count and filter summary
-                previewCount.innerHTML = `Matching Records: <span class="font-mono text-black">${Number(data.total_count).toLocaleString()}</span>`;
+                previewCount.innerHTML = `Matching Records: <span class="font-mono text-slate-900 font-bold">${Number(data.total_count).toLocaleString()}</span>`;
                 if (previewFiltersSummary) {
                     const descs = data.filter_descriptions || [];
                     previewFiltersSummary.innerText = descs.length > 0 ? `(${descs.join(' • ')})` : '(No filter applied - Complete Dataset)';
