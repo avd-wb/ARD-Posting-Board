@@ -177,238 +177,184 @@
 </head>
 <body class="bg-[#f5f5f7] text-[#1d1d1f] antialiased min-h-screen flex flex-col font-sans">
 
-    <!-- Top Executive Header with Sticky Wrapper -->
-    <header class="bg-slate-800 backdrop-blur-xl border-b border-slate-700 text-white shadow-sm sticky top-0 z-40">
-        <!-- Animated Confidential Beta & 84h Sync Countdown Banner -->
-        <div id="betaSyncBanner" class="bg-slate-900 border-b border-slate-700/80 px-3 sm:px-6 py-1.5 shadow-inner relative overflow-hidden">
-            <div class="absolute inset-0 pointer-events-none shimmer-bg opacity-25"></div>
-            <div class="max-w-7xl mx-auto hidden sm:flex items-center justify-between gap-2 text-xs relative z-10">
-                <!-- Left: Beta Version -->
-                <div class="flex items-center gap-2 flex-wrap justify-start">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 shadow-xs">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <span>Beta Version · Active Departmental Verification</span>
-                    </span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700 shadow-xs">
-                        <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
-                        <span>Confidential · Internal Administrative Board</span>
-                    </span>
-                </div>
-
-                <!-- Center: Animated Data Syncing -->
-                <div class="flex items-center gap-2 justify-center">
-                    <div class="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">
-                        <i data-lucide="refresh-cw" class="w-3 h-3 text-slate-400 animate-spin" style="animation-duration: 3s;"></i>
-                        <span class="tracking-wider text-[11px] font-medium uppercase">Data Synchronized</span>
+    <!-- Top Executive Header with Sticky Wrapper (Ultra-Compact 80px Height) -->
+    <header class="bg-slate-800 backdrop-blur-xl border-b border-slate-700 text-white shadow-xs sticky top-0 z-40">
+        <!-- Row 1: Executive Brand, Semantic Search & Key Actions (44px) -->
+        <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-5">
+            <div class="flex items-center justify-between h-11 sm:h-12 gap-2 sm:gap-3">
+                <!-- Left: Government Branding & Status -->
+                <div class="flex items-center space-x-2 shrink-0">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-700 flex items-center justify-center border border-slate-600 shadow-inner shrink-0">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-white"></i>
                     </div>
-                </div>
-
-                <!-- Right: 84h Countdown Clock -->
-                <div class="flex items-center gap-2 justify-end">
-                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider hidden md:inline">84h Sync Window:</div>
-                    <div id="countdownCard" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 font-mono text-slate-200 cursor-pointer hover:border-slate-500 transition" title="84-Hour Processing Window starting from 15:45 IST">
-                        <i data-lucide="timer" class="w-3 h-3 text-slate-400 shrink-0"></i>
-                        <div class="flex items-center gap-1 text-xs">
-                            <span id="countdownHours" class="font-bold">84</span>h:
-                            <span id="countdownMinutes" class="font-bold">00</span>m:
-                            <span id="countdownSeconds" class="font-bold">00</span>s
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile View -->
-            <div class="sm:hidden flex items-center justify-between w-full text-[11px] relative z-10 px-0.5">
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Beta
-                </span>
-                <div id="countdownCardMobile" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300">
-                    <i data-lucide="timer" class="w-3 h-3 text-slate-400"></i>
-                    <span><span id="countdownHoursMobile">84</span>h:<span id="countdownMinutesMobile">00</span>m:<span id="countdownSecondsMobile">00</span>s</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Header Bar -->
-        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14 sm:h-16 gap-3">
-                <!-- Left: Government Branding -->
-                <div class="flex items-center space-x-3 shrink-0">
-                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-700 flex items-center justify-center border border-slate-600 shadow-inner shrink-0">
-                        <i data-lucide="shield-check" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
-                    </div>
-                    <div>
+                    <div class="leading-tight">
                         <div class="flex items-center space-x-1.5">
-                            <span class="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase text-slate-400">Govt. of West Bengal</span>
-                            <span class="text-[9px] sm:text-[10px] text-slate-500 hidden xs:inline">| ARD Dept</span>
+                            <span class="text-[9px] font-bold tracking-wider uppercase text-slate-400">Govt. of West Bengal</span>
+                            <span class="text-[9px] text-slate-500 hidden xs:inline">• ARD Dept</span>
                         </div>
-                        <h1 class="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-1.5 leading-tight">
+                        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
                             <span>Smart Posting Decision Board</span>
-                            <span class="text-[9px] bg-slate-700 text-slate-300 border border-slate-600 px-1.5 py-0.2 rounded font-mono hidden md:inline">Decision Maker</span>
+                            <span class="text-[8px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 px-1 py-0.2 rounded font-mono hidden md:inline">Live</span>
                         </h1>
                     </div>
                 </div>
 
                 <!-- Center: Dedicated Universal Semantic Search Bar (Spotlight) -->
-                <div class="flex-1 max-w-md lg:max-w-lg mx-2 sm:mx-4">
-                    <div id="btnOpenSpotlightHeader" class="w-full flex items-center justify-between bg-slate-700/70 hover:bg-slate-700 text-slate-200 border border-slate-600 hover:border-slate-500 rounded-full px-3.5 py-1.5 sm:py-2 cursor-pointer transition group shadow-xs">
+                <div class="flex-1 max-w-sm lg:max-w-md mx-1 sm:mx-3">
+                    <div id="btnOpenSpotlightHeader" class="w-full flex items-center justify-between bg-slate-700/60 hover:bg-slate-700 text-slate-200 border border-slate-600/80 hover:border-slate-500 rounded-lg px-2.5 sm:px-3 py-1 cursor-pointer transition group shadow-xs">
                         <div class="flex items-center gap-2 truncate">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-400 group-hover:text-white transition shrink-0"></i>
-                            <span class="text-xs text-slate-300 group-hover:text-white truncate select-none">Search anything: officer, post, district, order, policy rule...</span>
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition shrink-0"></i>
+                            <span class="text-xs text-slate-300 group-hover:text-white truncate select-none">Search officer, cadre post, order, rule...</span>
                         </div>
-                        <kbd class="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-300 bg-slate-800 border border-slate-600 rounded shadow-xs ml-2 shrink-0">
+                        <kbd class="hidden sm:inline-flex items-center px-1.5 py-0.2 text-[9px] font-mono font-semibold text-slate-300 bg-slate-800 border border-slate-600 rounded shadow-xs ml-1.5 shrink-0">
                             <span>⌘K</span>
                         </kbd>
                     </div>
                 </div>
 
-                <!-- Right: Header Actions -->
-                <div class="flex items-center space-x-2 shrink-0">
-                    <button id="btnOpenExportModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs rounded-full border border-slate-600 transition active:scale-95 touch-target" title="Export Excel & Word Reports">
+                <!-- Right: Header Actions (Countdown, Export, Copilot) -->
+                <div class="flex items-center space-x-1.5 shrink-0">
+                    <!-- 84h Sync Countdown Clock Pill -->
+                    <div id="countdownCard" class="hidden lg:inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-900 border border-slate-700 font-mono text-[11px] text-slate-200 cursor-pointer hover:border-slate-500 transition shadow-xs" title="84-Hour Processing Window starting from 15:45 IST">
+                        <i data-lucide="timer" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                        <span id="countdownHours" class="font-bold">84</span>h:
+                        <span id="countdownMinutes" class="font-bold">00</span>m:
+                        <span id="countdownSeconds" class="font-bold">00</span>s
+                    </div>
+
+                    <!-- Hidden mobile counter to maintain JS binding -->
+                    <div id="countdownCardMobile" class="hidden">
+                        <span id="countdownHoursMobile">84</span>
+                        <span id="countdownMinutesMobile">00</span>
+                        <span id="countdownSecondsMobile">00</span>
+                    </div>
+
+                    <button id="btnOpenExportModal" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs rounded-md border border-slate-600 transition active:scale-95 shadow-xs" title="Export Excel & Word Reports">
                         <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-300"></i>
                         <span class="hidden sm:inline text-[11px]">Export Reports</span>
                     </button>
 
-                    <button id="btnOpenInstallModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs rounded-full border border-slate-600 transition active:scale-95 touch-target" title="Install App">
-                        <i data-lucide="download" class="w-3.5 h-3.5 text-slate-300"></i>
-                        <span class="hidden sm:inline text-[11px]">Install</span>
+                    <button id="btnOpenInstallModal" class="hidden xl:inline-flex items-center gap-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white font-medium text-xs rounded-md border border-slate-600 transition active:scale-95" title="Install App">
+                        <i data-lucide="download" class="w-3 h-3 text-slate-300"></i>
+                        <span class="text-[10px]">Install</span>
                     </button>
 
-                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-full shadow-xs border border-slate-200 transition active:scale-95 touch-target">
+                    <button id="btnToggleAIChat" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-md shadow-xs border border-slate-200 transition active:scale-95">
                         <i data-lucide="bot" class="w-3.5 h-3.5 text-slate-800"></i>
-                        <span class="hidden sm:inline text-[11px]">AI Copilot</span>
+                        <span class="text-[11px]">AI Copilot</span>
                     </button>
 
-                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-slate-700 text-slate-200 touch-target flex items-center justify-center border border-slate-600" title="Open All Modules">
-                        <i data-lucide="menu" class="w-4 h-4"></i>
+                    <button id="btnHeaderMobileMenu" class="md:hidden p-1.5 rounded-md bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-600" title="Open Menu">
+                        <i data-lucide="menu" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Navigation Tabs (Dignified Grey/White Pills) -->
+        <!-- Row 2: Navigation Tabs & Pinned Universal Color Indicator Strip (Single Streamlined Row 36px) -->
         <div class="bg-slate-900 border-t border-slate-700/80">
-            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-                <nav class="flex space-x-1 sm:space-x-1.5 overflow-x-auto py-2 no-scrollbar" id="navTabs">
-                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-900 bg-white flex items-center gap-1.5 transition shadow-xs">
-                        <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
-                        <span>50-Point Roster</span>
-                        <span id="badgeRosterCount" class="text-[10px] bg-slate-200 text-slate-800 font-bold px-1.5 py-0.2 rounded-full">242</span>
+            <div class="w-full max-w-[1600px] mx-auto px-2 sm:px-5 flex items-center justify-between gap-2 h-9 sm:h-10">
+                <!-- Left: Scrollable Navigation Tabs -->
+                <nav class="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1 flex-1 min-w-0" id="navTabs">
+                    <button data-tab="tab-roster" class="tab-btn px-2.5 py-1 text-[11px] font-semibold rounded text-slate-900 bg-white flex items-center gap-1 transition shadow-xs shrink-0">
+                        <i data-lucide="list-ordered" class="w-3 h-3"></i>
+                        <span>50-Pt Roster</span>
+                        <span id="badgeRosterCount" class="text-[9px] bg-slate-200 text-slate-800 font-bold px-1 rounded">242</span>
                     </button>
 
-                    <button data-tab="tab-master-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="award" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span>Master Schedule</span>
-                        <span id="badgeMasterOrdersCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">328</span>
+                    <button data-tab="tab-master-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="award" class="w-3 h-3 text-emerald-400"></i>
+                        <span>Master Sched</span>
+                        <span id="badgeMasterOrdersCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">328</span>
                     </button>
 
-                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i>
-                        <span>Obliterated Posts (1808)</span>
-                        <span id="badgeOblitCount" class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-bold px-1.5 py-0.2 rounded-full">106</span>
+                    <button data-tab="tab-obliterated" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-400"></i>
+                        <span>Obliterated</span>
+                        <span id="badgeOblitCount" class="text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-bold px-1 rounded">106</span>
                     </button>
 
-                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span>Department Cadre (1809)</span>
-                        <span id="badgeCadreTotal" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">1,794</span>
+                    <button data-tab="tab-cadre" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="layout-grid" class="w-3 h-3 text-emerald-400"></i>
+                        <span>Cadre</span>
+                        <span id="badgeCadreTotal" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">1,794</span>
                     </button>
 
-                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
-                        <span>Displaced Pool</span>
-                        <span id="badgeDisplacedCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">0</span>
+                    <button data-tab="tab-displaced" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="users" class="w-3 h-3 text-purple-400"></i>
+                        <span>Displaced</span>
+                        <span id="badgeDisplacedCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="git-merge" class="w-3.5 h-3.5 text-sky-400"></i>
-                        <span>Cascades & Simulation</span>
-                        <span id="badgeSimCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">0</span>
+                    <button data-tab="tab-cascade" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="git-merge" class="w-3 h-3 text-sky-400"></i>
+                        <span>Cascades</span>
+                        <span id="badgeSimCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-300"></i>
-                        <span>Official Orders</span>
-                        <span class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">470</span>
+                    <button data-tab="tab-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="file-text" class="w-3 h-3 text-slate-300"></i>
+                        <span>Orders</span>
+                        <span class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">470</span>
                     </button>
 
-                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="grid" class="w-3.5 h-3.5 text-slate-300"></i>
+                    <button data-tab="tab-visual-grid" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="grid" class="w-3 h-3 text-slate-300"></i>
                         <span>Visualizer</span>
-                        <span id="badgeVisualGridCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">2,038</span>
+                        <span id="badgeVisualGridCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">2,038</span>
                     </button>
 
-                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="book-user" class="w-3.5 h-3.5 text-slate-300"></i>
+                    <button data-tab="tab-master-directory" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="book-user" class="w-3 h-3 text-slate-300"></i>
                         <span>Directory</span>
-                        <span id="badgeMasterCount" class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">1,624</span>
+                        <span id="badgeMasterCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">1,624</span>
                     </button>
 
-                    <button data-tab="tab-organogram" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1.5 transition">
-                        <i data-lucide="network" class="w-3.5 h-3.5 text-slate-300"></i>
+                    <button data-tab="tab-organogram" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="network" class="w-3 h-3 text-slate-300"></i>
                         <span>Organogram</span>
-                        <span class="text-[10px] bg-slate-800 text-slate-300 font-bold px-1.5 py-0.2 rounded-full border border-slate-700">7 Tiers</span>
+                        <span class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">7 Tiers</span>
                     </button>
                 </nav>
-            </div>
-        </div>
 
-        <!-- ==================== UNIVERSAL COLOR INDICATOR PERSISTENT LEGEND BAR ==================== -->
-        <div id="universalColorLegendBar" class="bg-slate-100 border-t border-b border-slate-200 px-3 sm:px-6 py-1.5 text-xs text-slate-700 shadow-2xs">
-            <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 flex-wrap">
-                <div class="flex items-center gap-2 flex-wrap text-[11px]">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 shrink-0">Universal Indicator:</span>
-                    
-                    <!-- GREEN -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-900 text-[10px] sm:text-[11px] font-medium" title="OK: Policy Compliant, Finalized Allotment, Clear Vacancy">
-                        <span class="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
-                        <strong class="text-emerald-950">GREEN:</strong>
-                        <span>OK · Complied · Finalized · Vacant</span>
+                <!-- Right: Pinned Universal Color Indicator Strip & Policy Guide -->
+                <div class="flex items-center gap-1.5 shrink-0 pl-2 border-l border-slate-800">
+                    <!-- Compact Color Pills (Visible on lg+) -->
+                    <div class="hidden lg:flex items-center gap-1 text-[10px]">
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 cursor-help" title="GREEN: OK · Complied · Finalized · Vacant">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>OK</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-950/70 text-rose-300 border border-rose-800/60 cursor-help" title="RED: Needs Attention · Policy Violation · Over-Tenure">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                            <span>Alert</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-800/60 cursor-help" title="YELLOW: Draft · Pending Allotment · Advisory">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span>Draft</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 cursor-help" title="GREY: Not Available · Abolished · Locked">
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span>N/A</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-950/70 text-sky-300 border border-sky-800/60 cursor-help" title="BLUE: Administrative · Substantive · Info">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                            <span>Info</span>
+                        </span>
                     </div>
 
-                    <!-- RED -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-300 text-rose-900 text-[10px] sm:text-[11px] font-medium" title="Needs Attention: Policy Violation, Over-Tenure, Obliterated Post Pending, Collision Risk">
-                        <span class="w-2 h-2 rounded-full bg-rose-600 shrink-0 animate-pulse"></span>
-                        <strong class="text-rose-950">RED:</strong>
-                        <span>Needs Attention · Policy Violation · Over-Tenure</span>
-                    </div>
-
-                    <!-- YELLOW -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-[10px] sm:text-[11px] font-medium" title="Draft / Advisory: Pending Allotment, Administrative Advisory, Exemption Review">
-                        <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                        <strong class="text-amber-950">YELLOW:</strong>
-                        <span>Draft · Pending Allotment · Advisory</span>
-                    </div>
-
-                    <!-- GREY -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 border border-slate-300 text-slate-800 text-[10px] sm:text-[11px] font-medium" title="Unavailable: Abolished Post, Statutorily Locked, Inactive">
-                        <span class="w-2 h-2 rounded-full bg-slate-500 shrink-0"></span>
-                        <strong class="text-slate-900">GREY:</strong>
-                        <span>Not Available · Abolished · Locked</span>
-                    </div>
-
-                    <!-- BLUE -->
-                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 border border-sky-300 text-sky-900 text-[10px] sm:text-[11px] font-medium" title="Administrative: Substantive Post, Official Order, Info">
-                        <span class="w-2 h-2 rounded-full bg-sky-600 shrink-0"></span>
-                        <strong class="text-sky-950">BLUE:</strong>
-                        <span>Administrative · Substantive · Info</span>
-                    </div>
+                    <!-- Policy Criteria Button -->
+                    <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-0.5 rounded transition shrink-0" title="View Transfer Policy 219/2009 Statutory Norms & Criteria">
+                        <span>Policy 219</span>
+                        <span class="text-xs">⚖</span>
+                    </button>
                 </div>
-
-                <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 px-2.5 py-0.5 rounded-full shadow-2xs transition shrink-0 whitespace-nowrap">
-                    <span>Transfer Policy 219/2009 Criteria</span>
-                    <span class="text-xs">⚖</span>
-                </button>
             </div>
         </div>
     </header>
 
-    <!-- Top KPI Status Cards -->
-    <section class="bg-white border-b border-slate-200 shadow-sm py-3 sm:py-4">
+    <!-- Top KPI Status Cards (Compact 55px Height) -->
+    <section class="bg-white border-b border-slate-200 shadow-xs py-2 sm:py-2.5">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
             <!-- Mobile Swipe Hint -->
             <div class="md:hidden flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-1">
@@ -416,108 +362,108 @@
                 <span class="text-[10px] text-slate-400 flex items-center gap-0.5">Swipe stats <i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></span>
             </div>
 
-            <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2.5 pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar" id="kpiStatusCardsGrid">
+            <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar" id="kpiStatusCardsGrid">
                 <!-- 1. Total Posts -->
-                <div id="kpiCardTotalPosts" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-slate-50 hover:bg-wbblue-50 border border-slate-200 hover:border-wbblue-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view all 1,794 Department Cadre Posts in Memo 1809">
-                    <div class="text-[11px] text-slate-500 group-hover:text-wbblue-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50 hover:bg-wbblue-50 border border-slate-200 hover:border-wbblue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view all 1,794 Department Cadre Posts in Memo 1809">
+                    <div class="text-[10px] sm:text-[11px] text-slate-500 group-hover:text-wbblue-700 font-medium flex items-center justify-center gap-1">
                         <span>Total Posts</span>
                         <i data-lucide="layers" class="w-3 h-3 text-wbblue-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-slate-800 group-hover:text-wbblue-800" id="kpiTotalPosts">1,794</div>
-                    <div class="text-[10px] text-slate-400 group-hover:text-wbblue-600 font-medium flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-slate-800 group-hover:text-wbblue-800" id="kpiTotalPosts">1,794</div>
+                    <div class="text-[9px] sm:text-[10px] text-slate-400 group-hover:text-wbblue-600 font-medium flex items-center justify-center gap-0.5">
                         <span>Department Cadre</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 2. Clear Vacancies -->
-                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/80 hover:bg-emerald-100/70 border border-emerald-200 hover:border-emerald-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to filter and view all Clear Vacancies in Department Cadre">
-                    <div class="text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/80 hover:bg-emerald-100/70 border border-emerald-200 hover:border-emerald-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to filter and view all Clear Vacancies in Department Cadre">
+                    <div class="text-[10px] sm:text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
                         <span>Clear Vacancies</span>
                         <i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-emerald-700" id="kpiTotalVacancies">747</div>
-                    <div class="text-[10px] text-emerald-600 font-medium flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-emerald-700" id="kpiTotalVacancies">747</div>
+                    <div class="text-[9px] sm:text-[10px] text-emerald-600 font-medium flex items-center justify-center gap-0.5">
                         <span>Cadre Vacant Posts</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 3. Available DD Posts -->
-                <div id="kpiCardVacantDD" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-blue-50/80 hover:bg-blue-100/70 border border-blue-200 hover:border-blue-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view Available Deputy Director Posts (Promotion Targets)">
-                    <div class="text-[11px] text-blue-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/80 hover:bg-blue-100/70 border border-blue-200 hover:border-blue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Available Deputy Director Posts (Promotion Targets)">
+                    <div class="text-[10px] sm:text-[11px] text-blue-700 font-medium flex items-center justify-center gap-1">
                         <span>Available DD Posts</span>
                         <i data-lucide="award" class="w-3 h-3 text-blue-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-blue-700" id="kpiVacantDD">242</div>
-                    <div class="text-[10px] text-blue-600 flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-blue-700" id="kpiVacantDD">242</div>
+                    <div class="text-[9px] sm:text-[10px] text-blue-600 flex items-center justify-center gap-0.5">
                         <span>Promotion Target</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 4. AD Vacancies -->
-                <div id="kpiCardVacantAD" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-teal-50/80 hover:bg-teal-100/70 border border-teal-200 hover:border-teal-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view all Assistant Director Vacancies for Cadre Absorption">
-                    <div class="text-[11px] text-teal-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardVacantAD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-teal-50/80 hover:bg-teal-100/70 border border-teal-200 hover:border-teal-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view all Assistant Director Vacancies for Cadre Absorption">
+                    <div class="text-[10px] sm:text-[11px] text-teal-700 font-medium flex items-center justify-center gap-1">
                         <span>AD Vacancies</span>
                         <i data-lucide="user-plus" class="w-3 h-3 text-teal-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-teal-700" id="kpiVacantAD">156</div>
-                    <div class="text-[10px] text-teal-600 flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-teal-700" id="kpiVacantAD">156</div>
+                    <div class="text-[9px] sm:text-[10px] text-teal-600 flex items-center justify-center gap-0.5">
                         <span>Cadre Absorption</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 5. 50-Point Roster -->
-                <div id="kpiCardRoster" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-amber-50/80 hover:bg-amber-100/70 border border-amber-200 hover:border-amber-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view 50-Point Roster Panel (242 Promotees)">
-                    <div class="text-[11px] text-amber-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardRoster" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-amber-50/80 hover:bg-amber-100/70 border border-amber-200 hover:border-amber-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view 50-Point Roster Panel (242 Promotees)">
+                    <div class="text-[10px] sm:text-[11px] text-amber-700 font-medium flex items-center justify-center gap-1">
                         <span>50-Pt Roster</span>
                         <i data-lucide="list-ordered" class="w-3 h-3 text-amber-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-amber-700" id="kpiRoster">242</div>
-                    <div class="text-[10px] text-amber-600 flex items-center justify-center gap-0.5" id="kpiRosterSub">
+                    <div class="text-sm sm:text-base font-bold text-amber-700" id="kpiRoster">242</div>
+                    <div class="text-[9px] sm:text-[10px] text-amber-600 flex items-center justify-center gap-0.5" id="kpiRosterSub">
                         <span>Pending: 0</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 6. Obliterated Posts -->
-                <div id="kpiCardObliterated" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-rose-50/80 hover:bg-rose-100/70 border border-rose-200 hover:border-rose-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view Obliterated Posts & Rehabilitation (Memo 1808)">
-                    <div class="text-[11px] text-rose-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardObliterated" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-rose-50/80 hover:bg-rose-100/70 border border-rose-200 hover:border-rose-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Obliterated Posts & Rehabilitation (Memo 1808)">
+                    <div class="text-[10px] sm:text-[11px] text-rose-700 font-medium flex items-center justify-center gap-1">
                         <span>Obliterated Posts</span>
                         <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-rose-700" id="kpiObliterated">106</div>
-                    <div class="text-[10px] text-rose-600 flex items-center justify-center gap-0.5" id="kpiOblitSub">
+                    <div class="text-sm sm:text-base font-bold text-rose-700" id="kpiObliterated">106</div>
+                    <div class="text-[9px] sm:text-[10px] text-rose-600 flex items-center justify-center gap-0.5" id="kpiOblitSub">
                         <span>76 Serving</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 7. Tenure Over (>4/5y) -->
-                <div id="kpiCardOverTenure" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-red-50/80 hover:bg-red-100/70 border border-red-200 hover:border-red-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view Officers who Exceeded Tenure Norms (>4/5y, Memo 291)">
-                    <div class="text-[11px] text-red-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardOverTenure" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-red-50/80 hover:bg-red-100/70 border border-red-200 hover:border-red-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Officers who Exceeded Tenure Norms (>4/5y, Memo 291)">
+                    <div class="text-[10px] sm:text-[11px] text-red-700 font-medium flex items-center justify-center gap-1">
                         <span>Tenure Over (>4/5y)</span>
                         <i data-lucide="clock" class="w-3 h-3 text-red-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-red-700" id="kpiOverTenure">321</div>
-                    <div class="text-[10px] text-red-600 flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-red-700" id="kpiOverTenure">321</div>
+                    <div class="text-[9px] sm:text-[10px] text-red-600 flex items-center justify-center gap-0.5">
                         <span>Memo 291 Exceeded</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
 
                 <!-- 8. Collisions / Displaced -->
-                <div id="kpiCardCollisions" class="kpi-card min-w-[135px] sm:min-w-0 shrink-0 snap-start bg-purple-50/80 hover:bg-purple-100/70 border border-purple-200 hover:border-purple-400 rounded-xl p-3 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:scale-95 select-none group relative" title="Click to view Transferable Displaced Queue Pool">
-                    <div class="text-[11px] text-purple-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardCollisions" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-purple-50/80 hover:bg-purple-100/70 border border-purple-200 hover:border-purple-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Transferable Displaced Queue Pool">
+                    <div class="text-[10px] sm:text-[11px] text-purple-700 font-medium flex items-center justify-center gap-1">
                         <span>Collisions</span>
                         <i data-lucide="users" class="w-3 h-3 text-purple-600"></i>
                     </div>
-                    <div class="text-lg font-bold text-purple-700" id="kpiCollisions">0</div>
-                    <div class="text-[10px] text-purple-600 flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-purple-700" id="kpiCollisions">0</div>
+                    <div class="text-[9px] sm:text-[10px] text-purple-600 flex items-center justify-center gap-0.5">
                         <span>Forced Displacements</span>
-                        <i data-lucide="arrow-right" class="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition"></i>
+                        <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
             </div>
