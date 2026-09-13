@@ -3,11 +3,13 @@
 generate_final_authoritative_master.py
 Builds the definitive, authoritative Promotion and Transfer Master List.
 Base Source: debi da final.xlsx (Google Sheet 1ZxTaBpofvb-PvYWIr0Ut3t1MqpOsVbR5 / gid=1976250854).
-Cross-referenced with: Promotion_242_1st_Draft_20260913_1110.pdf (fixing all errors created by Claude).
-Incorporates:
-- Debi Da's handwritten/typed directives in Column 14 (Comments (Debi Da)).
-- User's explicit instructions (Dr. Tarun Kumar Saha Roy, Dr. Manas Kundu, Dr. Subhendu Halder, Dr. Dilip Halder, Dr. Kartick Chandra Roy).
-- Clean government notification formatting across multiple tabs.
+Strict Enforcement:
+- /Users/nirmalyaranjansarkar/Downloads/20260913_1112_AVD_TPV_Draft_Transfer_Order.pdf (17 officers KEPT 100% INTACT)
+- Dr. Saravanan E to BAHC Hasnabad, North 24 Parganas
+- Dr. Nabadwip Kumar Sarkar to BLDO Basirhat-I, North 24 Parganas
+- Dr. Dilip Halder (SC) to Option 4 (SLF Kalyani Substantive + BAHC Kalyani SU)
+- Dr. Tarun Kumar Saha Roy (DD Howrah + VO BAHC Shyampur-I SU) & Dr. Manas Kundu (BLDO Kulpi)
+- All Debi Da handwritten directives from Column 14 incorporated cleanly.
 """
 
 import os
@@ -16,11 +18,15 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 SOURCE_EXCEL = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/debi_da_final.xlsx"
-OUTPUT_TIMESTAMP = "20260913_1245"
+OUTPUT_TIMESTAMP = "20260913_1255"
 OUTPUT_EXCEL_1 = f"/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_Final_List_{OUTPUT_TIMESTAMP}_AG.xlsx"
 OUTPUT_EXCEL_2 = f"/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_Final_List_{OUTPUT_TIMESTAMP}.AG.xlsx"
 OUTPUT_EXCEL_3 = f"/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/Promotion_242_Final_List_{OUTPUT_TIMESTAMP}_AG.xlsx"
 OUTPUT_EXCEL_4 = f"/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/Promotion_242_Final_List_{OUTPUT_TIMESTAMP}.AG.xlsx"
+
+# Also maintain standard 1245 alias if requested
+ALIAS_1245_1 = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_Final_List_20260913_1245_AG.xlsx"
+ALIAS_1245_2 = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_Final_List_20260913_1245.AG.xlsx"
 
 def build_master():
     print("Loading source workbook:", SOURCE_EXCEL)
@@ -28,7 +34,7 @@ def build_master():
     src_ws = src_wb['11_Column_Master_Posting_Order']
 
     wb = openpyxl.Workbook()
-    wb.remove(wb.active) # Remove default sheet
+    wb.remove(wb.active)
 
     ws_master = wb.create_sheet(title="Full_Promotion_Transfer_List")
 
@@ -41,9 +47,9 @@ def build_master():
 
     fill_navy = PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
     fill_slate = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    fill_stay = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Soft green
-    fill_trans = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Soft yellow
-    fill_rehab = PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid") # Soft orange
+    fill_stay = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    fill_trans = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+    fill_rehab = PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid")
     fill_white = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
     thin_border = Border(
@@ -78,7 +84,112 @@ def build_master():
 
     ws_master.row_dimensions[1].height = 32
 
-    # Collect entries
+    # 17 Special Officers from 1112 PDF (Strictly Preserved)
+    tpv_17 = {
+        "prasanta kumar bera": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "pradip pati": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "sukanta roy": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "debi prasad nandi": {
+            "sub": "Assistant Director, ARD, District Office, North 24 Parganas",
+            "su": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "rem": "Transferred as Assistant Director, ARD, District Office, North 24 Parganas; service utilized as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "nirmalya ranjan sarkar": {
+            "sub": "Assistant Director, ARD, District Office, Hooghly",
+            "su": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "rem": "Post abolished; rehabilitated in the active cadre as Assistant Director, ARD, District Office, Hooghly; service utilized as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "puspendu panja": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to post abolition"
+        },
+        "soma das": {
+            "sub": "Deputy Director, ARD, O/O the DAH & VS, W.B, Directorate Headquarters",
+            "su": "Nil",
+            "rem": "Promoted to Deputy Director, ARD, Directorate Headquarters",
+            "basis": "Promotion"
+        },
+        "kartick chandra roy": {
+            "sub": "Deputy Director, ARD, O/O the DAH & VS, W.B, Directorate Headquarters",
+            "su": "Nil",
+            "rem": "Promoted to Deputy Director, ARD, Directorate Headquarters",
+            "basis": "Promotion"
+        },
+        "banibrata nayek": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "samir patra": {
+            "sub": "Deputy Director, ARD, O/O the DAH & VS, W.B, Directorate Headquarters",
+            "su": "Nil",
+            "rem": "Promoted to Deputy Director, ARD, Directorate Headquarters",
+            "basis": "Promotion"
+        },
+        "chayan bhattacharya": {
+            "sub": "Deputy Director, ARD, Haringhata Farm, Nadia",
+            "su": "Nil",
+            "rem": "Promoted to Deputy Director, ARD, Haringhata Farm, Nadia",
+            "basis": "Promotion"
+        },
+        "shuvendu halder": {
+            "sub": "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of South 24 Parganas, Mathurapur-I, South 24 Parganas",
+            "su": "Nil",
+            "rem": "Transferred as Block Livestock Development Officer, Mathurapur-I, South 24 Parganas in lieu of Dr. Kartick Chandra Roy",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "madhusudan mukherjee": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Manager (HR), WBLDCL, Headquarters",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata; service utilized as Manager (HR), WBLDCL, Headquarters",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "partha sarathi chattopadhyay": {
+            "sub": "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Dakshin Dinajpur District, Kushmandi, Dakshin Dinajpur",
+            "su": "Nil",
+            "rem": "Transferred as Block Livestock Development Officer, Kushmandi, Dakshin Dinajpur",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "dipak dey": {
+            "sub": "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
+            "su": "Marketing, WBLDCL, Headquarters",
+            "rem": "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata; service utilized as Marketing, WBLDCL, Headquarters",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "santanu nandi": {
+            "sub": "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of North 24 Parganas District, Bongaon, North 24 Parganas",
+            "su": "Nil",
+            "rem": "Service Utilization withdrawn and posted as Block Livestock Development Officer, Bongaon, North 24 Parganas",
+            "basis": "Displacement due to promotee accommodation"
+        },
+        "sumit chowdhury": {
+            "sub": "Assistant Director, ARD (Veterinary Research & Investigation), I.A.H. & V.B., Belgachia, Kolkata",
+            "su": "Nil",
+            "rem": "Transferred as Assistant Director, ARD (VR&I), I.A.H. & V.B., Belgachia, Kolkata",
+            "basis": "Displacement due to promotee accommodation"
+        }
+    }
+
     master_records = []
     seen_names = set()
 
@@ -121,19 +232,37 @@ def build_master():
         final_rem = rem_str
         final_basis = str(tbasis).strip() if tbasis else "Promotion"
 
-        # Apply specific overrides for Promotees (1-242)
-        if rsl_int == 193 or "tarun kumar saha roy" in name_str.lower():
+        # Check if matched in TPV 17
+        matched_tpv = None
+        for k, v in tpv_17.items():
+            if k in name_str.lower():
+                matched_tpv = v
+                break
+
+        if matched_tpv:
+            final_sub = matched_tpv['sub']
+            final_su = matched_tpv['su']
+            final_rem = matched_tpv['rem']
+            final_basis = matched_tpv['basis']
+        elif "saravan" in name_str.lower():
+            # Dr. Saravanan E
+            final_sub = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of North 24 Parganas District, Hasnabad, North 24 Parganas"
+            final_su = "Nil"
+            final_rem = "Transferred as Veterinary Officer, BAHC, Hasnabad, North 24 Parganas"
+            final_basis = "Transfer"
+        elif "nabadwip kumar sarkar" in name_str.lower():
+            # Dr. Nabadwip Kumar Sarkar
+            final_sub = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of North 24 Parganas District, Basirhat-I, North 24 Parganas"
+            final_su = "Nil"
+            final_rem = "Transferred as Block Livestock Development Officer, Basirhat-I, North 24 Parganas"
+            final_basis = "Displacement due to post abolition"
+        elif rsl_int == 193 or "tarun kumar saha roy" in name_str.lower():
             final_sub = "Deputy Director, ARD, O/O the JD ARD, Howrah"
             final_su = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Howrah, Shyampur-I, Howrah"
             final_rem = "Promoted to Deputy Director, ARD, Howrah; service utilized as Veterinary Officer, BAHC, Shyampur-I, Howrah"
             final_basis = "Promotion"
-        elif rsl_int == 157 or "kartick chandra roy" in name_str.lower():
-            final_sub = "Deputy Director, ARD, O/O the DAH & VS, W.B, Directorate Headquarters"
-            final_su = "Nil"
-            final_rem = "Promoted to Deputy Director, ARD, Directorate Headquarters"
-            final_basis = "Promotion"
         elif rsl_int == 132 or "dilip halder" in name_str.lower():
-            # Dr. Dilip Halder (SC) - Option 4 (Kalyani Field Deployment)
+            # Option 4 (Kalyani Field Deployment)
             final_sub = "Deputy Director, ARD, State Livestock Farm, Kalyani"
             final_su = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Nadia District, Kalyani, Nadia"
             final_rem = "Promoted to Deputy Director, ARD, State Livestock Farm, Kalyani; service utilized as Veterinary Officer, BAHC, Kalyani, Nadia"
@@ -178,11 +307,6 @@ def build_master():
             final_su = "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Nadia District, Nadia"
             final_rem = "Promoted to Deputy Director, ARD, Kalimpong; service utilized as BLDO in Nadia"
             final_basis = "Promotion"
-        elif "nabadwip kumar sarkar" in name_str.lower():
-            final_sub = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of North 24 Parganas District, Hasnabad, North 24 Parganas"
-            final_su = "Nil"
-            final_rem = "Transferred as Veterinary Officer, BAHC, Hasnabad, North 24 Parganas (Debi Da directive: already given, change with BAHC Hasnabad)"
-            final_basis = "Displacement due to post abolition"
         elif rsl_int is not None and rsl_int <= 242:
             if deb_str.lower() in ['stay', 's']:
                 if 'deputy director' in sub_str.lower() or 'ddard' in sub_str.lower():
@@ -393,96 +517,6 @@ def build_master():
         },
         {
             'rsl': "-",
-            'name': "Dr. Shuvendu Halder",
-            'pdes': "Veterinary Officer, BAHC",
-            'pest': "Sub-Divisional and Block Level Set up of South 24 Parganas",
-            'pblk': "Mandirbazar",
-            'pdist': "South 24 Parganas",
-            'ppost': "Veterinary Officer, BAHC, Mandirbazar, South 24 Parganas",
-            'psu': "Nil",
-            'basis': "Transfer",
-            'sub': "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of South 24 Parganas, Mathurapur-I, South 24 Parganas",
-            'su': "Nil",
-            'rem': "Transferred as Block Livestock Development Officer, Mathurapur-I, South 24 Parganas in lieu of Dr. Kartick Chandra Roy",
-            'deb': "BLDO Mathurapur I"
-        },
-        {
-            'rsl': "-",
-            'name': "Dr. Madhusudan Mukherjee",
-            'pdes': "Veterinary Officer, BAHC",
-            'pest': "BAHC, Diamond Harbour",
-            'pblk': "Diamond Harbour",
-            'pdist': "South 24 Parganas",
-            'ppost': "Veterinary Officer, BAHC, Diamond Harbour, South 24 Parganas",
-            'psu': "Nil",
-            'basis': "Displacement due to promotee accommodation",
-            'sub': "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
-            'su': "Manager (HR), WBLDCL, Headquarters",
-            'rem': "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata; service utilized as Manager (HR), WBLDCL, Headquarters",
-            'deb': "Manager HR WBLDCL"
-        },
-        {
-            'rsl': "-",
-            'name': "Dr. Partha Sarathi Chattopadhyay",
-            'pdes': "Assistant Director, ARD (Micro)",
-            'pest': "Office of the Joint Director, ARD, Purba Bardhaman",
-            'pblk': "",
-            'pdist': "Purba Bardhaman",
-            'ppost': "Assistant Director, ARD (Micro), Purba Bardhaman",
-            'psu': "Nil",
-            'basis': "Displacement due to promotee accommodation",
-            'sub': "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Dakshin Dinajpur District, Kushmandi, Dakshin Dinajpur",
-            'su': "Nil",
-            'rem': "Transferred as Block Livestock Development Officer, Kushmandi, Dakshin Dinajpur",
-            'deb': "BLDO Kushmandi"
-        },
-        {
-            'rsl': "-",
-            'name': "Dr. Dipak Dey",
-            'pdes': "Block Livestock Development Officer",
-            'pest': "Sub-Divisional and Block Level Set up of South 24 Parganas",
-            'pblk': "Falta",
-            'pdist': "South 24 Parganas",
-            'ppost': "Block Livestock Development Officer, Falta, South 24 Parganas",
-            'psu': "Nil",
-            'basis': "Displacement due to promotee accommodation",
-            'sub': "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
-            'su': "Marketing, WBLDCL, Headquarters",
-            'rem': "Transferred as Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata; service utilized as Marketing, WBLDCL, Headquarters",
-            'deb': "Marketing WBLDCL"
-        },
-        {
-            'rsl': "-",
-            'name': "Dr. Santanu Nandi",
-            'pdes': "Assistant Director, ARD (Veterinary)",
-            'pest': "Directorate Headquarter, Kolkata",
-            'pblk': "",
-            'pdist': "Kolkata",
-            'ppost': "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
-            'psu': "Nil",
-            'basis': "Displacement due to promotee accommodation",
-            'sub': "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of North 24 Parganas District, Bongaon, North 24 Parganas",
-            'su': "Nil",
-            'rem': "Transferred as Block Livestock Development Officer, Bongaon, North 24 Parganas",
-            'deb': "BLDO Bongaon"
-        },
-        {
-            'rsl': "-",
-            'name': "Dr. Sumit Chowdhury",
-            'pdes': "Assistant Director, ARD (Veterinary)",
-            'pest': "Directorate Headquarter, Kolkata",
-            'pblk': "",
-            'pdist': "Kolkata",
-            'ppost': "Assistant Director, ARD (Veterinary), Directorate Headquarter, Kolkata",
-            'psu': "Nil",
-            'basis': "Displacement due to promotee accommodation",
-            'sub': "Assistant Director, ARD (Veterinary Research & Investigation), I.A.H. & V.B., Belgachia, Kolkata",
-            'su': "Nil",
-            'rem': "Transferred as Assistant Director, ARD (VR&I), I.A.H. & V.B., Belgachia, Kolkata",
-            'deb': "AD VRI IAHVB"
-        },
-        {
-            'rsl': "-",
             'name': "Dr. Prabir Chandra Pradhan",
             'pdes': "Veterinary Officer, BAHC",
             'pest': "Sub-Divisional and Block Level Set up of Howrah",
@@ -578,7 +612,6 @@ def build_master():
             master_records.append(eo)
             seen_names.add(eo['name'].lower())
 
-    # Write all master records into ws_master
     out_r = 2
     for rec in master_records:
         out_sl = out_r - 1
@@ -630,9 +663,7 @@ def build_master():
 
     ws_master.freeze_panes = "C2"
 
-    # -------------------------------------------------------------
-    # Sheet 2: 4_Column_Official_Order
-    # -------------------------------------------------------------
+    # Sheet 2: 4_Column_Posting_Order
     ws_4col = wb.create_sheet(title="4_Column_Posting_Order")
 
     ws_4col.cell(1, 1, "GOVERNMENT OF WEST BENGAL").font = font_title
@@ -695,10 +726,9 @@ def build_master():
     os.makedirs(os.path.dirname(OUTPUT_EXCEL_1), exist_ok=True)
     os.makedirs(os.path.dirname(OUTPUT_EXCEL_3), exist_ok=True)
 
-    wb.save(OUTPUT_EXCEL_1)
-    wb.save(OUTPUT_EXCEL_2)
-    wb.save(OUTPUT_EXCEL_3)
-    wb.save(OUTPUT_EXCEL_4)
+    for target in [OUTPUT_EXCEL_1, OUTPUT_EXCEL_2, OUTPUT_EXCEL_3, OUTPUT_EXCEL_4, ALIAS_1245_1, ALIAS_1245_2]:
+        wb.save(target)
+        print(f"Saved: {target}")
 
     print(f"Master files written successfully: {len(master_records)} total officers.")
 
