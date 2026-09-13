@@ -1030,6 +1030,14 @@ def build_master():
         print(f"Saved: {target}")
 
     print(f"Master files written successfully: {len(master_records)} total officers.")
+    
+    # Enforce sacrosanct current posting rectifications into DB and workbooks
+    try:
+        from fix_schedule_current_postings import run_fix
+        run_fix()
+    except Exception as e:
+        print(f"Warning during post-processing fix: {e}")
+
     return master_records
 
 if __name__ == "__main__":

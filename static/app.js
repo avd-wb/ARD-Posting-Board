@@ -505,8 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (c.children_board_exams && c.children_board_exams !== '—') {
                     welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold" title="Children Board Exam ${c.children_board_exams}">Exam: ${c.children_board_exams}</span>`);
                 }
-                if (c.spouse_is_wbahvs) {
-                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-bold" title="Spouse in WBAHVS / Public Service">Spouse WBAHVS</span>`);
+                if (c.spouse_is_wbahvs === 'Yes' || c.is_spouse_cadre_matched === 1) {
+                    const isSame = c.cross_spouse_same_district === 1;
+                    const spBadgeText = isSame ? 'Spouse Cadre (Same Dist)' : 'Spouse Cadre (Split)';
+                    const spBadgeColor = isSame ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300';
+                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded ${spBadgeColor} text-[9px] font-bold border" title="Spouse in Cadre: ${c.cross_spouse_name || 'Cadre Member'} (${isSame ? 'Co-located' : 'Separate Districts'})">${spBadgeText}</span>`);
                 }
                 if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
                     welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold" title="Medical Grounds">Medical</span>`);
@@ -619,8 +622,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (c.children_board_exams && c.children_board_exams !== '—') {
                         welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200">Exam: ${c.children_board_exams}</span>`);
                     }
-                    if (c.spouse_is_wbahvs) {
-                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200">Spouse WBAHVS</span>`);
+                    if (c.spouse_is_wbahvs === 'Yes' || c.is_spouse_cadre_matched === 1) {
+                        const isSame = c.cross_spouse_same_district === 1;
+                        const spBadgeText = isSame ? 'Spouse Cadre (Same Dist)' : 'Spouse Cadre (Split)';
+                        const spBadgeColor = isSame ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200';
+                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg ${spBadgeColor} text-[10px] font-bold border">${spBadgeText}</span>`);
                     }
                     if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
                         welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">Medical Grounds</span>`);
@@ -3216,12 +3222,59 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `);
             }
-            if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard') && !d.spouse_service_details.includes('No spouse')) {
+            if (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) {
+                const sp = d.dynamic_spouse_info;
+                const coLocBadge = sp.is_same_district
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold border border-emerald-300 shadow-2xs">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Co-located in ${sp.spouse_current_district || 'Same District'}
+                       </span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 shadow-2xs">
+                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Cross-District (${d.district || 'Current'} ↔ ${sp.spouse_current_district || 'Spouse Post'})
+                       </span>`;
+
+                welfareAlerts.push(`
+                    <div class="p-3.5 rounded-xl bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/90 border-2 border-amber-300 text-amber-950 shadow-xs space-y-2.5">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2 font-bold text-amber-900 text-sm">
+                                <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
+                                <span>Spouse in WBAH&VS Cadre (Dynamic Cadre Match)</span>
+                            </div>
+                            ${coLocBadge}
+                        </div>
+                        <div class="text-xs bg-white/95 p-3 rounded-lg border border-amber-200 shadow-2xs space-y-1.5">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <strong class="text-slate-700">Spouse Name:</strong> 
+                                    <span class="font-bold text-slate-900 text-sm">${sp.spouse_name}</span>
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">HRMS: ${sp.spouse_hrms}</span>
+                                </div>
+                                <button type="button" onclick="openOfficerDossier('${sp.spouse_hrms}')" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer">
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Spouse Dossier
+                                </button>
+                            </div>
+                            <div class="text-slate-800 text-xs">
+                                <span class="text-slate-600 font-medium">Live Designation:</span> 
+                                <span class="font-bold text-slate-900">${sp.spouse_current_designation || 'Veterinary Cadre Officer'}</span>
+                            </div>
+                            <div class="text-slate-800 text-xs">
+                                <span class="text-slate-600 font-medium">Station & District:</span> 
+                                <span class="font-semibold text-slate-900">${sp.spouse_current_district || '—'}</span>
+                                ${sp.spouse_current_establishment ? `<span class="text-slate-500 font-normal"> (${sp.spouse_current_establishment})</span>` : ''}
+                            </div>
+                            ${sp.spouse_current_posting ? `<div class="text-[11px] text-slate-500 font-mono bg-slate-50 p-1.5 rounded border border-slate-200/80 leading-relaxed">${sp.spouse_current_posting}</div>` : ''}
+                        </div>
+                        <div class="text-[11px] text-amber-950 font-medium flex items-center gap-1.5 bg-amber-100/70 p-2 rounded-md border border-amber-200/80">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-amber-700 shrink-0"></i>
+                            <span><strong>Statutory Safeguard:</strong> Transfer Policy 2009 (Memo 291 Clause 7) entitles working spouses to co-location within same station/district.</span>
+                        </div>
+                    </div>
+                `);
+            } else if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard') && !d.spouse_service_details.includes('No spouse') && !d.spouse_service_details.toLowerCase().includes('confidential')) {
                 welfareAlerts.push(`
                     <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
                         <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
                         <div>
-                            <span class="font-bold text-amber-950">Spouse in Public Service:</span> ${d.spouse_service_details}
+                            <span class="font-bold text-amber-950">Spouse in Public Service:</span> ${d.spouse_name ? `<strong class="text-slate-900">${d.spouse_name}</strong> — ` : ''}${d.spouse_service_details}
                             <div class="text-[10px] text-amber-700 font-medium mt-0.5">Memo 291 Clause 7 Co-location safeguard applies for working spouses.</div>
                         </div>
                     </div>
@@ -3239,7 +3292,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Stated Field Preferences (1 to 8 + free text)
-            const rawPrefs = d.preferences_list && d.preferences_list.length > 0 ? d.preferences_list : Object.entries(d.preferences || {});
+            let rawPrefs = [];
+            if (Array.isArray(d.preferences_list) && d.preferences_list.length > 0) {
+                rawPrefs = d.preferences_list.map((item, idx) => {
+                    if (Array.isArray(item)) return item;
+                    if (item && typeof item === 'object') {
+                        const rank = item.rank || (idx + 1);
+                        const label = item.type || `Preference #${rank}`;
+                        const val = [item.establishment_name, item.establishment_type, item.district].filter(Boolean).join(' - ') || JSON.stringify(item);
+                        return [label, val];
+                    }
+                    return [`Preference #${idx + 1}`, String(item)];
+                });
+            } else if (d.preferences && typeof d.preferences === 'object') {
+                rawPrefs = Object.entries(d.preferences);
+            }
             let prefsHtml = '';
             if (rawPrefs.length > 0) {
                 prefsHtml = rawPrefs.map(([k, v]) => {
@@ -3695,20 +3762,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- TAB 4: FAMILY & WELFARE SAFEGUARDS -->
                 <div id="dossierSecFamily" class="dossier-sec hidden space-y-4">
                     <!-- Spouse Matter -->
-                    <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-2.5">
-                        <div class="font-bold text-amber-900 flex items-center gap-1.5">
-                            <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
-                            <span>Spouse Public Service Profile & Co-Location Safeguards (Memo 291)</span>
+                    <div class="p-3.5 rounded-xl border-2 border-amber-200 bg-amber-50/40 space-y-2.5">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="font-bold text-amber-900 flex items-center gap-1.5 text-sm">
+                                <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
+                                <span>Spouse Public Service Profile & Co-Location Safeguards (Memo 291)</span>
+                            </div>
+                            ${d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched ? `
+                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${d.dynamic_spouse_info.is_same_district ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                                    ${d.dynamic_spouse_info.is_same_district ? 'Co-located in Same District' : 'Cross-District Station'}
+                                </span>
+                            ` : ''}
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-amber-200">
-                            <div><strong class="text-slate-600">Spouse Name:</strong> <span class="text-slate-900 font-semibold">${d.spouse_name || 'Not recorded'}</span></div>
-                            <div><strong class="text-slate-600">Department:</strong> <span class="text-slate-800">${d.spouse_dept || '—'}</span></div>
-                            <div><strong class="text-slate-600">Designation:</strong> <span class="text-slate-800">${d.spouse_desig || '—'}</span></div>
-                            <div><strong class="text-slate-600">Posting Station:</strong> <span class="text-slate-800">${d.spouse_block ? `${d.spouse_block}, ` : ''}${d.spouse_district || '—'}</span></div>
-                            <div><strong class="text-slate-600">Is WBAH&VS Member:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.spouse_is_wbahvs === 'Yes' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">${d.spouse_is_wbahvs || 'No'}</span></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs bg-white p-3 rounded-lg border border-amber-200">
+                            <div class="flex items-center justify-between flex-wrap gap-1">
+                                <div><strong class="text-slate-600">Spouse Name:</strong> <span class="text-slate-900 font-semibold">${d.spouse_name || 'Not recorded'}</span></div>
+                                ${d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_hrms ? `
+                                    <button type="button" onclick="openOfficerDossier('${d.dynamic_spouse_info.spouse_hrms}')" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 cursor-pointer">
+                                        View Spouse Dossier →
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div><strong class="text-slate-600">Department:</strong> <span class="text-slate-800">${d.spouse_dept || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched ? 'WBAH&VS (ARD Department)' : '—')}</span></div>
+                            <div><strong class="text-slate-600">Live Designation:</strong> <span class="text-slate-800 font-medium">${(d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_current_designation) || d.spouse_desig || '—'}</span></div>
+                            <div><strong class="text-slate-600">Live Station / District:</strong> <span class="text-slate-800 font-medium">${(d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_current_district) || d.spouse_district || '—'}</span></div>
+                            <div class="sm:col-span-2 flex items-center gap-2">
+                                <strong class="text-slate-600">WBAH&VS Cadre Status:</strong> 
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.spouse_is_wbahvs === 'Yes' || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-700'}">
+                                    ${d.spouse_is_wbahvs === 'Yes' || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) ? 'Active WBAH&VS Cadre Member (Verified Live)' : (d.spouse_is_wbahvs || 'No')}
+                                </span>
+                            </div>
                         </div>
-                        <div class="text-xs text-amber-950 bg-amber-100/60 p-2.5 rounded border border-amber-300/60 leading-relaxed">
-                            <strong>Statutory Safeguard Note:</strong> ${d.spouse_service_details}
+                        <div class="text-xs text-amber-950 bg-amber-100/70 p-2.5 rounded border border-amber-300/70 leading-relaxed">
+                            <strong>Statutory Safeguard Note:</strong> ${d.spouse_service_details || 'Memo 291 Clause 7 Co-location safeguard applies.'}
                         </div>
                     </div>
 

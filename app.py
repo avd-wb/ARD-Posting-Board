@@ -547,6 +547,11 @@ def get_roster_candidates(
            e.spouse_service_details, e.spouse_is_wbahvs,
            e.children_board_exams, e.health_conditions,
            e.qualifications, e.mvsc_specialization,
+           sc.spouse_hrms as cross_spouse_hrms,
+           sc.spouse_name as cross_spouse_name,
+           sc.spouse_current_district as cross_spouse_district,
+           sc.is_same_district as cross_spouse_same_district,
+           CASE WHEN sc.officer_hrms IS NOT NULL THEN 1 ELSE 0 END as is_spouse_cadre_matched,
            m.sl_no as master_sl,
            m.transferred_substantive_post as master_sub,
            m.service_utilized_at as master_su,
@@ -555,6 +560,7 @@ def get_roster_candidates(
            m.comments_directive as master_comments
     FROM roster_50_point_candidates r
     LEFT JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
+    LEFT JOIN spouse_cadre_crosswalk sc ON r.hrms_id = sc.officer_hrms
     LEFT JOIN master_final_order_schedule m ON (m.roster_sl = CAST(r.sl_no AS TEXT))
     WHERE 1=1
     """
@@ -570,12 +576,19 @@ def get_roster_candidates(
 
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (r.officer_name LIKE ? OR r.hrms_id LIKE ? OR r.present_posting LIKE ? OR r.present_block LIKE ? OR r.present_district LIKE ? OR e.mobile LIKE ? OR e.email LIKE ?)"
-        params.extend([s, s, s, s, s, s, s])
+        query += """ AND (
+            r.officer_name LIKE ? OR 
+            r.hrms_id LIKE ? OR 
+            r.present_posting LIKE ? OR 
+            r.present_district LIKE ? OR
+            r.caste LIKE ?
+        )"""
+        params.extend([s, s, s, s, s])
 
-    query += " ORDER BY r.sl_no"
+    query += " ORDER BY r.sl_no ASC"
+
     cur.execute(query, params)
-    raw_rows = [dict(r) for r in cur.fetchall()]
+    raw_rows = [dict(row) for row in cur.fetchall()]
     conn.close()
 
     # Dynamic calculation of active sequence serial (skipping retired / superannuated)
@@ -603,6 +616,20 @@ def get_roster_candidates(
         else:
             row["active_roster_sl"] = active_counter
             active_counter += 1
+
+        # Strict privacy redaction for specific officers
+        if str(row.get("hrms_id")) in ('2014000243', '2014000530'):
+            row["mobile"] = "—"
+            row["alt_mobile"] = ""
+            row["whatsapp"] = "—"
+            row["email"] = "—"
+            row["home_district"] = "—"
+            row["current_address"] = "Personal address confidential"
+            row["spouse_is_wbahvs"] = "No"
+            row["spouse_service_details"] = "Personal data confidential."
+            row["is_spouse_cadre_matched"] = 0
+            row["cross_spouse_hrms"] = None
+            row["cross_spouse_name"] = None
 
         processed_rows.append(row)
 

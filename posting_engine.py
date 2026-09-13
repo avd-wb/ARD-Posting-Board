@@ -1181,6 +1181,49 @@ class PostingEngine:
         mf_row = cur.fetchone()
         master_final_order = dict(mf_row) if mf_row else None
 
+        # Dynamic Spouse Intelligence lookup
+        dynamic_spouse = None
+        if hrms_id not in ('2014000243', '2014000530'):
+            cur.execute("SELECT * FROM spouse_cadre_crosswalk WHERE officer_hrms = ?", (hrms_id,))
+            sp_row = cur.fetchone()
+            if sp_row:
+                dynamic_spouse = dict(sp_row)
+                dynamic_spouse["is_cadre_matched"] = True
+                
+                # Fetch real-time live posting of spouse from cadre_1794_posts
+                cur.execute("SELECT designation, establishment, district, detailed_presentation FROM cadre_1794_posts WHERE incumbent_hrms = ?", (dynamic_spouse["spouse_hrms"],))
+                sp_cadre_p = cur.fetchone()
+                if sp_cadre_p:
+                    sp_cp = dict(sp_cadre_p)
+                    dynamic_spouse["spouse_current_designation"] = sp_cp.get("designation") or dynamic_spouse.get("spouse_current_designation")
+                    dynamic_spouse["spouse_current_posting"] = sp_cp.get("detailed_presentation") or dynamic_spouse.get("spouse_current_posting")
+                    dynamic_spouse["spouse_current_establishment"] = sp_cp.get("establishment") or dynamic_spouse.get("spouse_current_establishment")
+                    dynamic_spouse["spouse_current_district"] = sp_cp.get("district") or dynamic_spouse.get("spouse_current_district")
+                
+                # Dynamic co-location verification
+                off_dist = (officer.get("present_district") or officer.get("district") or "").strip()
+                sp_dist = (dynamic_spouse.get("spouse_current_district") or "").strip()
+                is_same = 1 if (off_dist and sp_dist and off_dist.lower() == sp_dist.lower()) else 0
+                dynamic_spouse["is_same_district"] = is_same
+                dynamic_spouse["officer_district"] = off_dist
+            elif officer.get("spouse_name") and officer.get("spouse_name") not in ("—", "", "None"):
+                off_dist = (officer.get("present_district") or officer.get("district") or "").strip()
+                sp_dist = (officer.get("spouse_district") or "").strip()
+                is_same = 1 if (off_dist and sp_dist and off_dist.lower() == sp_dist.lower()) else 0
+                dynamic_spouse = {
+                    "officer_hrms": hrms_id,
+                    "officer_name": officer.get("officer_name"),
+                    "officer_district": off_dist,
+                    "spouse_name": officer.get("spouse_name"),
+                    "spouse_hrms": None,
+                    "spouse_current_designation": officer.get("spouse_desig") or "—",
+                    "spouse_current_posting": f"{officer.get('spouse_dept') or 'State / Public Service'} ({officer.get('spouse_block') or ''} {officer.get('spouse_district') or ''})".strip(),
+                    "spouse_current_establishment": officer.get("spouse_dept") or "—",
+                    "spouse_current_district": officer.get("spouse_district") or "—",
+                    "is_same_district": is_same,
+                    "is_cadre_matched": False
+                }
+
         conn.close()
 
         if not officer:
@@ -1292,13 +1335,14 @@ class PostingEngine:
             "temp_address": officer.get("temp_address") or "",
             "post_retirement_district": officer.get("post_retirement_district") or "",
             "marital_status": officer.get("marital_status") or "—",
-            "spouse_name": officer.get("spouse_name") or "",
-            "spouse_dept": officer.get("spouse_dept") or "",
-            "spouse_desig": officer.get("spouse_desig") or "",
-            "spouse_district": officer.get("spouse_district") or "",
+            "spouse_name": dynamic_spouse["spouse_name"] if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_name") or ""),
+            "spouse_dept": "WBAH&VS (ARD Department)" if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_dept") or ""),
+            "spouse_desig": dynamic_spouse["spouse_current_designation"] if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_desig") or ""),
+            "spouse_district": dynamic_spouse["spouse_current_district"] if dynamic_spouse else (officer.get("spouse_district") or ""),
             "spouse_block": officer.get("spouse_block") or "",
-            "spouse_is_wbahvs": officer.get("spouse_is_wbahvs") or "No",
+            "spouse_is_wbahvs": "Yes" if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_is_wbahvs") or "No"),
             "spouse_service_details": officer.get("spouse_service_details") or "No spouse co-location claim recorded.",
+            "dynamic_spouse_info": dynamic_spouse,
             "children_count": officer.get("children_count") or "0",
             "children_board_exams": officer.get("children_board_exams") or "",
             "family_dependencies": officer.get("family_dependencies") or officer.get("family_details") or "Standard family dependencies.",
@@ -1333,6 +1377,31 @@ class PostingEngine:
             "latest_allotment": officer.get("current_simulation_assignment"),
             "master_final_order": master_final_order
         }
+
+        # Strict privacy redactions for specified officers
+        if str(hrms_id) in ('2014000243', '2014000530'):
+            dossier["mobile"] = "—"
+            dossier["alt_mobile"] = ""
+            dossier["whatsapp"] = "—"
+            dossier["email"] = "—"
+            dossier["home_district"] = "—"
+            dossier["current_address"] = "Personal address confidential"
+            dossier["ancestral_address"] = "Personal address confidential"
+            dossier["temp_address"] = ""
+            dossier["current_pin"] = ""
+            dossier["spouse_name"] = "—"
+            dossier["spouse_dept"] = "—"
+            dossier["spouse_desig"] = "—"
+            dossier["spouse_district"] = "—"
+            dossier["spouse_block"] = "—"
+            dossier["spouse_is_wbahvs"] = "No"
+            dossier["spouse_service_details"] = "Personal data confidential."
+            dossier["dynamic_spouse_info"] = None
+            dossier["children_count"] = "—"
+            dossier["children_board_exams"] = ""
+            dossier["family_dependencies"] = "Confidential"
+            dossier["health_conditions"] = "—"
+            dossier["health_details"] = ""
 
         if not dossier["preferences"] and officer.get("all_preferences"):
             dossier["preferences_summary"] = officer.get("all_preferences")
