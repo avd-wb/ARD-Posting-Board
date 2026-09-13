@@ -536,6 +536,7 @@ def get_roster_candidates(
 
     query = """
     SELECT r.*, 
+           COALESCE(r.gender, e.gender, 'Male') as gender,
            COALESCE(e.attention_flag, 0) as attention_flag, 
            e.attention_reason, 
            COALESCE(e.needs_backfill, 0) as needs_backfill, 
@@ -574,10 +575,154 @@ def get_roster_candidates(
 
     query += " ORDER BY r.sl_no"
     cur.execute(query, params)
+    raw_rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    # Dynamic calculation of active sequence serial (skipping retired / superannuated)
+    active_counter = 1
+    processed_rows = []
+    for row in raw_rows:
+        status = (row.get("service_status") or "").strip().lower()
+        is_ret = 1 if status in ["retired", "superannuated", "deceased", "left service"] else 0
+
+        # Check DOR vs 01.09.2026
+        dor = row.get("dor") or row.get("service_ends") or ""
+        if dor and not is_ret:
+            parts = dor.replace("-", "/").split("/")
+            if len(parts) == 3:
+                try:
+                    d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+                    if y < 2026 or (y == 2026 and m < 9):
+                        is_ret = 1
+                except (ValueError, IndexError):
+                    pass
+
+        row["is_retired"] = is_ret
+        if is_ret:
+            row["active_roster_sl"] = None
+        else:
+            row["active_roster_sl"] = active_counter
+            active_counter += 1
+
+        processed_rows.append(row)
+
+    return {"count": len(processed_rows), "data": processed_rows}
+
+
+@app.get("/api/gradation")
+def get_gradation_list(
+    grade_section: Optional[str] = None,
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    gender: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 100
+):
+    """
+    Returns dynamic gradation list brought forward from published list No. 3768-AR&AH.
+    Retired officers maintain their historical 2025 sequence, have sl_2026 = None, and are marked is_retired = 1.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    base_query = "FROM official_gradation_list WHERE 1=1"
+    params = []
+
+    if grade_section and grade_section != "ALL":
+        base_query += " AND grade_section = ?"
+        params.append(grade_section)
+
+    if status and status != "ALL":
+        if status.lower() == "serving":
+            base_query += " AND is_retired = 0"
+        elif status.lower() in ["retired", "superannuated"]:
+            base_query += " AND is_retired = 1"
+
+    if category and category != "ALL":
+        base_query += " AND UPPER(category) = UPPER(?)"
+        params.append(category)
+
+    if gender and gender != "ALL":
+        base_query += " AND gender = ?"
+        params.append(gender)
+
+    if search:
+        s = f"%{search.strip()}%"
+        base_query += " AND (officer_name LIKE ? OR clean_name LIKE ? OR hrms_id LIKE ? OR present_posting LIKE ? OR qualifications LIKE ?)"
+        params.extend([s, s, s, s, s])
+
+    # Count query
+    count_query = f"SELECT COUNT(*) {base_query}"
+    cur.execute(count_query, params)
+    total_count = cur.fetchone()[0]
+
+    # Data query
+    data_query = f"""
+        SELECT id, grade_section, sl_2025, sl_2026, status_2026, is_retired,
+               officer_name, clean_name, hrms_id, gender, qualifications,
+               dob, age, doj, dor, category, avd_member, present_posting,
+               recommended_post, recommendation_reason, remarks, record_sha256
+        {base_query}
+        ORDER BY id ASC
+    """
+    if page_size > 0:
+        offset = (page - 1) * page_size
+        data_query += f" LIMIT {page_size} OFFSET {offset}"
+
+    cur.execute(data_query, params)
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
 
-    return {"count": len(rows), "data": rows}
+    return {
+        "count": total_count,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (total_count + page_size - 1) // page_size if page_size > 0 else 1,
+        "data": rows
+    }
+
+
+@app.get("/api/gradation/stats")
+def get_gradation_stats():
+    """
+    Returns summary metrics for the dynamic Gradation List:
+    Total, Serving, Retired, Male, Female, and breakdown across Grade Sections.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    total = cur.execute("SELECT COUNT(*) FROM official_gradation_list").fetchone()[0]
+    serving = cur.execute("SELECT COUNT(*) FROM official_gradation_list WHERE is_retired = 0").fetchone()[0]
+    retired = cur.execute("SELECT COUNT(*) FROM official_gradation_list WHERE is_retired = 1").fetchone()[0]
+    female = cur.execute("SELECT COUNT(*) FROM official_gradation_list WHERE gender = 'Female'").fetchone()[0]
+    male = cur.execute("SELECT COUNT(*) FROM official_gradation_list WHERE gender = 'Male'").fetchone()[0]
+
+    sections_raw = cur.execute("""
+        SELECT grade_section,
+               COUNT(*) as total,
+               SUM(CASE WHEN is_retired = 0 THEN 1 ELSE 0 END) as serving,
+               SUM(CASE WHEN is_retired = 1 THEN 1 ELSE 0 END) as retired
+        FROM official_gradation_list
+        GROUP BY grade_section
+        ORDER BY MIN(id) ASC
+    """).fetchall()
+
+    sections = [
+        {"section": r["grade_section"], "total": r["total"], "serving": r["serving"], "retired": r["retired"]}
+        for r in sections_raw
+    ]
+
+    conn.close()
+    return {
+        "total": total,
+        "serving": serving,
+        "retired": retired,
+        "female": female,
+        "male": male,
+        "sections": sections
+    }
+
 
 @app.get("/api/posts/visual-grid")
 def get_posts_visual_grid_endpoint(

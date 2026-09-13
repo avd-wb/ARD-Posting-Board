@@ -224,6 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
             loadRoster();
         } else if (targetTab === 'tab-master-orders') {
             loadMasterOrders();
+        } else if (targetTab === 'tab-gradation') {
+            loadGradationList();
         } else if (targetTab === 'tab-obliterated') {
             loadObliterated();
         } else if (targetTab === 'tab-cadre') {
@@ -259,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tabNameMap = {
                 'tab-roster': '50-Point Roster',
                 'tab-master-orders': 'Master Schedule',
+                'tab-gradation': 'Gradation List',
                 'tab-obliterated': 'Obliterated Posts',
                 'tab-cadre': 'Cadre & Vacancies',
                 'tab-map': 'Cadre GIS Map',
@@ -509,9 +512,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold" title="Medical Grounds">Medical</span>`);
                 }
 
+                const isRet = c.is_retired === 1;
+                const genderBadge = c.gender === 'Female'
+                    ? `<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 border border-purple-200 text-[9px] font-bold shrink-0" title="Female Officer">F</span>`
+                    : `<span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-medium shrink-0" title="Male Officer">M</span>`;
+
+                const slDisplay = isRet
+                    ? `<div class="text-center"><span class="text-slate-400 font-bold">—</span><div class="text-[9px] line-through text-slate-400 font-mono">${c.sl_no}</div></div>`
+                    : `<div class="text-center"><span class="font-mono font-bold text-slate-900">${c.active_roster_sl || c.sl_no}</span>${c.active_roster_sl && c.active_roster_sl !== c.sl_no ? `<div class="text-[9px] text-slate-400 font-mono">(${c.sl_no})</div>` : ''}</div>`;
+
                 return `
-                    <tr class="hover:bg-slate-50 transition ${isAllotted ? 'bg-emerald-50/20' : ''}">
-                        <td class="py-2.5 px-3 font-semibold text-slate-600">${c.sl_no}</td>
+                    <tr class="hover:bg-slate-50 transition ${isRet ? 'bg-slate-100/75 opacity-70' : (isAllotted ? 'bg-emerald-50/20' : '')}">
+                        <td class="py-2.5 px-3 font-semibold text-slate-600">${slDisplay}</td>
                         <td class="py-2.5 px-2 font-mono font-bold text-wbblue-800">${c.roster_point}</td>
                         <td class="py-2.5 px-2">
                             <span class="px-1.5 py-0.5 text-[10px] font-bold rounded ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-slate-100 text-slate-700'}">
@@ -519,9 +531,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </span>
                         </td>
                         <td class="py-2.5 px-4">
-                            <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view full personnel dossier">
-                                <span>${c.officer_name}</span>
-                                ${dualBadge}
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <div class="font-bold ${isRet ? 'line-through text-slate-500' : 'text-wbblue-900'} hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view full personnel dossier">
+                                    <span>${c.officer_name}</span>
+                                    ${dualBadge}
+                                </div>
+                                ${genderBadge}
+                                ${isRet ? `<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold">Retired</span>` : ''}
                             </div>
                             <div class="text-[11px] font-mono text-slate-500">HRMS: ${c.hrms_id || 'N/A'}</div>
                             ${contactBar}
@@ -620,11 +636,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-1">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">Sl ${c.sl_no}</span>
+                                            ${c.is_retired ? `
+                                                <span class="px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-500 font-mono text-[9px] font-bold line-through">Sl ${c.sl_no}</span>
+                                                <span class="px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[9px] font-bold">Retired</span>
+                                            ` : `
+                                                <span class="px-1.5 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">Sl ${c.active_roster_sl || c.sl_no}</span>
+                                            `}
                                             <span class="px-1.5 py-0.5 rounded-md bg-wbblue-100 text-wbblue-900 font-mono text-[9px] font-bold">Pt ${c.roster_point}</span>
                                             <span class="px-1.5 py-0.5 rounded-md ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 font-bold'} text-[9px]">${c.point_reserved_for} Quota</span>
+                                            <span class="px-1.5 py-0.5 rounded-md ${c.gender === 'Female' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-600'} text-[9px] font-bold">${c.gender || 'Male'}</span>
                                         </div>
-                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700 pt-0.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view dossier">
+                                        <div class="font-extrabold text-sm ${c.is_retired ? 'line-through text-slate-500' : 'text-slate-900'} truncate cursor-pointer hover:text-wbblue-700 pt-0.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view dossier">
                                             ${c.officer_name} ${dualBadge}
                                         </div>
                                         <div class="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
@@ -955,6 +977,175 @@ document.addEventListener('DOMContentLoaded', () => {
     if (moSearch) moSearch.addEventListener('input', debounce(loadMasterOrders, 300));
     if (moBasis) moBasis.addEventListener('change', loadMasterOrders);
     if (moDist) moDist.addEventListener('change', loadMasterOrders);
+
+    // --- TAB: LOAD DYNAMIC GRADATION LIST (1,219) ---
+    let currentGradationPage = 1;
+    const GRADATION_PAGE_SIZE = 50;
+
+    async function loadGradationList(resetPage = false) {
+        if (resetPage === true) currentGradationPage = 1;
+
+        const tbody = document.getElementById('gradationTableBody');
+        if (!tbody) return;
+
+        const section = document.getElementById('gradSectionFilter')?.value || 'ALL';
+        const status = document.getElementById('gradStatusFilter')?.value || 'ALL';
+        const category = document.getElementById('gradCategoryFilter')?.value || 'ALL';
+        const gender = document.getElementById('gradGenderFilter')?.value || 'ALL';
+        const search = document.getElementById('gradSearchInput')?.value || '';
+
+        let url = `/api/gradation?page=${currentGradationPage}&page_size=${GRADATION_PAGE_SIZE}`;
+        if (section && section !== 'ALL') url += `&grade_section=${encodeURIComponent(section)}`;
+        if (status && status !== 'ALL') url += `&status=${encodeURIComponent(status)}`;
+        if (category && category !== 'ALL') url += `&category=${encodeURIComponent(category)}`;
+        if (gender && gender !== 'ALL') url += `&gender=${encodeURIComponent(gender)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        try {
+            const [dataRes, statsRes] = await Promise.all([
+                fetch(url),
+                fetch('/api/gradation/stats')
+            ]);
+            const dataJson = await dataRes.json();
+            const statsJson = await statsRes.json();
+
+            // Update Stats Badges
+            if (statsJson) {
+                const elTotal = document.getElementById('gradStatTotal');
+                const elServing = document.getElementById('gradStatServing');
+                const elRetired = document.getElementById('gradStatRetired');
+                const elFemale = document.getElementById('gradStatFemale');
+                if (elTotal) elTotal.innerText = statsJson.total.toLocaleString();
+                if (elServing) elServing.innerText = statsJson.serving.toLocaleString();
+                if (elRetired) elRetired.innerText = statsJson.retired.toLocaleString();
+                if (elFemale) elFemale.innerText = statsJson.female.toLocaleString();
+            }
+
+            const badgeCount = document.getElementById('badgeGradationCount');
+            if (badgeCount) badgeCount.innerText = dataJson.count.toLocaleString();
+
+            // Pagination Controls
+            const pageInfo = document.getElementById('gradPaginationInfo');
+            const pageNum = document.getElementById('gradPageNum');
+            const prevBtn = document.getElementById('gradPrevBtn');
+            const nextBtn = document.getElementById('gradNextBtn');
+
+            const startIdx = dataJson.count > 0 ? (currentGradationPage - 1) * GRADATION_PAGE_SIZE + 1 : 0;
+            const endIdx = Math.min(currentGradationPage * GRADATION_PAGE_SIZE, dataJson.count);
+            if (pageInfo) pageInfo.innerText = `Showing ${startIdx}–${endIdx} of ${dataJson.count} officers`;
+            if (pageNum) pageNum.innerText = `${currentGradationPage} / ${dataJson.total_pages || 1}`;
+            if (prevBtn) prevBtn.disabled = currentGradationPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentGradationPage >= (dataJson.total_pages || 1);
+
+            if (!dataJson.data || dataJson.data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400">No officers found matching current filters.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = dataJson.data.map(o => {
+                const isRet = o.is_retired === 1;
+                const rowBg = isRet ? 'bg-slate-50/75 text-slate-500' : 'hover:bg-cyan-50/20';
+
+                const sl26Display = isRet
+                    ? `<span class="text-slate-400 font-bold text-sm">—</span>`
+                    : `<span class="font-mono font-bold text-cyan-900 bg-cyan-100/70 border border-cyan-200 px-2 py-0.5 rounded text-xs">${o.sl_2026}</span>`;
+
+                const sl25Display = isRet
+                    ? `<span class="line-through text-slate-400 font-mono text-xs font-semibold">${o.sl_2025 || '—'}</span>`
+                    : `<span class="font-mono text-slate-600 text-xs">${o.sl_2025 || '—'}</span>`;
+
+                const nameDisplay = isRet
+                    ? `<span class="line-through text-slate-500 font-semibold cursor-pointer hover:text-slate-700" onclick="openOfficerDossier('${o.hrms_id}')">${o.officer_name}</span>`
+                    : `<span class="text-wbblue-900 font-bold cursor-pointer hover:text-wbblue-600 hover:underline" onclick="openOfficerDossier('${o.hrms_id}')">${o.officer_name}</span>`;
+
+                const statusBadge = isRet
+                    ? `<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold line-through">${o.status_2026}</span>`
+                    : `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">Serving</span>`;
+
+                const genderPill = o.gender === 'Female'
+                    ? `<span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200 text-[10px] font-bold">Female</span>`
+                    : `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-medium">Male</span>`;
+
+                const catPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                    o.category === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                    o.category === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' :
+                    (o.category && o.category.startsWith('OBC')) ? 'bg-blue-100 text-blue-900 border border-blue-300' :
+                    'bg-slate-100 text-slate-700'
+                }">${o.category || 'Gen'}</span>`;
+
+                return `
+                    <tr class="transition border-b border-slate-100 ${rowBg}">
+                        <td class="py-2.5 px-3 text-center">${sl26Display}</td>
+                        <td class="py-2.5 px-3 text-center">${sl25Display}</td>
+                        <td class="py-2.5 px-4 text-slate-700 font-medium">
+                            <div class="truncate max-w-[180px]" title="${o.grade_section}">${o.grade_section}</div>
+                        </td>
+                        <td class="py-2.5 px-4">
+                            <div class="flex items-center gap-1.5">
+                                ${nameDisplay}
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-400 mt-0.5">
+                                HRMS: <strong class="text-slate-600">${o.hrms_id || '—'}</strong>
+                                ${o.qualifications ? ` • <span class="text-slate-500">${o.qualifications}</span>` : ''}
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-2 text-center">${genderPill}</td>
+                        <td class="py-2.5 px-2 text-center">${catPill}</td>
+                        <td class="py-2.5 px-3 text-center">${statusBadge}</td>
+                        <td class="py-2.5 px-3">
+                            <div class="font-mono text-xs ${isRet ? 'line-through text-slate-400' : 'text-slate-700'}">DOB: ${o.dob || '—'}</div>
+                            <div class="font-mono text-xs ${isRet ? 'line-through text-slate-400' : 'text-rose-700 font-semibold'}">DOR: ${o.dor || '—'}</div>
+                        </td>
+                        <td class="py-2.5 px-5">
+                            <div class="text-slate-800 text-xs ${isRet ? 'line-through text-slate-400' : 'font-medium'}">${o.present_posting || '—'}</div>
+                            ${o.recommended_post ? `
+                                <div class="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                                    <i data-lucide="arrow-right-circle" class="w-3 h-3 text-emerald-600"></i>
+                                    <span>Rec: ${o.recommended_post}</span>
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-right">
+                            <button onclick="openOfficerDossier('${o.hrms_id}')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-cyan-50 text-cyan-800 hover:bg-cyan-100 border border-cyan-200 transition shadow-2xs">
+                                Dossier
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+        } catch (err) {
+            console.error('Error loading gradation list:', err);
+            tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-rose-500">Failed to load Gradation List: ${err.message}</td></tr>`;
+        }
+    }
+
+    // Gradation List Listeners
+    const gradSearch = document.getElementById('gradSearchInput');
+    const gradSec = document.getElementById('gradSectionFilter');
+    const gradSt = document.getElementById('gradStatusFilter');
+    const gradCat = document.getElementById('gradCategoryFilter');
+    const gradGen = document.getElementById('gradGenderFilter');
+    const gradPrev = document.getElementById('gradPrevBtn');
+    const gradNext = document.getElementById('gradNextBtn');
+
+    if (gradSearch) gradSearch.addEventListener('input', debounce(() => loadGradationList(true), 300));
+    if (gradSec) gradSec.addEventListener('change', () => loadGradationList(true));
+    if (gradSt) gradSt.addEventListener('change', () => loadGradationList(true));
+    if (gradCat) gradCat.addEventListener('change', () => loadGradationList(true));
+    if (gradGen) gradGen.addEventListener('change', () => loadGradationList(true));
+    if (gradPrev) gradPrev.addEventListener('click', () => {
+        if (currentGradationPage > 1) {
+            currentGradationPage--;
+            loadGradationList(false);
+        }
+    });
+    if (gradNext) gradNext.addEventListener('click', () => {
+        currentGradationPage++;
+        loadGradationList(false);
+    });
+
 
     // --- TAB 2: LOAD OBLITERATED POSTS ---
     async function loadObliterated() {
@@ -3273,7 +3464,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div class="text-base font-bold text-slate-900 flex items-center gap-2">
                                         <span>${d.officer_name}</span>
                                         ${d.caste ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800">${d.caste}</span>` : ''}
-                                        ${d.gender && d.gender !== '—' ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800">${d.gender}</span>` : ''}
+                                        ${d.gender && d.gender !== '—' ? `
+                                            <span class="px-2 py-0.5 text-[10px] font-bold rounded ${d.gender === 'Female' ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-blue-100 text-blue-800 border border-blue-300'} flex items-center gap-1">
+                                                <i data-lucide="${d.gender === 'Female' ? 'user-check' : 'user'}" class="w-3 h-3"></i>
+                                                <span>${d.gender}</span>
+                                            </span>
+                                        ` : ''}
                                     </div>
                                     <div class="text-[11px] font-mono text-wbblue-700 font-bold mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <span>HRMS ID: ${d.hrms_id}</span>
@@ -3282,6 +3478,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ${d.gradation_sl && d.gradation_sl !== '—' ? `<span>Gradation Sl: ${d.gradation_sl}</span>` : ''}
                                         ${d.caste ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">Category: ${d.caste}</span>` : ''}
                                     </div>
+                                    ${d.gradation_info ? `
+                                        <div class="mt-1 flex items-center gap-1.5 flex-wrap text-[10px]">
+                                            <span class="px-2 py-0.5 rounded font-bold ${d.gradation_info.is_retired ? 'bg-slate-200 text-slate-600 line-through border border-slate-300' : 'bg-cyan-100 text-cyan-900 border border-cyan-300'}">
+                                                Gradation 2026: ${d.gradation_info.sl_2026 ? `Sl #${d.gradation_info.sl_2026}` : '— (Retired)'}
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                                2025 Sl #${d.gradation_info.sl_2025 || '—'}
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded font-semibold ${d.gradation_info.is_retired ? 'bg-rose-100 text-rose-800 border border-rose-200 line-through' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                                                ${d.gradation_info.status_2026}
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium truncate max-w-[200px]" title="${d.gradation_info.grade_section}">
+                                                ${d.gradation_info.grade_section}
+                                            </span>
+                                        </div>
+                                    ` : ''}
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-wbblue-100 text-wbblue-800 border border-wbblue-200">
                                     ${d.source_category || 'WBAH&VS Cadre'}

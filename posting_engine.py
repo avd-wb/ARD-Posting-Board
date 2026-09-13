@@ -1170,6 +1170,12 @@ class PostingEngine:
         if ext_row:
             officer.update(dict(ext_row))
 
+        # Official Gradation List lookup
+        cur.execute("SELECT * FROM official_gradation_list WHERE hrms_id = ?", (hrms_id,))
+        grad_row = cur.fetchone()
+        if grad_row:
+            officer["gradation_info"] = dict(grad_row)
+
         # Authoritative master final order schedule lookup
         cur.execute("SELECT * FROM master_final_order_schedule WHERE hrms_id = ? OR clean_name = ?", (hrms_id, officer.get("clean_name", "")))
         mf_row = cur.fetchone()
