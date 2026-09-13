@@ -1180,6 +1180,12 @@ class PostingEngine:
         if grad_row:
             officer["gradation_info"] = dict(grad_row)
 
+        # Multi-Agent Verification Summary lookup
+        cur.execute("SELECT * FROM multi_agent_verification_summary WHERE hrms_id = ?", (hrms_id,))
+        verif_row = cur.fetchone()
+        if verif_row:
+            officer["verification_summary"] = dict(verif_row)
+
         # Authoritative master final order schedule lookup
         cur.execute("SELECT * FROM master_final_order_schedule WHERE hrms_id = ? OR clean_name = ?", (hrms_id, officer.get("clean_name", "")))
         mf_row = cur.fetchone()
@@ -1379,7 +1385,8 @@ class PostingEngine:
             "source_category": officer.get("source_category", "Departmental Officer"),
             "allotment_status": officer.get("allotment_status") or ("Allotted" if officer.get("current_simulation_assignment") else "Pending Decision"),
             "latest_allotment": officer.get("current_simulation_assignment"),
-            "master_final_order": master_final_order
+            "master_final_order": master_final_order,
+            "verification_summary": officer.get("verification_summary")
         }
 
         # Strict privacy redactions for specified officers

@@ -503,6 +503,92 @@ def get_map_stats():
     conn.close()
     return {"summary": summary, "districts": districts}
 
+@app.get("/api/verification/summary")
+def get_verification_summary():
+    """Returns real-time aggregate results from the 10-Agent Verification Matrix."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM multi_agent_verification_summary")
+    audited_count = cur.fetchone()[0]
+    
+    cur.execute("SELECT COUNT(*) FROM multi_agent_verification_summary WHERE consensus_status = '10/10_UNANIMOUS_PASS'")
+    unanimous_count = cur.fetchone()[0]
+    
+    cur.execute("SELECT COUNT(*) FROM multi_agent_verification_summary WHERE discrepancies = 0")
+    zero_disc_count = cur.fetchone()[0]
+
+    # Breakdown by agent
+    cur.execute("""
+        SELECT agent_name, dimension,
+               SUM(CASE WHEN status = 'PASS' THEN 1 ELSE 0 END) as passed,
+               SUM(CASE WHEN status = 'DISCREPANCY' THEN 1 ELSE 0 END) as discrepancies,
+               SUM(CASE WHEN status = 'WARNING' THEN 1 ELSE 0 END) as warnings,
+               SUM(CASE WHEN status = 'INFO' THEN 1 ELSE 0 END) as info
+        FROM multi_agent_verification_log
+        GROUP BY agent_name, dimension
+        ORDER BY agent_id ASC
+    """)
+    agents_breakdown = [dict(r) for r in cur.fetchall()]
+    
+    cur.execute("SELECT * FROM multi_agent_verification_summary ORDER BY last_audited_at DESC LIMIT 15")
+    recent_officers = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    return {
+        "total_officers_audited": audited_count,
+        "unanimous_10_of_10": unanimous_count,
+        "clean_records_zero_discrepancy": zero_disc_count,
+        "pass_rate_pct": round((zero_disc_count / audited_count * 100), 1) if audited_count else 0.0,
+        "agents": agents_breakdown,
+        "recent_audited_officers": recent_officers
+    }
+
+@app.get("/api/verification/officers")
+def get_verification_officers(search: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0):
+    """Returns paginated and filterable list of audited officers."""
+    conn = get_db()
+    cur = conn.cursor()
+    query = """
+        SELECT s.hrms_id, s.officer_name, o.gender, s.cadre_tier, o.present_district,
+               o.office_code, o.ddo_code, s.consensus_status, s.passed_checks,
+               s.discrepancies, s.warnings, s.record_sha256
+        FROM multi_agent_verification_summary s
+        LEFT JOIN officer_extended_dossier o ON s.hrms_id = o.hrms_id
+        WHERE 1=1
+    """
+    params = []
+    if search:
+        s = f"%{search.strip()}%"
+        query += " AND (s.hrms_id LIKE ? OR s.officer_name LIKE ? OR o.present_district LIKE ? OR s.cadre_tier LIKE ?)"
+        params.extend([s, s, s, s])
+    if status and status != "ALL":
+        if status == "UNANIMOUS":
+            query += " AND s.consensus_status = '10/10_UNANIMOUS_PASS'"
+        elif status == "WARNINGS":
+            query += " AND s.consensus_status = 'PASSED_WITH_WARNINGS'"
+    
+    cur.execute(f"SELECT COUNT(*) FROM ({query})", params)
+    total = cur.fetchone()[0]
+
+    query += " ORDER BY s.hrms_id LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    cur.execute(query, params)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return {"total": total, "officers": rows}
+
+@app.get("/api/verification/export-excel")
+def export_verification_excel():
+    """Serves the authoritative Multi-Agent Verification Audit Report Excel workbook."""
+    excel_path = os.path.join(os.path.dirname(__file__), "Multi_Agent_Verification_Audit_Report_20260914.xlsx")
+    if os.path.exists(excel_path):
+        return FileResponse(
+            excel_path,
+            filename="Multi_Agent_Verification_Audit_Report_20260914.xlsx",
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    raise HTTPException(status_code=404, detail="Audit report workbook not found.")
+
 @app.get("/api/sacrosanct/summary")
 def get_sacrosanct_summary():
     """Returns verification audit summary and cryptographic proof status."""
