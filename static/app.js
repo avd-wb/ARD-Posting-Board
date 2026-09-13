@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initBetaSyncCountdown();
     initKPICardClickHandlers();
     initInstallAppModal();
+    initSpotlightSearch();
+    initPolicyGuideModal();
+    initLivePolicyEvaluator();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -64,15 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!targetTab) return;
         state.currentTab = targetTab;
 
-        // 1. Desktop Tab Buttons
+        // 1. Desktop Tab Buttons (Apple Monochrome Pills)
         const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(b => {
             if (b.getAttribute('data-tab') === targetTab) {
-                b.classList.add('bg-wbblue-800', 'text-white');
-                b.classList.remove('text-blue-200', 'hover:bg-wbblue-800/60');
+                b.classList.add('bg-white', 'text-black', 'shadow-xs');
+                b.classList.remove('text-neutral-400', 'hover:text-white', 'hover:bg-neutral-800/60');
             } else {
-                b.classList.remove('bg-wbblue-800', 'text-white');
-                b.classList.add('text-blue-200', 'hover:bg-wbblue-800/60');
+                b.classList.remove('bg-white', 'text-black', 'shadow-xs');
+                b.classList.add('text-neutral-400', 'hover:text-white', 'hover:bg-neutral-800/60');
             }
         });
 
@@ -1496,6 +1499,15 @@ document.addEventListener('DOMContentLoaded', () => {
             prefsEl.innerText = officer.all_preferences || officer.pref_1 || 'None listed';
         }
 
+        const policyBox = document.getElementById('modalPolicyEvaluationBox');
+        if (policyBox) policyBox.classList.add('hidden');
+        state.lastPolicyEvaluation = null;
+
+        // Trigger policy check on substantive post change
+        subSelect.onchange = () => {
+            if (window.triggerLivePolicyEvaluation) window.triggerLivePolicyEvaluation();
+        };
+
         // Fetch dynamically reduced substantive posts
         try {
             const subRes = await fetch(`/api/available-posts?type=substantive&role=${source}&session_id=CURRENT_SESSION`);
@@ -1539,9 +1551,10 @@ document.addEventListener('DOMContentLoaded', () => {
             collisionAlert.classList.add('hidden');
             suSelect.value = '';
         }
+        if (window.triggerLivePolicyEvaluation) window.triggerLivePolicyEvaluation();
     });
 
-    // Handle SU Post change and trigger collision warning
+    // Handle SU Post change and trigger collision warning + policy evaluation
     document.getElementById('modalSUPostSelect').addEventListener('change', (e) => {
         const val = parseInt(e.target.value);
         const collisionAlert = document.getElementById('modalCollisionAlert');
@@ -1549,20 +1562,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!val) {
             collisionAlert.classList.add('hidden');
-            return;
-        }
-
-        const selectedPost = state.suPosts.find(p => p.post_id === val);
-        if (selectedPost && selectedPost.occupancy_status !== 'Vacant' && selectedPost.incumbent_name) {
-            collisionAlert.classList.remove('hidden');
-            collisionText.innerHTML = `
-                <strong>COLLISION RISK DETECTED:</strong> This post is currently occupied by <strong>${selectedPost.incumbent_name}</strong> (HRMS: ${selectedPost.incumbent_hrms}).
-                Placing this officer on Service Utilization here will trigger a displacement chain requiring rehabilitation of the incumbent!
-            `;
-            lucide.createIcons();
         } else {
-            collisionAlert.classList.add('hidden');
+            const selectedPost = state.suPosts.find(p => p.post_id === val);
+            if (selectedPost && selectedPost.occupancy_status !== 'Vacant' && selectedPost.incumbent_name) {
+                collisionAlert.classList.remove('hidden');
+                collisionText.innerHTML = `
+                    <strong>COLLISION RISK DETECTED:</strong> This post is currently occupied by <strong>${selectedPost.incumbent_name}</strong> (HRMS: ${selectedPost.incumbent_hrms}).
+                    Placing this officer on Service Utilization here will trigger a displacement chain requiring rehabilitation of the incumbent!
+                `;
+                lucide.createIcons();
+            } else {
+                collisionAlert.classList.add('hidden');
+            }
         }
+        if (window.triggerLivePolicyEvaluation) window.triggerLivePolicyEvaluation();
     });
 
     // Modal Close buttons
@@ -1583,6 +1596,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!subPostId) {
             alert('Please select a Substantive / Main Post.');
             return;
+        }
+
+        // Check if there is an unacknowledged policy violation
+        if (state.lastPolicyEvaluation && state.lastPolicyEvaluation.overall_status === 'VIOLATION') {
+            const proceed = confirm(
+                "⚠️ POLICY VIOLATION WARNING (Transfer Policy 2009 / Memo 291):\n\n" +
+                (state.lastPolicyEvaluation.violations || []).join("\n") +
+                "\n\nDo you wish to proceed with an Administrative Exemption / Competent Authority Waiver?"
+            );
+            if (!proceed) return;
         }
 
         const officer = state.activeModalOfficer;
@@ -1629,6 +1652,476 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Error completing allotment: ' + e.message);
         }
     });
+
+    // --- TRANSFER POLICY 2009 (MEMO 291) LIVE COMPLIANCE EVALUATOR ---
+    function initLivePolicyEvaluator() {
+        window.triggerLivePolicyEvaluation = async function() {
+            const policyBox = document.getElementById('modalPolicyEvaluationBox');
+            const badgeIcon = document.getElementById('modalPolicyBadgeIcon');
+            const titleEl = document.getElementById('modalPolicyTitle');
+            const subTitleEl = document.getElementById('modalPolicySubtitle');
+            const overallBadge = document.getElementById('modalPolicyOverallBadge');
+            const violationsBox = document.getElementById('modalPolicyViolations');
+            const checksList = document.getElementById('modalPolicyChecksList');
+
+            if (!policyBox) return;
+
+            const subVal = parseInt(document.getElementById('modalSubstantivePostSelect')?.value);
+            const isSU = document.getElementById('modalEnableSUCheck')?.checked;
+            const suVal = isSU ? (parseInt(document.getElementById('modalSUPostSelect')?.value) || null) : null;
+            const officer = state.activeModalOfficer;
+
+            if (!subVal || !officer) {
+                policyBox.classList.add('hidden');
+                return;
+            }
+
+            const hrmsId = officer.hrms_id || officer.incumbent_hrms;
+            if (!hrmsId) return;
+
+            policyBox.classList.remove('hidden');
+            policyBox.className = "p-3.5 rounded-xl border border-neutral-200 bg-neutral-50 transition-all duration-200 animate-pulse";
+            overallBadge.innerText = "Evaluating Policy...";
+            overallBadge.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-neutral-200 text-neutral-700";
+
+            try {
+                const res = await fetch('/api/policy/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        officer_hrms: hrmsId,
+                        substantive_post_id: subVal,
+                        su_post_id: suVal,
+                        officer_type: state.activeModalRole || 'roster'
+                    })
+                });
+                const data = await res.json();
+                policyBox.classList.remove('animate-pulse');
+
+                state.lastPolicyEvaluation = data;
+
+                // Color & Badge configuration based on Universal Color System
+                if (data.overall_status === 'COMPLIANT') {
+                    policyBox.className = "p-3.5 rounded-xl border border-emerald-400 bg-emerald-50/70 transition-all duration-200";
+                    badgeIcon.className = "w-6 h-6 rounded-full flex items-center justify-center font-black text-xs shadow-xs bg-emerald-500 text-white";
+                    badgeIcon.innerHTML = "✓";
+                    titleEl.className = "text-xs font-bold leading-tight text-emerald-950";
+                    titleEl.innerText = "✓ Transfer Policy 2009 Compliant (Memo 291)";
+                    subTitleEl.className = "text-[10px] text-emerald-800";
+                    subTitleEl.innerText = "All statutory transfer & welfare criteria satisfied. Approved for Government posting order.";
+                    overallBadge.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-emerald-500 text-white shadow-xs";
+                    overallBadge.innerText = "✓ COMPLIANT";
+                    violationsBox.classList.add('hidden');
+                } else if (data.overall_status === 'VIOLATION') {
+                    policyBox.className = "p-3.5 rounded-xl border border-rose-400 bg-rose-50/90 transition-all duration-200";
+                    badgeIcon.className = "w-6 h-6 rounded-full flex items-center justify-center font-black text-xs shadow-xs bg-rose-500 text-white";
+                    badgeIcon.innerHTML = "✗";
+                    titleEl.className = "text-xs font-bold leading-tight text-rose-950";
+                    titleEl.innerText = `✗ Policy Violation: ${data.summary_label}`;
+                    subTitleEl.className = "text-[10px] text-rose-800";
+                    subTitleEl.innerText = "Statutory conflict detected under Transfer Policy Memo 291 of 2009. Attention required before issuing order.";
+                    overallBadge.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-rose-600 text-white shadow-xs animate-pulse";
+                    overallBadge.innerText = "✗ VIOLATION";
+
+                    violationsBox.classList.remove('hidden');
+                    violationsBox.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-rose-900">
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
+                            <span>Criteria Violations:</span>
+                        </div>
+                        <ul class="list-disc pl-4 space-y-0.5 text-[10px] text-rose-800">
+                            ${(data.violations || []).map(v => `<li>${v}</li>`).join('')}
+                        </ul>
+                    `;
+                } else {
+                    policyBox.className = "p-3.5 rounded-xl border border-amber-400 bg-amber-50/80 transition-all duration-200";
+                    badgeIcon.className = "w-6 h-6 rounded-full flex items-center justify-center font-black text-xs shadow-xs bg-amber-500 text-white";
+                    badgeIcon.innerHTML = "⚠";
+                    titleEl.className = "text-xs font-bold leading-tight text-amber-950";
+                    titleEl.innerText = `⚠ Advisory: ${data.summary_label}`;
+                    subTitleEl.className = "text-[10px] text-amber-800";
+                    subTitleEl.innerText = "Administrative advisory or departmental waiver review recommended.";
+                    overallBadge.className = "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-amber-500 text-white shadow-xs";
+                    overallBadge.innerText = "⚠ ADVISORY";
+
+                    if (data.cautions && data.cautions.length > 0) {
+                        violationsBox.classList.remove('hidden');
+                        violationsBox.innerHTML = `
+                            <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <span>Administrative Advisories:</span>
+                            </div>
+                            <ul class="list-disc pl-4 space-y-0.5 text-[10px] text-amber-800">
+                                ${data.cautions.map(c => `<li>${c}</li>`).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        violationsBox.classList.add('hidden');
+                    }
+                }
+
+                // Render checklist pills
+                if (data.checks && data.checks.length > 0) {
+                    checksList.innerHTML = data.checks.map(c => {
+                        let badgeCls = "bg-neutral-100 text-neutral-700 border-neutral-200";
+                        let icon = "•";
+                        if (c.badge === 'GREEN') {
+                            badgeCls = "bg-emerald-100/90 text-emerald-900 border-emerald-300";
+                            icon = "✓";
+                        } else if (c.badge === 'RED') {
+                            badgeCls = "bg-rose-100/90 text-rose-900 border-rose-300 font-bold";
+                            icon = "✗";
+                        } else if (c.badge === 'YELLOW') {
+                            badgeCls = "bg-amber-100/90 text-amber-900 border-amber-300";
+                            icon = "⚠";
+                        } else if (c.badge === 'BLUE') {
+                            badgeCls = "bg-sky-100/90 text-sky-900 border-sky-300";
+                            icon = "ℹ";
+                        }
+                        return `
+                            <div class="p-2 rounded-lg border ${badgeCls} flex items-start gap-1.5 leading-snug">
+                                <span class="font-bold shrink-0">${icon}</span>
+                                <div>
+                                    <div class="font-bold text-[10px]">${c.criterion}</div>
+                                    <div class="text-[9px] opacity-90">${c.message}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                console.error('Error evaluating policy:', err);
+                overallBadge.innerText = "Error";
+            }
+        };
+    }
+
+    // --- UNIVERSAL SPOTLIGHT SEMANTIC SEARCH CONTROLLER ---
+    function initSpotlightSearch() {
+        const modal = document.getElementById('spotlightModal');
+        const input = document.getElementById('spotlightInput');
+        const spinner = document.getElementById('spotlightSpinner');
+        const resultsContainer = document.getElementById('spotlightResultsContainer');
+        const filterBtns = document.querySelectorAll('.spotlight-filter-btn');
+
+        let currentResults = { officers: [], posts: [], orders: [], policy_rules: [] };
+        let currentFilter = 'all';
+
+        function openSpotlight() {
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeSpotlight() {
+            if (!modal) return;
+            modal.classList.add('hidden');
+        }
+
+        window.openSpotlightSearch = openSpotlight;
+        window.closeSpotlightSearch = closeSpotlight;
+
+        document.getElementById('btnOpenSpotlightHeader')?.addEventListener('click', openSpotlight);
+        document.getElementById('btnMobileSearchTrigger')?.addEventListener('click', openSpotlight);
+        document.getElementById('btnCloseSpotlightModal')?.addEventListener('click', closeSpotlight);
+
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) closeSpotlight();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                if (modal.classList.contains('hidden')) openSpotlight();
+                else closeSpotlight();
+            } else if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                openSpotlight();
+            } else if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeSpotlight();
+            }
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.getAttribute('data-spotlight-filter');
+                currentFilter = filter;
+                filterBtns.forEach(b => {
+                    if (b === btn) {
+                        b.classList.add('bg-black', 'text-white');
+                        b.classList.remove('text-neutral-600', 'hover:bg-neutral-100');
+                    } else {
+                        b.classList.remove('bg-black', 'text-white');
+                        b.classList.add('text-neutral-600', 'hover:bg-neutral-100');
+                    }
+                });
+                renderResults();
+            });
+        });
+
+        const doSearch = debounce(async (query) => {
+            if (!query || query.trim().length < 1) {
+                resultsContainer.innerHTML = `
+                    <div class="py-12 text-center text-neutral-400 text-xs">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-neutral-300 mx-auto mb-2"></i>
+                        <p class="font-semibold text-neutral-600">Universal Semantic Search</p>
+                        <p class="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
+                    </div>
+                `;
+                updateCounts(0, 0, 0, 0);
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            if (spinner) spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/search/omni?q=${encodeURIComponent(query.trim())}&limit=30`);
+                const data = await res.json();
+                currentResults = data;
+                updateCounts(
+                    data.officers?.length || 0,
+                    data.posts?.length || 0,
+                    data.orders?.length || 0,
+                    data.policy_rules?.length || 0
+                );
+                renderResults();
+            } catch (err) {
+                console.error('Spotlight search error:', err);
+                resultsContainer.innerHTML = `<div class="p-6 text-center text-rose-500 text-xs">Search error. Please try again.</div>`;
+            } finally {
+                if (spinner) spinner.classList.add('hidden');
+            }
+        }, 200);
+
+        input?.addEventListener('input', (e) => doSearch(e.target.value));
+
+        function updateCounts(off, post, ord, rul) {
+            const oEl = document.getElementById('spotlightCountOfficers');
+            const pEl = document.getElementById('spotlightCountPosts');
+            const ordEl = document.getElementById('spotlightCountOrders');
+            const rEl = document.getElementById('spotlightCountRules');
+            if (oEl) oEl.innerText = off;
+            if (pEl) pEl.innerText = post;
+            if (ordEl) ordEl.innerText = ord;
+            if (rEl) rEl.innerText = rul;
+        }
+
+        function renderResults() {
+            const { officers = [], posts = [], orders = [], policy_rules = [] } = currentResults;
+            const totalFound = officers.length + posts.length + orders.length + policy_rules.length;
+
+            if (totalFound === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="py-12 text-center text-neutral-400 text-xs">
+                        <i data-lucide="search-x" class="w-8 h-8 text-neutral-300 mx-auto mb-2"></i>
+                        <p class="font-semibold text-neutral-700">No results found</p>
+                        <p class="text-[11px] text-neutral-400 mt-1">Try searching by district name, officer surname, post designation, or HRMS ID.</p>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            let html = '';
+
+            // 1. Officers Section
+            if ((currentFilter === 'all' || currentFilter === 'officers') && officers.length > 0) {
+                html += `
+                    <div class="pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 flex items-center justify-between">
+                        <span>Officers & Personnel (${officers.length})</span>
+                        <span class="text-[10px] text-neutral-400 font-normal">Click to view dossier or allot</span>
+                    </div>
+                `;
+                officers.forEach(o => {
+                    const offName = o.officer_name || 'Unnamed Officer';
+                    const desig = o.designation || o.post_name || 'Officer';
+                    const dist = o.district || o.present_district || 'District N/A';
+                    const hid = o.hrms_id || 'N/A';
+                    const source = o.source || 'master';
+                    let tag = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-200">${source}</span>`;
+                    if (source === 'roster') tag = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">50-Pt Roster</span>`;
+                    else if (source === 'obliterated') tag = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Obliterated (1808)</span>`;
+
+                    html += `
+                        <div class="p-2.5 rounded-xl hover:bg-neutral-50 transition border border-transparent hover:border-neutral-200 flex items-center justify-between gap-3 group cursor-pointer" onclick="window.spotlightJumpOfficer('${hid}', '${source}')">
+                            <div class="flex items-center gap-2.5 truncate">
+                                <div class="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-700 shrink-0 font-bold text-xs">
+                                    ${offName.charAt(3) || 'Dr'}
+                                </div>
+                                <div class="truncate">
+                                    <div class="font-bold text-xs text-neutral-900 flex items-center gap-1.5 truncate">
+                                        <span>${offName}</span>
+                                        ${tag}
+                                    </div>
+                                    <div class="text-[11px] text-neutral-500 truncate">
+                                        ${desig} • ${dist} • <span class="font-mono text-[10px]">HRMS: ${hid}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100">
+                                <button class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-black text-white hover:bg-neutral-800 transition shadow-xs" title="Open Allotment Modal">
+                                    Allot
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 2. Posts Section
+            if ((currentFilter === 'all' || currentFilter === 'posts') && posts.length > 0) {
+                html += `
+                    <div class="pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 flex items-center justify-between">
+                        <span>Sanctioned Cadre Posts (${posts.length})</span>
+                        <span class="text-[10px] text-neutral-400 font-normal">Click to view in Cadre</span>
+                    </div>
+                `;
+                posts.forEach(p => {
+                    const pName = p.post_name || p.designation || 'Sanctioned Post';
+                    const office = p.establishment || p.office || 'Office N/A';
+                    const dist = p.district || 'District N/A';
+                    const isVacant = p.occupancy_status === 'Vacant' || p.occupancy_status === 'Available';
+                    const statusBadge = isVacant 
+                        ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Vacant</span>`
+                        : `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-300">Occupied: ${p.incumbent_name || 'Serving Officer'}</span>`;
+
+                    html += `
+                        <div class="p-2.5 rounded-xl hover:bg-neutral-50 transition border border-transparent hover:border-neutral-200 flex items-center justify-between gap-3 group cursor-pointer" onclick="window.spotlightJumpPost('${p.district || ''}')">
+                            <div class="truncate">
+                                <div class="font-bold text-xs text-neutral-900 flex items-center gap-1.5 truncate">
+                                    <span>${pName}</span>
+                                    ${statusBadge}
+                                </div>
+                                <div class="text-[11px] text-neutral-500 truncate">
+                                    ${office} • ${dist} ${p.block ? '• ' + p.block + ' Block' : ''}
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-black transition"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 3. Official Orders Section
+            if ((currentFilter === 'all' || currentFilter === 'orders') && orders.length > 0) {
+                html += `
+                    <div class="pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 flex items-center justify-between">
+                        <span>Official Orders & Schedules (${orders.length})</span>
+                    </div>
+                `;
+                orders.forEach(ord => {
+                    const ordNo = ord.order_number || 'Official Order';
+                    const date = ord.order_date || '';
+                    const subject = ord.subject || ord.final_substantive_post || ord.previous_posting || '';
+                    const offName = ord.officer_name ? ` • ${ord.officer_name}` : '';
+
+                    html += `
+                        <div class="p-2.5 rounded-xl hover:bg-neutral-50 transition border border-transparent hover:border-neutral-200 flex items-center justify-between gap-3 group cursor-pointer" onclick="window.spotlightJumpOrder()">
+                            <div class="truncate">
+                                <div class="font-bold text-xs text-neutral-900 flex items-center gap-1.5 truncate">
+                                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-sky-600"></i>
+                                    <span>${ordNo}</span>
+                                    <span class="text-[10px] text-neutral-400">${date}</span>
+                                </div>
+                                <div class="text-[11px] text-neutral-600 truncate">
+                                    ${subject}${offName}
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-neutral-400 group-hover:text-black transition"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 4. Policy Rules Section
+            if ((currentFilter === 'all' || currentFilter === 'rules') && policy_rules.length > 0) {
+                html += `
+                    <div class="pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400 flex items-center justify-between">
+                        <span>Administrative & Transfer Policy Rules (${policy_rules.length})</span>
+                    </div>
+                `;
+                policy_rules.forEach(rule => {
+                    html += `
+                        <div class="p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 transition space-y-1 cursor-pointer" onclick="document.getElementById('policyInfoModal')?.classList.remove('hidden'); document.getElementById('spotlightModal')?.classList.add('hidden');">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-xs text-neutral-900">${rule.title}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-neutral-200 text-neutral-800">${rule.clause}</span>
+                            </div>
+                            <p class="text-[11px] text-neutral-600 leading-relaxed">${rule.description}</p>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContainer.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Jump helpers
+        window.spotlightJumpOfficer = function(hrmsId, source) {
+            closeSpotlight();
+            if (source === 'roster') {
+                switchTab('tab-roster');
+                setTimeout(() => openDualAllotModal(hrmsId, 'roster'), 250);
+            } else if (source === 'obliterated') {
+                switchTab('tab-obliterated');
+                setTimeout(() => openDualAllotModal(hrmsId, 'obliterated'), 250);
+            } else {
+                openOfficerDossier(hrmsId);
+            }
+        };
+
+        window.spotlightJumpPost = function(district) {
+            closeSpotlight();
+            switchTab('tab-cadre');
+            const distFilter = document.getElementById('cadreDistrictFilter');
+            if (distFilter && district) {
+                distFilter.value = district;
+                distFilter.dispatchEvent(new Event('change'));
+            }
+        };
+
+        window.spotlightJumpOrder = function() {
+            closeSpotlight();
+            switchTab('tab-orders');
+        };
+    }
+
+    // --- TRANSFER POLICY 2009 NORMS MODAL CONTROLLER ---
+    function initPolicyGuideModal() {
+        const modal = document.getElementById('policyInfoModal');
+        const openBtn = document.getElementById('btnOpenPolicyInfoModal');
+        const closeBtn = document.getElementById('btnClosePolicyInfoModal');
+        const footerBtn = document.getElementById('btnClosePolicyInfoFooter');
+
+        function openModal() {
+            if (modal) modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeModal() {
+            if (modal) modal.classList.add('hidden');
+        }
+
+        openBtn?.addEventListener('click', openModal);
+        closeBtn?.addEventListener('click', closeModal);
+        footerBtn?.addEventListener('click', closeModal);
+
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
 
     // --- BACKUP & RESTORE MANAGER LOGIC ---
     function initBackupManager() {

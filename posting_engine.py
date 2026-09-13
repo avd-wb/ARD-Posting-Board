@@ -64,76 +64,254 @@ class PostingEngine:
 
     def check_officer_rules(self, officer_data: Dict[str, Any], target_post: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluates an allotment against West Bengal administrative transfer rules.
+        Evaluates an allotment against West Bengal administrative transfer rules
+        (Transfer Policy Memo 291-AR & AH/3A-11/06 dt. 19.02.2009 & WBRS / Cadre norms).
+        Returns a comprehensive compliance breakdown with overall Green/Red verdict.
         """
-        target_dist = target_post.get("district", "")
-        target_block = target_post.get("block", "")
+        target_dist = str(target_post.get("district") or "").strip()
+        target_block = str(target_post.get("block") or "").strip()
+        target_post_name = str(target_post.get("post_name") or target_post.get("designation") or "").strip()
         max_tenure = self.evaluate_tenure_norm(target_dist, target_block)
 
         tenure_years = float(officer_data.get("tenure_years") or 0.0)
-        curr_dist = officer_data.get("district") or officer_data.get("current_district") or officer_data.get("present_district") or ""
+        curr_dist = str(officer_data.get("district") or officer_data.get("current_district") or officer_data.get("present_district") or "").strip()
+        home_dist = str(officer_data.get("home_district") or officer_data.get("native_district") or "").strip()
+        fam_text = str(officer_data.get("family_details") or "")
+        caste = str(officer_data.get("caste") or "Gen").strip()
+        roster_pt_res = str(officer_data.get("point_reserved_for") or "UR").strip()
+        dor_str = str(officer_data.get("service_ends") or officer_data.get("incumbent_dor") or officer_data.get("dor") or "").strip()
 
-        # Tenure rule
+        # Calculate years to superannuation
+        dor_years = 99.0
+        if dor_str and len(dor_str) >= 4:
+            try:
+                # Try parsing YYYY-MM-DD or DD/MM/YYYY
+                if "-" in dor_str:
+                    parts = dor_str.split("-")
+                    if len(parts[0]) == 4:
+                        dor_dt = datetime.datetime.strptime(dor_str[:10], "%Y-%m-%d").date()
+                    else:
+                        dor_dt = datetime.datetime.strptime(dor_str[:10], "%d-%m-%Y").date()
+                elif "/" in dor_str:
+                    dor_dt = datetime.datetime.strptime(dor_str[:10], "%d/%m/%Y").date()
+                else:
+                    dor_dt = None
+                if dor_dt:
+                    today = datetime.date.today()
+                    dor_years = max(0.0, (dor_dt - today).days / 365.25)
+            except Exception:
+                dor_years = 99.0
+
+        violations = []
+        cautions = []
+        checks = []
+
+        # 1. Standard Area Tenure Evaluation (Memo 291)
+        is_difficult_zone = max_tenure <= 4.0
         tenure_status = "COMPLIANT"
-        tenure_msg = f"Tenure within {max_tenure} yr norm."
+        tenure_msg = f"Tenure within {max_tenure:.0f}-year norm for {target_dist or 'this post'}."
+        tenure_icon = "check-circle"
+        tenure_badge = "GREEN"
+
         if tenure_years > max_tenure:
             tenure_status = "OVER_TENURE"
-            tenure_msg = f"Officer tenure ({tenure_years:.1f} yrs) exceeds {max_tenure} yr area norm."
+            tenure_msg = f"Officer tenure ({tenure_years:.1f} yrs) exceeds {max_tenure:.0f}-year area norm ({'Difficult/Hill Zone' if is_difficult_zone else 'General Zone'}). Rotation recommended."
+            tenure_icon = "alert-circle"
+            tenure_badge = "RED"
+            violations.append(f"Tenure violation: {tenure_years:.1f} years served exceeds {max_tenure:.0f}-year maximum under Memo 291.")
+        elif tenure_years > 0 and tenure_years < 2.0 and curr_dist and target_dist and curr_dist.lower() != target_dist.lower():
+            tenure_status = "PREMATURE_TRANSFER"
+            tenure_msg = f"Officer has completed only {tenure_years:.1f} years in current station. Normal minimum tenure before transfer is 2 years unless on administrative exigency."
+            tenure_icon = "alert-triangle"
+            tenure_badge = "YELLOW"
+            cautions.append(f"Premature transfer ({tenure_years:.1f} yrs in current post). Needs administrative justification.")
 
-        # Spouse rule (Memo 291 Para 5)
-        fam_text = str(officer_data.get("family_details") or "")
+        checks.append({
+            "criterion": "Area Tenure Norm (Memo 291)",
+            "clause": f"Max {max_tenure:.0f} yrs ({'Difficult Zone' if is_difficult_zone else 'Standard Zone'})",
+            "status": tenure_status,
+            "badge": tenure_badge,
+            "message": tenure_msg
+        })
+
+        # 2. Superannuation Protection (Retirement within 2 Years)
+        retire_status = "NORMAL"
+        retire_badge = "BLUE"
+        retire_msg = "Superannuation > 2 years away."
+        if dor_years <= 2.0:
+            retire_status = "PROTECTED_SUPERANNUATION"
+            retire_badge = "GREEN"
+            retire_msg = f"Retirement in {dor_years:.1f} years ({dor_str}). Officer entitled to choice of home district / station without displacement under Memo 291."
+        checks.append({
+            "criterion": "Superannuation Protection",
+            "clause": "Retirement within 2 Years",
+            "status": retire_status,
+            "badge": retire_badge,
+            "message": retire_msg
+        })
+
+        # 3. Home District Posting Restriction (Administrative Norms)
+        home_status = "COMPLIANT"
+        home_badge = "GREEN"
+        home_msg = "Posting is outside home district."
+        if home_dist and target_dist and home_dist.lower() in target_dist.lower():
+            if dor_years <= 2.0:
+                home_status = "HOME_DISTRICT_ALLOWED_SUPERANNUATION"
+                home_badge = "GREEN"
+                home_msg = f"Home District posting ({home_dist}) is permitted under 2-year Superannuation Exemption."
+            elif any(ad in target_post_name.lower() for ad in ["deputy director", "dd", "assistant director (hq)"]):
+                home_status = "HOME_DISTRICT_RESTRICTION"
+                home_badge = "YELLOW"
+                home_msg = f"Administrative post ({target_post_name}) in Home District ({home_dist}) requires departmental waiver under Rule 75."
+                cautions.append(f"Home District posting: Officer native of {home_dist}. Departmental administrative waiver recommended.")
+            else:
+                home_status = "HOME_DISTRICT_OK"
+                home_badge = "GREEN"
+                home_msg = f"Posting located in Home District ({home_dist})."
+        checks.append({
+            "criterion": "Home District Norm",
+            "clause": "Administrative cadre separation",
+            "status": home_status,
+            "badge": home_badge,
+            "message": home_msg
+        })
+
+        # 4. Children Academic Board Exam Safeguard (Memo 291 Para 13)
+        exam_status = "SAFE"
+        exam_badge = "GREEN"
+        exam_msg = "No board examination conflict reported."
+        
+        has_board_exam = False
+        child_exam = str(officer_data.get("children_board_exams") or "").strip().lower()
+        if child_exam and child_exam not in ["none", "no", "n/a", "nil", "-", "false"]:
+            has_board_exam = True
+        elif fam_text:
+            fam_lower = fam_text.lower()
+            exam_terms = ["class ix", "class x", "class xi", "class xii", "madhyamik", "icse", "cbse", "higher secondary", "hs 202", "secondary exam"]
+            if any(term in fam_lower for term in exam_terms):
+                has_board_exam = True
+            elif "board exam" in fam_lower and not any(neg in fam_lower for neg in ["board exam: none", "board exam: no", "board exam: nil", "board exam: n/a", "no board exam"]):
+                has_board_exam = True
+
+        if has_board_exam:
+            if curr_dist and target_dist and curr_dist.lower() != target_dist.lower():
+                exam_status = "EXAM_DISRUPTION_RISK"
+                exam_badge = "RED"
+                exam_msg = f"Child appearing in Board Exam ({fam_text}). Inter-district transfer outside {curr_dist} disrupts academic calendar (Memo 291 Para 13)."
+                violations.append(f"Child Board Exam Safeguard breached: Transfer outside {curr_dist} conflicts with Memo 291 Para 13.")
+            else:
+                exam_status = "EXAM_SAFE_INTRA_DISTRICT"
+                exam_badge = "GREEN"
+                exam_msg = f"Academic safeguard satisfied: Posting remains within district ({curr_dist})."
+        checks.append({
+            "criterion": "Child Academic Safeguard",
+            "clause": "Memo 291 Para 13 (Board Exams)",
+            "status": exam_status,
+            "badge": exam_badge,
+            "message": exam_msg
+        })
+
+        # 5. Spouse Co-location (Memo 291 Para 5)
         spouse_status = "NOT_APPLICABLE"
-        spouse_msg = "No spouse co-location claim."
-        if "Spouse" in fam_text and ("Government" in fam_text or "Teacher" in fam_text or "Doctor" in fam_text):
-            if target_dist.lower() in fam_text.lower():
+        spouse_badge = "GREY"
+        spouse_msg = "No public service spouse co-location claim."
+        if "Spouse" in fam_text and any(k in fam_text for k in ["Government", "Teacher", "Doctor", "Officer", "WB", "Govt", "State", "School"]):
+            if target_dist and target_dist.lower() in fam_text.lower():
                 spouse_status = "MATCH_SATISFIED"
+                spouse_badge = "GREEN"
                 spouse_msg = f"Spouse posting in {target_dist} satisfied (Memo 291 Para 5)."
             else:
                 spouse_status = "WARNING_DIFFERENT_DISTRICT"
-                spouse_msg = f"Spouse may be located outside target district {target_dist}."
+                spouse_badge = "YELLOW"
+                spouse_msg = f"Spouse working in different district ({fam_text}). Co-location consideration advised."
+                cautions.append("Spouse co-location advisory: Target district differs from spouse station.")
+        checks.append({
+            "criterion": "Spouse Co-location",
+            "clause": "Memo 291 Para 5 (Public Employees)",
+            "status": spouse_status,
+            "badge": spouse_badge,
+            "message": spouse_msg
+        })
 
-        # Child board exam safeguard (Memo 291 Para 13)
-        exam_status = "SAFE"
-        exam_msg = "No board exam conflict."
-        if any(cls in fam_text.lower() for cls in ["class ix", "class x", "class xi", "class xii", "madhyamik", "icse", "cbse"]):
-            if curr_dist and target_dist.lower() != curr_dist.lower():
-                exam_status = "EXAM_DISRUPTION_RISK"
-                exam_msg = f"Child appearing in Board Exam. Transfer outside {curr_dist} disrupts academic calendar (Para 13)."
-
-        # 50-Point Roster category check
-        caste = str(officer_data.get("caste") or "Gen").strip()
-        roster_pt_res = str(officer_data.get("point_reserved_for") or "UR").strip()
+        # 6. 50-Point Roster Reservation Alignment
         roster_status = "VALID"
-        roster_msg = f"Category {caste} matches Roster point {roster_pt_res}."
+        roster_badge = "GREEN"
+        roster_msg = f"Category '{caste}' matches Roster point reservation '{roster_pt_res}'."
         if roster_pt_res in ["SC", "ST", "OBC-A", "OBC-B"]:
             if caste.upper() != roster_pt_res.upper() and not (caste.upper() == "SC" and roster_pt_res == "SC"):
                 roster_status = "MISMATCH"
+                roster_badge = "RED"
                 roster_msg = f"Officer caste ({caste}) does not match reserved point ({roster_pt_res})."
+                violations.append(f"50-Point Roster violation: Officer caste ({caste}) does not match quota reservation ({roster_pt_res}).")
+        checks.append({
+            "criterion": "50-Point Roster Reservation",
+            "clause": f"Point Reserved: {roster_pt_res}",
+            "status": roster_status,
+            "badge": roster_badge,
+            "message": roster_msg
+        })
 
-        # Preference satisfaction check
+        # 7. Preference Satisfaction Match
         pref_text = str(officer_data.get("all_preferences") or officer_data.get("posting_preferences_all") or "")
         pref_match = "NO_PREFERENCE_LISTED"
+        pref_badge = "GREY"
         if pref_text and pref_text != "—":
-            if target_dist.lower() in pref_text.lower():
+            if target_dist and target_dist.lower() in pref_text.lower():
                 if "Pref 1" in pref_text and target_dist.lower() in pref_text.split("Pref 2")[0].lower():
-                    pref_match = "CHOICE_1"
+                    pref_match = "CHOICE_1 (First Preference Satisfied)"
+                    pref_badge = "GREEN"
                 elif "Pref 2" in pref_text and target_dist.lower() in pref_text.split("Pref 3")[0].lower():
-                    pref_match = "CHOICE_2"
+                    pref_match = "CHOICE_2 (Second Preference Satisfied)"
+                    pref_badge = "GREEN"
                 elif "Pref 3" in pref_text:
-                    pref_match = "CHOICE_3"
+                    pref_match = "CHOICE_3 (Third Preference Satisfied)"
+                    pref_badge = "GREEN"
                 else:
-                    pref_match = "CHOICE_4_PLUS"
-            elif curr_dist and target_dist.lower() == curr_dist.lower():
-                pref_match = "HOME_CURRENT_DISTRICT"
+                    pref_match = "CHOICE_SATISFIED"
+                    pref_badge = "GREEN"
+            elif curr_dist and target_dist and curr_dist.lower() == target_dist.lower():
+                pref_match = "SAME_DISTRICT_CONTINUATION"
+                pref_badge = "BLUE"
             else:
-                pref_match = "NO_MATCH"
+                pref_match = "ADMINISTRATIVE_ALLOTMENT (Outside Preferences)"
+                pref_badge = "YELLOW"
+        checks.append({
+            "criterion": "Candidate Preference",
+            "clause": "Options 1-3 Submission",
+            "status": pref_match,
+            "badge": pref_badge,
+            "message": f"Status: {pref_match}"
+        })
+
+        # Overarching Verdict Determination
+        is_compliant = len(violations) == 0
+        overall_status = "COMPLIANT"
+        verdict_badge = "GREEN"
+        summary_label = "Transfer Policy 2009 Compliant"
+
+        if len(violations) > 0:
+            overall_status = "VIOLATION"
+            verdict_badge = "RED"
+            summary_label = f"{len(violations)} Policy Violation{'s' if len(violations) > 1 else ''} Detected"
+        elif len(cautions) > 0:
+            overall_status = "CAUTION"
+            verdict_badge = "YELLOW"
+            summary_label = f"Compliant with {len(cautions)} Administrative Advisory"
 
         return {
-            "tenure": {"status": tenure_status, "message": tenure_msg, "max_allowed": max_tenure},
+            "overall_status": overall_status,
+            "is_compliant": is_compliant,
+            "verdict_badge": verdict_badge,
+            "summary_label": summary_label,
+            "violations": violations,
+            "cautions": cautions,
+            "checks": checks,
+            "tenure": {"status": tenure_status, "message": tenure_msg, "max_allowed": max_tenure, "tenure_years": tenure_years},
             "spouse": {"status": spouse_status, "message": spouse_msg},
             "board_exam": {"status": exam_status, "message": exam_msg},
             "roster": {"status": roster_status, "message": roster_msg},
-            "preference": {"match": pref_match}
+            "preference": {"match": pref_match},
+            "superannuation": {"dor_years": round(dor_years, 1), "dor_str": dor_str}
         }
 
     # --- DYNAMIC OPTION REDUCTION QUERIES ---

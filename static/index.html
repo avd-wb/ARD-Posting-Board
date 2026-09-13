@@ -19,21 +19,32 @@
             theme: {
                 extend: {
                     colors: {
+                        apple: {
+                            black: '#000000',
+                            surface: '#0a0a0c',
+                            cardDark: '#161618',
+                            darkGray: '#1c1c1e',
+                            midGray: '#48484a',
+                            subtext: '#86868b',
+                            borderLight: '#e5e5ea',
+                            bgLight: '#f5f5f7',
+                            pureWhite: '#ffffff',
+                        },
                         wbblue: {
-                            50: '#f0f7ff',
-                            100: '#e0effe',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                            950: '#082f49',
+                            50: '#f5f5f7',
+                            100: '#e5e5ea',
+                            600: '#1c1c1e',
+                            700: '#111113',
+                            800: '#0a0a0c',
+                            900: '#000000',
+                            950: '#000000',
                         },
                         avdsaffron: {
-                            50: '#fff7ed',
-                            100: '#ffedd5',
-                            500: '#f97316',
-                            600: '#ea580c',
-                            700: '#c2410c',
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
                         },
                         wbgreen: {
                             50: '#f0fdf4',
@@ -41,6 +52,9 @@
                             600: '#16a34a',
                             700: '#15803d',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                     }
                 }
             }
@@ -58,11 +72,14 @@
         html {
             -webkit-text-size-adjust: 100%;
             scroll-behavior: smooth;
+            background-color: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, sans-serif;
         }
         body {
             padding-bottom: calc(4.5rem + var(--sab));
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            background-color: #f5f5f7;
         }
         @media (min-width: 768px) {
             body {
@@ -158,212 +175,229 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+<body class="bg-[#f5f5f7] text-[#1d1d1f] antialiased min-h-screen flex flex-col font-sans">
 
     <!-- Top Executive Header with Sticky Wrapper -->
-    <header class="bg-gradient-to-r from-wbblue-900 via-wbblue-800 to-slate-900 text-white shadow-lg sticky top-0 z-40">
-        <!-- ==================== ANIMATED CONFIDENTIAL BETA & 84H SYNC COUNTDOWN BANNER ==================== -->
-        <div id="betaSyncBanner" class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-amber-500/40 px-3 sm:px-6 py-1.5 shadow-inner relative overflow-hidden">
-            <!-- Animated shimmer light beam -->
-            <div class="absolute inset-0 pointer-events-none shimmer-bg opacity-40"></div>
-
-            <!-- Desktop View: Full 3-Section Layout -->
+    <header class="bg-black/95 backdrop-blur-xl border-b border-neutral-800 text-white shadow-md sticky top-0 z-40">
+        <!-- Animated Confidential Beta & 84h Sync Countdown Banner -->
+        <div id="betaSyncBanner" class="bg-neutral-950 border-b border-neutral-800/80 px-3 sm:px-6 py-1.5 shadow-inner relative overflow-hidden">
+            <div class="absolute inset-0 pointer-events-none shimmer-bg opacity-25"></div>
             <div class="max-w-7xl mx-auto hidden sm:flex items-center justify-between gap-2 text-xs relative z-10">
-                <!-- Left: Beta Version & Developing Stage Disclaimer -->
+                <!-- Left: Beta Version -->
                 <div class="flex items-center gap-2 flex-wrap justify-start">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/50 shadow-xs">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-neutral-900 text-neutral-300 border border-neutral-700 shadow-xs">
                         <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span>Beta Version · Developing Stage</span>
+                        <span>Beta Version · Active Departmental Verification</span>
                     </span>
-
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/40 shadow-xs">
-                        <i data-lucide="lock" class="w-3 h-3 text-amber-400"></i>
-                        <span>Private ; Do Not Share</span>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-neutral-900 text-neutral-400 border border-neutral-800 shadow-xs">
+                        <i data-lucide="lock" class="w-3 h-3 text-neutral-400"></i>
+                        <span>Confidential · Internal Administrative Board</span>
                     </span>
                 </div>
 
-                <!-- Center: Animated Data Syncing and Processing -->
-                <div class="flex items-center gap-2 justify-center radar-pulse">
-                    <div class="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-950/70 border border-cyan-400/40 text-cyan-300 shadow-xs">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-cyan-400 animate-spin" style="animation-duration: 2.5s;"></i>
-                        <span class="tracking-wider text-[11px] font-bold uppercase">&lsquo;Data Syncing and Processing ;&rsquo;</span>
-                        <span class="flex items-center gap-0.5 ml-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style="animation-delay: 0ms;"></span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style="animation-delay: 150ms;"></span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-bounce" style="animation-delay: 300ms;"></span>
-                        </span>
+                <!-- Center: Animated Data Syncing -->
+                <div class="flex items-center gap-2 justify-center">
+                    <div class="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300">
+                        <i data-lucide="refresh-cw" class="w-3 h-3 text-neutral-400 animate-spin" style="animation-duration: 3s;"></i>
+                        <span class="tracking-wider text-[11px] font-medium uppercase">Data Synchronized</span>
                     </div>
                 </div>
 
-                <!-- Right: 84-Hour Countdown Clock -->
+                <!-- Right: 84h Countdown Clock -->
                 <div class="flex items-center gap-2 justify-end">
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider hidden md:inline">
-                        84h Sync Window:
-                    </div>
-                    <div id="countdownCard" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/75 border border-amber-500/50 shadow-inner font-mono cursor-pointer hover:border-amber-400 transition" title="84-Hour Processing Window starting from 15:45 IST. Click to toggle elapsed countdown preview.">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                    <div class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider hidden md:inline">84h Sync Window:</div>
+                    <div id="countdownCard" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800 font-mono text-neutral-200 cursor-pointer hover:border-neutral-600 transition" title="84-Hour Processing Window starting from 15:45 IST">
+                        <i data-lucide="timer" class="w-3 h-3 text-neutral-400 shrink-0"></i>
                         <div class="flex items-center gap-1 text-xs">
-                            <div class="flex items-center bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-200 font-bold min-w-[32px] justify-center">
-                                <span id="countdownHours">84</span>
-                                <span class="text-[9px] text-amber-400/80 font-sans ml-0.5">h</span>
-                            </div>
-                            <span class="text-amber-400 font-bold animate-pulse">:</span>
-                            <div class="flex items-center bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-200 font-bold min-w-[28px] justify-center">
-                                <span id="countdownMinutes">00</span>
-                                <span class="text-[9px] text-amber-400/80 font-sans ml-0.5">m</span>
-                            </div>
-                            <span class="text-amber-400 font-bold animate-pulse">:</span>
-                            <div class="flex items-center bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-200 font-bold min-w-[28px] justify-center">
-                                <span id="countdownSeconds">00</span>
-                                <span class="text-[9px] text-amber-400/80 font-sans ml-0.5">s</span>
-                            </div>
+                            <span id="countdownHours" class="font-bold">84</span>h:
+                            <span id="countdownMinutes" class="font-bold">00</span>m:
+                            <span id="countdownSeconds" class="font-bold">00</span>s
                         </div>
                     </div>
-                    <span id="countdownBadgeStatus" class="text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 hidden lg:inline">
-                        From 15:45
-                    </span>
                 </div>
             </div>
 
-            <!-- Mobile View: Ultra-Compact Single-Row Ticker -->
+            <!-- Mobile View -->
             <div class="sm:hidden flex items-center justify-between w-full text-[11px] relative z-10 px-0.5">
-                <div class="flex items-center gap-1.5">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/50 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-                        Beta
-                    </span>
-                    <span class="text-cyan-300 text-[10px] font-semibold flex items-center gap-1">
-                        <i data-lucide="refresh-cw" class="w-2.5 h-2.5 animate-spin"></i>
-                        Syncing
-                    </span>
-                </div>
-                <!-- Compact mobile clock -->
-                <div id="countdownCardMobile" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/80 border border-amber-500/50 font-mono text-[10px] text-amber-300 font-bold">
-                    <i data-lucide="timer" class="w-3 h-3 text-amber-400 shrink-0"></i>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-neutral-900 text-neutral-300 border border-neutral-700 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Beta
+                </span>
+                <div id="countdownCardMobile" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 font-mono text-[10px] text-neutral-300">
+                    <i data-lucide="timer" class="w-3 h-3 text-neutral-400"></i>
                     <span><span id="countdownHoursMobile">84</span>h:<span id="countdownMinutesMobile">00</span>m:<span id="countdownSecondsMobile">00</span>s</span>
                 </div>
             </div>
         </div>
 
-        <!-- Official Disclaimer Sub-Bar (Beta Version - Developing Stage) -->
-        <div class="bg-amber-500/10 border-b border-amber-500/25 px-3 sm:px-6 py-1 text-center text-[10px] sm:text-[11px] text-amber-200 flex items-center justify-center gap-1.5 flex-wrap">
-            <span class="inline-flex items-center gap-1 font-bold text-amber-300 uppercase tracking-wider text-[9px] sm:text-[10px] bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-500/40">
-                <i data-lucide="shield-alert" class="w-3 h-3 text-amber-400"></i>
-                Official Disclaimer
-            </span>
-            <span class="line-clamp-1 sm:line-clamp-none"><strong>Beta Stage:</strong> Cadre data and simulation models under active departmental verification by ARD Department, GoWB.</span>
-        </div>
-
+        <!-- Main Header Bar -->
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14 sm:h-20">
+            <div class="flex items-center justify-between h-14 sm:h-16 gap-3">
                 <!-- Left: Government Branding -->
-                <div class="flex items-center space-x-2.5 sm:space-x-4">
-                    <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner shrink-0">
-                        <i data-lucide="shield-check" class="w-5 h-5 sm:w-7 sm:h-7 text-amber-400"></i>
+                <div class="flex items-center space-x-3 shrink-0">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-900 flex items-center justify-center border border-neutral-800 shadow-inner shrink-0">
+                        <i data-lucide="shield-check" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
                     </div>
                     <div>
-                        <div class="flex items-center space-x-1.5 sm:space-x-2">
-                            <span class="text-[9px] sm:text-xs font-semibold tracking-wider uppercase text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">Govt. of West Bengal</span>
-                            <span class="text-[9px] sm:text-xs text-blue-200 hidden xs:inline">| ARD Dept</span>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase text-neutral-400">Govt. of West Bengal</span>
+                            <span class="text-[9px] sm:text-[10px] text-neutral-500 hidden xs:inline">| ARD Dept</span>
                         </div>
-                        <h1 class="text-sm sm:text-xl font-bold tracking-tight text-white flex items-center gap-1.5 leading-tight">
+                        <h1 class="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-1.5 leading-tight">
                             <span>Smart Posting Decision Board</span>
-                            <span class="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-1.5 py-0.2 rounded font-mono hidden md:inline">AI Cadre</span>
+                            <span class="text-[9px] bg-neutral-800 text-neutral-300 border border-neutral-700 px-1.5 py-0.2 rounded font-mono hidden md:inline">Decision Maker</span>
                         </h1>
                     </div>
                 </div>
 
-                <!-- Right: Header Actions (Install App + AI Assistant + Mobile Menu) -->
-                <div class="flex items-center space-x-1.5 sm:space-x-2.5">
-                    <button id="btnOpenInstallModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-800 hover:from-teal-600 hover:to-emerald-500 text-white font-semibold text-xs rounded-lg shadow-md border border-teal-400/40 transition-all hover:scale-105 active:scale-95 touch-target" title="Install App on iPhone, Android or PC">
-                        <i data-lucide="download" class="w-4 h-4 text-amber-300 animate-bounce"></i>
-                        <span class="font-bold hidden sm:inline">Install App</span>
+                <!-- Center: Dedicated Universal Semantic Search Bar (Spotlight) -->
+                <div class="flex-1 max-w-md lg:max-w-lg mx-2 sm:mx-4">
+                    <div id="btnOpenSpotlightHeader" class="w-full flex items-center justify-between bg-neutral-900 hover:bg-neutral-800/90 text-neutral-300 border border-neutral-800 hover:border-neutral-600 rounded-full px-3.5 py-1.5 sm:py-2 cursor-pointer transition group shadow-xs">
+                        <div class="flex items-center gap-2 truncate">
+                            <i data-lucide="search" class="w-4 h-4 text-neutral-400 group-hover:text-white transition shrink-0"></i>
+                            <span class="text-xs text-neutral-400 group-hover:text-neutral-200 truncate select-none">Search anything: officer, post, district, order, policy rule...</span>
+                        </div>
+                        <kbd class="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-semibold text-neutral-400 bg-neutral-800 border border-neutral-700 rounded shadow-xs ml-2 shrink-0">
+                            <span>⌘K</span>
+                        </kbd>
+                    </div>
+                </div>
+
+                <!-- Right: Header Actions -->
+                <div class="flex items-center space-x-2 shrink-0">
+                    <button id="btnOpenInstallModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs rounded-full border border-neutral-800 hover:border-neutral-700 transition active:scale-95 touch-target" title="Install App">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-neutral-300"></i>
+                        <span class="hidden sm:inline text-[11px]">Install</span>
                     </button>
 
-                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg shadow transition active:scale-95 touch-target">
-                        <i data-lucide="bot" class="w-4 h-4 text-amber-200"></i>
-                        <span class="hidden sm:inline font-bold">AI Assistant</span>
-                        <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
-                        </span>
+                    <button id="btnToggleAIChat" class="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-black hover:bg-neutral-200 font-semibold text-xs rounded-full shadow transition active:scale-95 touch-target">
+                        <i data-lucide="bot" class="w-3.5 h-3.5 text-black"></i>
+                        <span class="hidden sm:inline text-[11px]">AI Copilot</span>
                     </button>
 
-                    <!-- Mobile More Modules Drawer Toggle -->
-                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white touch-target flex items-center justify-center transition active:scale-95" title="Open All Modules">
-                        <i data-lucide="menu" class="w-5 h-5 text-amber-300"></i>
+                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-neutral-900 text-neutral-300 touch-target flex items-center justify-center border border-neutral-800" title="Open All Modules">
+                        <i data-lucide="menu" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="bg-wbblue-950/70 border-t border-wbblue-700/40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <nav class="flex space-x-1 sm:space-x-3 overflow-x-auto py-2" id="navTabs">
-                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-wbblue-800 flex items-center gap-2 transition">
-                        <i data-lucide="list-ordered" class="w-4 h-4 text-amber-300"></i>
-                        <span>50-Point Roster Panel</span>
-                        <span id="badgeRosterCount" class="ml-1 text-[11px] bg-amber-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">242</span>
+        <!-- Navigation Tabs (Apple Monochrome Pills) -->
+        <div class="bg-black/90 border-t border-neutral-800/80">
+            <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+                <nav class="flex space-x-1 sm:space-x-1.5 overflow-x-auto py-2 no-scrollbar" id="navTabs">
+                    <button data-tab="tab-roster" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-black bg-white flex items-center gap-1.5 transition shadow-xs">
+                        <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i>
+                        <span>50-Point Roster</span>
+                        <span id="badgeRosterCount" class="text-[10px] bg-neutral-200 text-neutral-800 font-bold px-1.5 py-0.2 rounded-full">242</span>
                     </button>
 
-                    <button data-tab="tab-master-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-emerald-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="award" class="w-4 h-4 text-emerald-400"></i>
-                        <span class="font-bold">Authoritative Master (328)</span>
-                        <span id="badgeMasterOrdersCount" class="ml-1 text-[11px] bg-emerald-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">328</span>
+                    <button data-tab="tab-master-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="award" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Master Schedule</span>
+                        <span id="badgeMasterOrdersCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">328</span>
                     </button>
 
-                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
-                        <span>Obliterated Posts (Memo 1808)</span>
-                        <span id="badgeOblitCount" class="ml-1 text-[11px] bg-rose-500 text-white font-bold px-2 py-0.2 rounded-full">106</span>
+                    <button data-tab="tab-obliterated" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i>
+                        <span>Obliterated Posts (1808)</span>
+                        <span id="badgeOblitCount" class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-bold px-1.5 py-0.2 rounded-full">106</span>
                     </button>
 
-                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-300"></i>
-                        <span>Department Cadre (Memo 1809)</span>
-                        <span id="badgeCadreTotal" class="ml-1 text-[11px] bg-emerald-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">1,794</span>
+                    <button data-tab="tab-cadre" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Department Cadre (1809)</span>
+                        <span id="badgeCadreTotal" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">1,794</span>
                     </button>
 
-                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="users" class="w-4 h-4 text-purple-300"></i>
+                    <button data-tab="tab-displaced" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
                         <span>Displaced Pool</span>
-                        <span id="badgeDisplacedCount" class="ml-1 text-[11px] bg-purple-600 text-white font-bold px-2 py-0.2 rounded-full">0</span>
+                        <span id="badgeDisplacedCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </button>
 
-                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="git-merge" class="w-4 h-4 text-cyan-300"></i>
-                        <span>Simulation & Cascades</span>
-                        <span id="badgeSimCount" class="ml-1 text-[11px] bg-cyan-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">0</span>
+                    <button data-tab="tab-cascade" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="git-merge" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <span>Cascades & Simulation</span>
+                        <span id="badgeSimCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </button>
 
-                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="file-text" class="w-4 h-4 text-slate-300"></i>
-                        <span>Official Orders & Gazette</span>
-                        <span class="ml-1 text-[11px] bg-slate-600 text-white font-bold px-2 py-0.2 rounded-full">470</span>
+                    <button data-tab="tab-orders" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-neutral-400"></i>
+                        <span>Official Orders</span>
+                        <span class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">470</span>
                     </button>
 
-                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-300"></i>
-                        <span>District Post Visualizer</span>
-                        <span id="badgeVisualGridCount" class="ml-1 text-[11px] bg-emerald-600 text-white font-bold px-2 py-0.2 rounded-full">2,038</span>
+                    <button data-tab="tab-visual-grid" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="grid" class="w-3.5 h-3.5 text-neutral-400"></i>
+                        <span>Visualizer</span>
+                        <span id="badgeVisualGridCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">2,038</span>
                     </button>
 
-                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-blue-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="users" class="w-4 h-4 text-amber-300"></i>
-                        <span>Master Cadre Directory</span>
-                        <span id="badgeMasterCount" class="ml-1 text-[11px] bg-amber-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">1,624</span>
+                    <button data-tab="tab-master-directory" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="book-user" class="w-3.5 h-3.5 text-neutral-400"></i>
+                        <span>Directory</span>
+                        <span id="badgeMasterCount" class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">1,624</span>
                     </button>
 
-                    <button data-tab="tab-organogram" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-md text-amber-200 hover:text-white hover:bg-wbblue-800/60 flex items-center gap-2 transition">
-                        <i data-lucide="network" class="w-4 h-4 text-amber-300"></i>
-                        <span class="font-bold">ARD Organogram</span>
-                        <span class="ml-1 text-[11px] bg-amber-500 text-slate-900 font-bold px-2 py-0.2 rounded-full">7 Tiers</span>
+                    <button data-tab="tab-organogram" class="tab-btn px-3 py-1.5 text-xs font-semibold rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800/60 flex items-center gap-1.5 transition">
+                        <i data-lucide="network" class="w-3.5 h-3.5 text-neutral-400"></i>
+                        <span>Organogram</span>
+                        <span class="text-[10px] bg-neutral-800 text-neutral-300 font-bold px-1.5 py-0.2 rounded-full">7 Tiers</span>
                     </button>
                 </nav>
+            </div>
+        </div>
+
+        <!-- ==================== UNIVERSAL COLOR INDICATOR PERSISTENT LEGEND BAR ==================== -->
+        <div id="universalColorLegendBar" class="bg-neutral-950 border-t border-neutral-800/80 px-3 sm:px-6 py-1.5 text-xs">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap text-[11px]">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 shrink-0">Color Indicator:</span>
+                    
+                    <!-- GREEN -->
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] sm:text-[11px]" title="OK: Policy Compliant, Finalized Allotment, Clear Vacancy">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                        <strong class="text-white">GREEN:</strong>
+                        <span>OK · Complied · Finalized · Vacant</span>
+                    </div>
+
+                    <!-- RED -->
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/40 text-rose-300 text-[10px] sm:text-[11px]" title="Needs Attention: Policy Violation, Over-Tenure, Obliterated Post Pending, Collision Risk">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
+                        <strong class="text-white">RED:</strong>
+                        <span>Needs Attention · Policy Violation · Over-Tenure</span>
+                    </div>
+
+                    <!-- YELLOW -->
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[10px] sm:text-[11px]" title="Draft / Advisory: Pending Allotment, Administrative Advisory, Exemption Review">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+                        <strong class="text-white">YELLOW:</strong>
+                        <span>Draft · Pending Allotment · Advisory</span>
+                    </div>
+
+                    <!-- GREY -->
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 text-[10px] sm:text-[11px]" title="Unavailable: Abolished Post, Statutorily Locked, Inactive">
+                        <span class="w-2 h-2 rounded-full bg-neutral-400 shrink-0"></span>
+                        <strong class="text-white">GREY:</strong>
+                        <span>Not Available · Abolished · Locked</span>
+                    </div>
+
+                    <!-- BLUE -->
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-950/60 border border-sky-500/40 text-sky-300 text-[10px] sm:text-[11px]" title="Administrative: Substantive Post, Official Order, Info">
+                        <span class="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+                        <strong class="text-white">BLUE:</strong>
+                        <span>Administrative · Substantive · Info</span>
+                    </div>
+                </div>
+
+                <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 px-2.5 py-0.5 rounded-full transition shrink-0 whitespace-nowrap">
+                    <span>Transfer Policy 219/2009 Criteria</span>
+                    <span class="text-xs">⚖</span>
+                </button>
             </div>
         </div>
     </header>
@@ -1313,6 +1347,154 @@
 
     </main>
 
+    <!-- ==================== UNIVERSAL SPOTLIGHT SEMANTIC SEARCH MODAL ==================== -->
+    <div id="spotlightModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-start justify-center p-3 sm:p-6 pt-12 sm:pt-20">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-neutral-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            <!-- Top Search Input Bar -->
+            <div class="p-3.5 sm:p-4 border-b border-neutral-200 bg-neutral-50/70 flex items-center gap-3">
+                <i data-lucide="search" class="w-5 h-5 text-neutral-400 shrink-0"></i>
+                <input id="spotlightInput" type="text" placeholder="Type anything: officer name, HRMS, post title, district, block, order, policy rule..."
+                    class="w-full bg-transparent border-none outline-none text-sm sm:text-base text-neutral-900 placeholder-neutral-400 font-medium focus:ring-0">
+                <span id="spotlightSpinner" class="hidden text-neutral-400 animate-spin shrink-0">
+                    <i data-lucide="loader-2" class="w-4 h-4"></i>
+                </span>
+                <kbd class="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-200/80 rounded">ESC</kbd>
+                <button id="btnCloseSpotlightModal" class="p-1 text-neutral-400 hover:text-neutral-700 rounded-lg hover:bg-neutral-200/60 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="px-4 py-2 border-b border-neutral-100 bg-white flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
+                <button data-spotlight-filter="all" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-bold bg-black text-white shadow-xs">All Results</button>
+                <button data-spotlight-filter="officers" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">👤 Officers (<span id="spotlightCountOfficers">0</span>)</button>
+                <button data-spotlight-filter="posts" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">🏛️ Posts (<span id="spotlightCountPosts">0</span>)</button>
+                <button data-spotlight-filter="orders" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">📜 Orders (<span id="spotlightCountOrders">0</span>)</button>
+                <button data-spotlight-filter="rules" class="spotlight-filter-btn px-2.5 py-1 rounded-full text-[11px] font-semibold text-neutral-600 hover:bg-neutral-100">⚖️ Policy Rules (<span id="spotlightCountRules">0</span>)</button>
+            </div>
+
+            <!-- Results Scrollable Area -->
+            <div id="spotlightResultsContainer" class="p-3 sm:p-4 overflow-y-auto flex-1 divide-y divide-neutral-100 space-y-1">
+                <div class="py-12 text-center text-neutral-400 text-xs">
+                    <i data-lucide="sparkles" class="w-8 h-8 text-neutral-300 mx-auto mb-2"></i>
+                    <p class="font-semibold text-neutral-600">Universal Semantic Search</p>
+                    <p class="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
+                </div>
+            </div>
+
+            <!-- Spotlight Footer Hint -->
+            <div class="p-2.5 px-4 border-t border-neutral-200 bg-neutral-50/80 flex items-center justify-between text-[11px] text-neutral-500">
+                <div class="flex items-center gap-3">
+                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">↑↓</kbd> Navigate</span>
+                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">↵</kbd> Select</span>
+                    <span><kbd class="font-mono bg-neutral-200 px-1 rounded text-[10px]">ESC</kbd> Close</span>
+                </div>
+                <div class="font-semibold text-neutral-600">WB ARD Decision Board</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TRANSFER POLICY 2009 NORMS MODAL ==================== -->
+    <div id="policyInfoModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-neutral-200 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-neutral-200 bg-black text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center">
+                        <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Transfer Policy 2009 (Memo 291-AR & AH)</h3>
+                        <p class="text-[10px] text-neutral-400">Statutory Rules & Criteria for ARD Department Transfers & Promotions</p>
+                    </div>
+                </div>
+                <button id="btnClosePolicyInfoModal" class="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4 overflow-y-auto flex-1 text-xs leading-relaxed text-neutral-700">
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900">
+                    <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Automated Transfer Decision Compliance Engine</span>
+                    </div>
+                    <p class="text-[11px] mt-1 text-emerald-800/90">
+                        Every single promotion, transfer, and service utilization (SU) in this board is evaluated dynamically in real time against the following 6 core statutory criteria:
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>1. Area Tenure Norms</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">5 yrs / 4 yrs</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            Standard maximum tenure in a station/district is <strong>5.0 years</strong> for general areas, and <strong>4.0 years</strong> for difficult and hill districts (Darjeeling, Kalimpong, Alipurduar, Cooch Behar, Jalpaiguri, Uttar Dinajpur, Dakshin Dinajpur, Jhargram, Purulia). Officers exceeding this norm receive a <strong>🔴 RED</strong> rotation alert.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>2. Children Academic Board Exam Safeguard</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">Para 13</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            Under <strong>Memo 291 Para 13</strong>, officers whose children are appearing in Board Examinations (Class X Madhyamik/ICSE/CBSE or Class XII HS) must NOT be displaced outside their current district during the academic session. A <strong>🔴 RED</strong> warning is triggered if breached.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>3. Superannuation Exemption</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">DOR &le; 2 Years</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            Officers within 2 years of retirement date (DOR) are exempted from compulsory transfers and entitled to choice of home district or convenient station under statutory retirement welfare norms.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>4. Working Spouse Co-location</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">Para 5</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            Under <strong>Memo 291 Para 5</strong>, when an officer's spouse is employed in Government service or recognized educational institutions, postings should be accommodated in the same district or contiguous stations.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>5. Home District Restriction</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">Rule 75</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            Officers in administrative posts (Deputy Director, Assistant Director HQ) are generally prohibited from being posted to their Home District, unless within 2 years of superannuation.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                        <div class="font-bold text-neutral-900 flex items-center justify-between">
+                            <span>6. 50-Point Roster Reservation Quota</span>
+                            <span class="text-[10px] bg-neutral-200 text-neutral-800 font-mono px-2 py-0.5 rounded-full">WBCSC Statute</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-600 mt-1">
+                            The candidate's community category (SC, ST, OBC-A, OBC-B, UR) must align strictly with the statutory reservation cycle of the 50-Point Roster point.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3.5 border-t border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs">
+                <span class="text-[11px] text-neutral-500">Government of West Bengal • ARD Department</span>
+                <button id="btnClosePolicyInfoFooter" class="px-4 py-1.5 text-xs font-semibold text-neutral-800 hover:text-black rounded-lg border border-neutral-300 hover:bg-neutral-100 transition">
+                    Close Guide
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== ORGANOGRAM NODE DETAIL MODAL ==================== -->
     <div id="organogramNodeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
@@ -1446,6 +1628,24 @@
                             <div id="modalCollisionText" class="text-[11px] leading-relaxed"></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Live Transfer Policy 2009 Compliance Evaluation Box (Decision Maker Tool) -->
+                <div id="modalPolicyEvaluationBox" class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50 transition-all duration-200 hidden">
+                    <div class="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-inherit">
+                        <div class="flex items-center gap-2">
+                            <span id="modalPolicyBadgeIcon" class="w-6 h-6 rounded-full flex items-center justify-center font-black text-xs shadow-xs bg-emerald-500 text-white">✓</span>
+                            <div>
+                                <div id="modalPolicyTitle" class="text-xs font-bold leading-tight text-neutral-900">Transfer Policy 2009 Compliance Evaluation</div>
+                                <div id="modalPolicySubtitle" class="text-[10px] text-neutral-500">Statutory Audit: Memo 291 Area Tenure, Home District, & Board Exam Safeguards</div>
+                            </div>
+                        </div>
+                        <span id="modalPolicyOverallBadge" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">COMPLIANT</span>
+                    </div>
+                    <!-- Violations list if any -->
+                    <div id="modalPolicyViolations" class="hidden mb-2.5 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 text-[11px] leading-relaxed space-y-1"></div>
+                    <!-- Checklist grid -->
+                    <div id="modalPolicyChecksList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px]"></div>
                 </div>
 
                 <!-- Posting Reason Selection -->

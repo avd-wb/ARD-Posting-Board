@@ -11,3 +11,4 @@ file_manifest.json
 *.tmp
 .vercel
 debi_da_final.xlsx
+scratch/

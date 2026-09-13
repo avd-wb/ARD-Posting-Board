@@ -101,6 +101,12 @@ class BackupCreateRequest(BaseModel):
 class BackupRestoreRequest(BaseModel):
     filename: str
 
+class PolicyEvaluateRequest(BaseModel):
+    officer_hrms: str
+    substantive_post_id: int
+    su_post_id: Optional[int] = None
+    officer_type: Optional[str] = "roster"
+
 # --- API ENDPOINTS ---
 
 @app.get("/api/overview")
@@ -486,6 +492,288 @@ def get_officer_dossier_endpoint(hrms_id: str):
     if not dossier:
         raise HTTPException(status_code=404, detail=f"Officer HRMS {hrms_id} not found.")
     return dossier
+
+@app.post("/api/policy/evaluate")
+def evaluate_policy_endpoint(req: PolicyEvaluateRequest):
+    """
+    Evaluates transfer policy compliance (Transfer Policy 2009 / Memo 291)
+    for an officer and target post in real-time.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+
+    # 1. Fetch officer details
+    officer = None
+    cur.execute("SELECT * FROM roster_50_point_candidates WHERE hrms_id = ?", (req.officer_hrms,))
+    r = cur.fetchone()
+    if r:
+        officer = dict(r)
+    else:
+        cur.execute("SELECT * FROM obliterated_posts_1808 WHERE incumbent_hrms = ?", (req.officer_hrms,))
+        r = cur.fetchone()
+        if r:
+            officer = dict(r)
+        else:
+            cur.execute("SELECT * FROM cadre_1794_posts WHERE incumbent_hrms = ?", (req.officer_hrms,))
+            r = cur.fetchone()
+            if r:
+                officer = dict(r)
+            else:
+                cur.execute("SELECT * FROM master_all_cadre_employees WHERE hrms_id = ?", (req.officer_hrms,))
+                r = cur.fetchone()
+                if r:
+                    officer = dict(r)
+
+    if not officer:
+        conn.close()
+        return {
+            "overall_status": "UNKNOWN",
+            "is_compliant": False,
+            "verdict_badge": "GREY",
+            "summary_label": "Officer Record Not Found",
+            "violations": ["Officer record not found in database."],
+            "cautions": [],
+            "checks": []
+        }
+
+    # Enrich with extended dossier (PII, family details, board exams, spouse) if present
+    cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (req.officer_hrms,))
+    dossier_r = cur.fetchone()
+    if dossier_r:
+        dossier_dict = dict(dossier_r)
+        c_exam = str(dossier_dict.get("children_board_exams") or "").strip()
+        officer["children_board_exams"] = c_exam
+        if c_exam and c_exam.lower() not in ["none", "no", "nil", "n/a", ""] and not officer.get("family_details"):
+            officer["family_details"] = f"Child Board Exam: {c_exam}"
+        if dossier_dict.get("spouse_service_details"):
+            officer["family_details"] = f"{officer.get('family_details', '')} | Spouse: {dossier_dict.get('spouse_service_details')}".strip(" |")
+        if dossier_dict.get("dor") and not officer.get("service_ends"):
+            officer["service_ends"] = dossier_dict.get("dor")
+
+    # 2. Fetch target substantive post
+    target_post = None
+    cur.execute("SELECT * FROM available_dd_posts WHERE dd_sl = ?", (req.substantive_post_id,))
+    r = cur.fetchone()
+    if r:
+        target_post = dict(r)
+    else:
+        cur.execute("SELECT * FROM cadre_1794_posts WHERE id = ?", (req.substantive_post_id,))
+        r = cur.fetchone()
+        if r:
+            target_post = dict(r)
+
+    if not target_post:
+        conn.close()
+        return {
+            "overall_status": "UNKNOWN",
+            "is_compliant": False,
+            "verdict_badge": "GREY",
+            "summary_label": "Target Post Record Not Found",
+            "violations": ["Target post record not found in database."],
+            "cautions": [],
+            "checks": []
+        }
+
+    # 3. Check SU collision if SU post is specified
+    su_collision = None
+    if req.su_post_id:
+        cur.execute("SELECT * FROM cadre_1794_posts WHERE id = ?", (req.su_post_id,))
+        su_r = cur.fetchone()
+        if su_r:
+            su_p = dict(su_r)
+            if su_p.get("occupancy_status") == "Occupied" and str(su_p.get("incumbent_hrms") or "").strip() != str(req.officer_hrms).strip():
+                su_collision = {
+                    "incumbent_name": su_p.get("incumbent_name"),
+                    "incumbent_hrms": su_p.get("incumbent_hrms"),
+                    "post_name": su_p.get("post_name") or su_p.get("designation") or "Cadre Post",
+                    "district": su_p.get("district")
+                }
+
+    conn.close()
+
+    # Run core policy rules
+    res = engine.check_officer_rules(officer, target_post)
+
+    # SU conflict handling
+    if su_collision:
+        res["violations"].append(f"Service Utilization Collision: Selected SU post '{su_collision['post_name']}' in {su_collision['district']} is already occupied by {su_collision['incumbent_name']} (HRMS: {su_collision['incumbent_hrms']}). Allotment will trigger a displacement chain.")
+        res["overall_status"] = "VIOLATION"
+        res["is_compliant"] = False
+        res["verdict_badge"] = "RED"
+        res["summary_label"] = "Collision Risk Detected (Forced Displacement)"
+        res["checks"].append({
+            "criterion": "Service Utilization (SU) Conflict",
+            "clause": "Rule 75(a) Non-Collision",
+            "status": "COLLISION_RISK",
+            "badge": "RED",
+            "message": f"Post currently occupied by {su_collision['incumbent_name']} (HRMS: {su_collision['incumbent_hrms']})."
+        })
+    else:
+        res["checks"].append({
+            "criterion": "Service Utilization (SU) Conflict",
+            "clause": "Rule 75(a) Non-Collision",
+            "status": "CLEAR" if not req.su_post_id else "SU_ATTACHMENT_VERIFIED",
+            "badge": "GREEN",
+            "message": "No collision conflict." if not req.su_post_id else "SU attachment post verified available."
+        })
+
+    return res
+
+@app.get("/api/search/omni")
+def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
+    """
+    Universal Spotlight Search across:
+    - Officers / Personnel (Roster, Master Directory, Obliterated, Displaced)
+    - Sanctioned & Available Posts (1,794 Cadre, Available DD, SU posts)
+    - Official Orders & Gazettes (328 Authoritative, 470 Official)
+    - Policy Rules & Memos (Memo 291 of 2009, Memo 1808, Memo 1809, Rule 75a)
+    """
+    conn = get_db()
+    cur = conn.cursor()
+    query_str = f"%{q.strip()}%"
+
+    results = {
+        "query": q,
+        "officers": [],
+        "posts": [],
+        "orders": [],
+        "policy_rules": []
+    }
+
+    # 1. Search Officers
+    cur.execute("""
+    SELECT hrms_id, officer_name, designation, district, establishment AS current_office, mobile AS mobile_no, dor, 'master_employee' AS source
+    FROM master_all_cadre_employees
+    WHERE officer_name LIKE ? OR hrms_id LIKE ? OR designation LIKE ? OR district LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    emp_rows = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+    SELECT hrms_id, officer_name, caste, roster_point, point_reserved_for, allotment_status, substantive_post_name, su_post_name, 'roster' AS source
+    FROM roster_50_point_candidates
+    WHERE officer_name LIKE ? OR hrms_id LIKE ? OR roster_point LIKE ? OR substantive_post_name LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    roster_rows = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+    SELECT hrms_id, officer_name, post_name AS designation, district, rehabilitation_status AS allotment_status, substantive_post_name, 'obliterated' AS source
+    FROM obliterated_posts_1808
+    WHERE officer_name LIKE ? OR hrms_id LIKE ? OR post_name LIKE ? OR district LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    oblit_rows = [dict(r) for r in cur.fetchall()]
+
+    seen_hrms = set()
+    combined_officers = []
+    for o in roster_rows + oblit_rows + emp_rows:
+        hid = str(o.get("hrms_id") or "").strip()
+        if hid and hid not in seen_hrms:
+            seen_hrms.add(hid)
+            combined_officers.append(o)
+            if len(combined_officers) >= limit:
+                break
+    results["officers"] = combined_officers
+
+    # 2. Search Posts (Cadre 1,794 + Available DD)
+    cur.execute("""
+    SELECT id AS post_id, designation AS post_name, designation, establishment AS office, establishment, district, block, occupancy_status, incumbent_name, incumbent_hrms, pay_level, 'cadre_1794' AS source
+    FROM cadre_1794_posts
+    WHERE designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, query_str, limit))
+    cadre_rows = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+    SELECT dd_sl AS post_id, post_name, establishment, office, district, allotment_status AS occupancy_status, allotted_name AS incumbent_name, allotted_hrms AS incumbent_hrms, 'dd_post' AS source
+    FROM available_dd_posts
+    WHERE post_name LIKE ? OR office LIKE ? OR district LIKE ? OR dd_sl LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    dd_rows = [dict(r) for r in cur.fetchall()]
+    results["posts"] = (cadre_rows + dd_rows)[:limit]
+
+    # 3. Search Official Orders
+    cur.execute("""
+    SELECT order_index AS id, order_number, order_date, title AS subject, category, title AS summary, 'official_order' AS source
+    FROM official_orders
+    WHERE order_number LIKE ? OR title LIKE ? OR key_officers LIKE ? OR category LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    order_rows = [dict(r) for r in cur.fetchall()]
+
+    cur.execute("""
+    SELECT sl_no AS id, 'Master Order Schedule (328)' AS order_number, officer_name, hrms_id, present_post_full AS previous_posting, transferred_substantive_post AS final_substantive_post, transfer_basis, 'master_order' AS source
+    FROM master_final_order_schedule
+    WHERE officer_name LIKE ? OR hrms_id LIKE ? OR transferred_substantive_post LIKE ? OR present_post_full LIKE ?
+    LIMIT ?
+    """, (query_str, query_str, query_str, query_str, limit))
+    master_order_rows = [dict(r) for r in cur.fetchall()]
+    results["orders"] = (master_order_rows + order_rows)[:limit]
+
+    # 4. Search Policy Rules (Memo 291 of 2009, Rule 75a, Notifications 1808 & 1809)
+    policy_corpus = [
+        {
+            "id": "memo-291-tenure-general",
+            "title": "Transfer Policy 2009 (Memo 291): General Area Tenure",
+            "clause": "Normative Tenure: 5 Years",
+            "description": "Standard maximum tenure in a district/station is 5.0 years. Officers serving beyond 5 years are placed on rotation priority.",
+            "category": "Tenure Policy"
+        },
+        {
+            "id": "memo-291-tenure-difficult",
+            "title": "Transfer Policy 2009 (Memo 291): Difficult & Hill Zone Tenure",
+            "clause": "Normative Tenure: 4 Years",
+            "description": "Tenure in hill & difficult districts (Darjeeling, Kalimpong, Alipurduar, Cooch Behar, Jalpaiguri, Uttar Dinajpur, Dakshin Dinajpur, Jhargram, Purulia) is strictly 4.0 years.",
+            "category": "Tenure Policy"
+        },
+        {
+            "id": "memo-291-para-13-exams",
+            "title": "Transfer Policy 2009 Para 13: Children Board Examination Safeguard",
+            "clause": "Para 13 Protection",
+            "description": "Officers whose children are appearing in Class X or XII Board Exams (Madhyamik, ICSE, CBSE, HS) are protected against displacement outside their current district during the academic session.",
+            "category": "Welfare Safeguard"
+        },
+        {
+            "id": "memo-291-para-5-spouse",
+            "title": "Transfer Policy 2009 Para 5: Working Spouse Co-location",
+            "clause": "Para 5 Accommodation",
+            "description": "Spouses employed in State Govt, Central Govt, or School/Colleges are entitled to accommodation within the same district or contiguous stations.",
+            "category": "Family Welfare"
+        },
+        {
+            "id": "memo-291-superannuation",
+            "title": "Transfer Policy 2009: 2-Year Superannuation Exemption",
+            "clause": "Retirement Immunity",
+            "description": "Officers within 2 years of Date of Retirement (DOR) are exempted from routine transfers and granted priority for choice posting or home district.",
+            "category": "Retirement Norm"
+        },
+        {
+            "id": "notif-1809-cadre",
+            "title": "Reconstitution Rules 2025 (Notification No. 1809)",
+            "clause": "1,794 Restructured Cadre Posts",
+            "description": "Gazette notification restructuring WBAH&VS into 1,794 sanctioned posts across Directorate, HQ, Districts, Sub-Divisions, and Blocks.",
+            "category": "Cadre Statute"
+        },
+        {
+            "id": "notif-1808-obliteration",
+            "title": "Post Obliteration Schedule 2025 (Notification No. 1808)",
+            "clause": "106 Abolished Posts Rehabilitation",
+            "description": "Statutory abolition of 106 posts with complete rehabilitation and protection of 73 serving officers.",
+            "category": "Abolition Schedule"
+        }
+    ]
+
+    ql = q.lower()
+    matched_rules = [
+        rule for rule in policy_corpus
+        if ql in rule["title"].lower() or ql in rule["clause"].lower() or ql in rule["description"].lower() or ql in rule["category"].lower()
+    ]
+    results["policy_rules"] = matched_rules
+
+    conn.close()
+    return results
 
 @app.get("/api/master-orders")
 def get_master_orders_endpoint(
