@@ -819,6 +819,17 @@ def download_authoritative_master_ag():
         filename=os.path.basename(target_file)
     )
 
+@app.get("/api/download/live-synced-datasheet")
+def download_live_synced_datasheet():
+    file_path = os.path.join(BASE_DIR, "<00_LIVE_SYNCED>_<DATASHEET>_<ARD_POSTING_BOARD>_<AG>.xlsx")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Live synced backup data sheet not found.")
+    return FileResponse(
+        file_path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="<00_LIVE_SYNCED>_<DATASHEET>_<ARD_POSTING_BOARD>_<AG>.xlsx"
+    )
+
 # --- SERVE FRONTEND ---
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
