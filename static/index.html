@@ -183,53 +183,8 @@
                     </div>
                 </div>
 
-                <!-- Right: Action Bar -->
+                <!-- Right: Clean Header Action (AI Assistant) -->
                 <div class="flex items-center space-x-2.5">
-                    <button id="btnAutoSolve" class="inline-flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium text-sm rounded-lg shadow-md hover:shadow-lg transition border border-emerald-400/30">
-                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
-                        <span>Run AI Auto-Solver</span>
-                    </button>
-
-                    <button id="btnResetSim" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-700/80 hover:bg-slate-600 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                        <span>Reset</span>
-                    </button>
-
-                    <button id="btnOpenBackupModal" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
-                        <i data-lucide="database-backup" class="w-3.5 h-3.5 text-cyan-300"></i>
-                        <span>Backup & Restore</span>
-                    </button>
-
-                    <button id="btnOpenShareModal" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
-                        <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-300"></i>
-                        <span>Share Online</span>
-                    </button>
-
-                    <a href="/api/download/authoritative-master-ag" download class="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-lg border border-emerald-400/50 shadow-md transition" title="Download Official Verified Authoritative Master Promotion & Transfer Order (328 Officers with .AG.xlsx suffix)">
-                        <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-amber-300"></i>
-                        <span>Master Order (.AG.xlsx)</span>
-                    </a>
-
-                    <a href="/api/download/google-sheets-version" download class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-800 hover:bg-teal-700 text-teal-100 hover:text-white font-medium text-xs rounded-lg border border-teal-500/40 shadow-sm transition" title="Download Shareable Interactive Google Sheets Version (.xlsx)">
-                        <i data-lucide="table-2" class="w-3.5 h-3.5 text-teal-300"></i>
-                        <span>Google Sheet (.xlsx)</span>
-                    </a>
-
-                    <a href="/api/simulation/export-excel" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs rounded-lg border border-emerald-500/40 shadow-sm transition" title="Export Excel with 6 official columns">
-                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-200"></i>
-                        <span>Excel Order</span>
-                    </a>
-
-                    <a href="/api/simulation/export-docx" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs rounded-lg border border-blue-500/40 shadow-sm transition" title="Export Official Word Notification (Memo 391 standard)">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-200"></i>
-                        <span>Word (.docx)</span>
-                    </a>
-
-                    <a href="/api/simulation/view-order-html" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-medium text-xs rounded-lg border border-slate-600 shadow-sm transition" title="Printable Official Gazette Notification">
-                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                        <span>Gazette Order</span>
-                    </a>
-
                     <button id="btnToggleAIChat" class="relative inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg shadow transition">
                         <i data-lucide="bot" class="w-4 h-4"></i>
                         <span>AI Assistant</span>
@@ -732,6 +687,58 @@
 
         <!-- ==================== TAB 5: OFFICIAL ORDERS REPOSITORY ==================== -->
         <div id="tab-orders" class="tab-content hidden">
+            <!-- Executive Action Bar: Exports, Snapshots & Publishing Tools -->
+            <div class="bg-gradient-to-r from-slate-900 via-wbblue-950 to-slate-900 border border-slate-700/60 rounded-xl p-4 mb-4 shadow-md text-white">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-slate-900 uppercase tracking-wider">Executive Actions</span>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="download-cloud" class="w-4 h-4 text-emerald-400"></i>
+                                Official Order Exports, System Snapshots & Live Sharing
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-0.5">Generate official publication artifacts, gazette orders, Excel spreadsheets, and state snapshot backups.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="/api/download/authoritative-master-ag" download class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-lg border border-emerald-400/50 shadow transition" title="Download Official Verified Authoritative Master Promotion & Transfer Order (328 Officers with .AG.xlsx suffix)">
+                            <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-amber-300"></i>
+                            <span>Master Order (.AG.xlsx)</span>
+                        </a>
+
+                        <a href="/api/download/google-sheets-version" download class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-800 hover:bg-teal-700 text-teal-100 hover:text-white font-medium text-xs rounded-lg border border-teal-500/40 shadow-sm transition" title="Download Shareable Interactive Google Sheets Version (.xlsx)">
+                            <i data-lucide="table-2" class="w-3.5 h-3.5 text-teal-300"></i>
+                            <span>Google Sheet (.xlsx)</span>
+                        </a>
+
+                        <a href="/api/simulation/export-excel" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs rounded-lg border border-emerald-500/40 shadow-sm transition" title="Export Excel with 6 official columns">
+                            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-200"></i>
+                            <span>Excel Order</span>
+                        </a>
+
+                        <a href="/api/simulation/export-docx" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 text-white font-medium text-xs rounded-lg border border-blue-500/40 shadow-sm transition" title="Export Official Word Notification (Memo 391 standard)">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-200"></i>
+                            <span>Word (.docx)</span>
+                        </a>
+
+                        <a href="/api/simulation/view-order-html" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-medium text-xs rounded-lg border border-slate-600 shadow-sm transition" title="Printable Official Gazette Notification">
+                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            <span>Gazette Order</span>
+                        </a>
+
+                        <button id="btnOpenBackupModal" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
+                            <i data-lucide="database-backup" class="w-3.5 h-3.5 text-cyan-300"></i>
+                            <span>Backup & Restore</span>
+                        </button>
+
+                        <button id="btnOpenShareModal" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
+                            <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-300"></i>
+                            <span>Share Online</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>

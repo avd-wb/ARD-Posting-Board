@@ -888,10 +888,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        btnAutoSolve.addEventListener('click', triggerAutoSolve);
-        btnRunSolverCascade.addEventListener('click', triggerAutoSolve);
-        btnResetSim.addEventListener('click', triggerReset);
-        btnResetCascade.addEventListener('click', triggerReset);
+        if (btnAutoSolve) btnAutoSolve.addEventListener('click', triggerAutoSolve);
+        if (btnRunSolverCascade) btnRunSolverCascade.addEventListener('click', triggerAutoSolve);
+        if (btnResetSim) btnResetSim.addEventListener('click', triggerReset);
+        if (btnResetCascade) btnResetCascade.addEventListener('click', triggerReset);
     }
 
     // --- DUAL ALLOTMENT MODAL LOGIC WITH DYNAMIC OPTION REDUCTION ---
@@ -1087,13 +1087,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('backupTableBody');
         const countEl = document.getElementById('backupListCount');
 
-        btnOpen.addEventListener('click', async () => {
-            modal.classList.remove('hidden');
-            await loadBackups();
-        });
+        if (btnOpen) {
+            btnOpen.addEventListener('click', async () => {
+                modal.classList.remove('hidden');
+                await loadBackups();
+            });
+        }
 
-        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
-        btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
+        if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+        if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
 
         async function loadBackups() {
             try {
@@ -1262,9 +1264,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnClose = document.getElementById('btnCloseShareModal');
         const btnCloseFooter = document.getElementById('btnCloseShareFooter');
 
-        btnOpen.addEventListener('click', () => modal.classList.remove('hidden'));
-        btnClose.addEventListener('click', () => modal.classList.add('hidden'));
-        btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
+        if (btnOpen) btnOpen.addEventListener('click', () => modal.classList.remove('hidden'));
+        if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+        if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
     }
 
     // --- AI COPILOT INTERACTION ---
