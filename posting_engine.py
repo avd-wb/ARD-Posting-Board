@@ -1168,7 +1168,11 @@ class PostingEngine:
         cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (hrms_id,))
         ext_row = cur.fetchone()
         if ext_row:
-            officer.update(dict(ext_row))
+            for k, v in dict(ext_row).items():
+                if v not in (None, "", "—"):
+                    officer[k] = v
+                elif k not in officer:
+                    officer[k] = v
 
         # Official Gradation List lookup
         cur.execute("SELECT * FROM official_gradation_list WHERE hrms_id = ?", (hrms_id,))
@@ -1296,8 +1300,8 @@ class PostingEngine:
             "wbvc_reg_no": officer.get("wbvc_reg_no") or "—",
             "employee_id": officer.get("employee_id") or "—",
             "gradation_sl": officer.get("gradation_sl") or "—",
-            "office_code": officer.get("office_code") or "—",
-            "ddo_code": officer.get("ddo_code") or "—",
+            "office_code": officer.get("office_code") or (officer.get("current_post_record") or {}).get("office_code") or "—",
+            "ddo_code": officer.get("ddo_code") or (officer.get("current_post_record") or {}).get("ddo_code") or "—",
             "cadre": officer.get("cadre") or "West Bengal Animal Husbandry and Veterinary Service",
             "dob": officer.get("dob") or officer.get("incumbent_dob") or "—",
             "doj": officer.get("doj") or officer.get("incumbent_doj") or "—",

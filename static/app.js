@@ -3613,8 +3613,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${d.additional_charges ? `<div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Additional Charges:</strong> <span class="text-slate-800">${d.additional_charges}</span></div>` : ''}
                             ${d.last_order_no ? `<div><strong class="text-slate-600">Last Order No:</strong> <span class="font-mono text-slate-800">${d.last_order_no}</span> ${d.last_order_date ? `dt. ${d.last_order_date}` : ''}</div>` : ''}
                             ${d.continue_in_present_post ? `<div class="col-span-1 sm:col-span-2 p-2 rounded bg-amber-50 border border-amber-200 text-amber-900"><strong class="text-amber-950">Prayer to Continue in Present Post:</strong> ${d.continue_in_present_post}</div>` : ''}
-                            <div><strong class="text-slate-600">Office Code:</strong> <span class="font-mono text-slate-700">${d.office_code}</span></div>
-                            <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono text-slate-700">${d.ddo_code}</span></div>
+                            <div><strong class="text-slate-600">Office Code:</strong> <span class="font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-800 font-semibold">${d.office_code}</span></div>
+                            <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-900 font-semibold">${d.ddo_code}</span></div>
                             <div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Present Scale:</strong> ${d.present_pay_level}</div>
                         </div>
                     </div>
