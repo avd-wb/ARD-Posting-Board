@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.renderVisualGrid('visualGridBody', false, null);
                 } else if (targetTab === 'tab-master-directory') {
                     loadMasterDirectory();
+                } else if (targetTab === 'tab-organogram') {
+                    if (window.renderOrganogram) window.renderOrganogram();
                 }
             });
         });
@@ -3413,4 +3415,1009 @@ ${r.statutory_justification}
     initEmployeeDistricts();
 
     window.loadMasterDirectory = loadMasterDirectory;
+
+    // --- ARD DEPARTMENT ORGANOGRAM COMPONENT ---
+// --- ORGANOGRAM COMPONENT FOR ARD POSTING BOARD ---
+
+(function() {
+    const ARD_ORGANOGRAM_DATA = [
+        {
+            id: "tier-1",
+            tierNumber: "Tier 1",
+            tierName: "Departmental Secretariat & Governance",
+            levelBadge: "State Apex Policy",
+            badgeColor: "bg-amber-500 text-slate-950",
+            statutoryRef: "WBSCS Rules • WBSR Part I & II",
+            description: "Department of Animal Resources Development, Government of West Bengal. Policy formulation, budget appropriation, legislative governance, and cadre control.",
+            postsCount: "State Apex",
+            groups: ["secretariat"],
+            nodes: [
+                {
+                    id: "sec-mic",
+                    title: "Minister-in-Charge (MIC)",
+                    office: "ARD Department, Mantralaya / Nabanna",
+                    payLevel: "Cabinet Minister",
+                    cadre: "Constitutional Executive",
+                    posts: "1",
+                    headOfOffice: false,
+                    hooNote: "Apex Political Authority",
+                    superior: "Hon'ble Chief Minister & Cabinet",
+                    subordinates: "Additional Chief Secretary / Principal Secretary, ARD Department",
+                    sarReporting: "Cabinet & State Legislature",
+                    functions: "Departmental policy approvals, Cabinet memoranda, legislative bills, state livestock policy direction, inter-departmental allocations.",
+                    legalBasis: "Rules of Business, Government of West Bengal",
+                    tags: ["Secretariat", "Cabinet", "Policy"]
+                },
+                {
+                    id: "sec-acs",
+                    title: "Additional Chief Secretary / Principal Secretary",
+                    office: "ARD Department, Mantralaya / Nabanna & Prani Sampad Bhawan",
+                    payLevel: "Apex Scale (Level 17 / IAS)",
+                    cadre: "Indian Administrative Service (IAS)",
+                    posts: "1",
+                    headOfOffice: true,
+                    hooNote: "Chief Executive & Secretary to Govt.",
+                    superior: "Minister-in-Charge (MIC) & Chief Secretary, GoWB",
+                    subordinates: "Special Secretary, Joint Secretaries, DAH&VS (Level 22), Directorate Heads",
+                    sarReporting: "Accepting Authority for Additional Directors & Joint Directors; Reports to Chief Secretary",
+                    functions: "Administrative command of ARD Department, sanction of capital projects, financial concurrence, cadre notifications, DPC presiding authority.",
+                    legalBasis: "WBSR & West Bengal Secretariat Rules",
+                    tags: ["Secretariat", "IAS", "Executive Head"]
+                },
+                {
+                    id: "sec-spec-sec",
+                    title: "Special Secretary, ARD Department",
+                    office: "Secretariat Wing, Prani Sampad Bhawan",
+                    payLevel: "Supertime Scale (IAS / Senior WBCS)",
+                    cadre: "IAS / Senior WBCS (Exec)",
+                    posts: "1",
+                    headOfOffice: false,
+                    hooNote: "Secretariat Senior Executive",
+                    superior: "Additional Chief Secretary / Principal Secretary",
+                    subordinates: "Joint Secretaries, Deputy Secretaries, Assistant Secretaries",
+                    sarReporting: "Reviewing Officer for Joint Directors & Addl. Directors; Reports to ACS",
+                    functions: "Cadre management, Departmental Promotion Committees (DPC), vigilance and disciplinary proceedings, service rule amendments.",
+                    legalBasis: "WBSR & WBAH&VS Reconstitution Rules 2025",
+                    tags: ["Secretariat", "Cadre Control", "DPC"]
+                },
+                {
+                    id: "sec-joint-sec",
+                    title: "Joint Secretaries / Deputy Secretaries",
+                    office: "ARD Secretariat Wings (Administration, Budget, Dairy, Planning)",
+                    payLevel: "Level 19 - 21 (WBCS Exec / WBSS)",
+                    cadre: "WBCS (Exec) & West Bengal Secretariat Service",
+                    posts: "4 Wings",
+                    headOfOffice: false,
+                    hooNote: "Secretariat Branch Heads",
+                    superior: "Special Secretary & ACS",
+                    subordinates: "Assistant Secretaries, Section Officers, Registrars",
+                    sarReporting: "Reports to Special Secretary; Reviewing for Section Officers",
+                    functions: "Administrative sanctions, budget allocations, Plan expenditure monitoring, legislative questions, audit reconciliation.",
+                    legalBasis: "West Bengal Secretariat Manual of Office Procedure",
+                    tags: ["Secretariat", "Administration", "Budget"]
+                }
+            ]
+        },
+        {
+            id: "tier-2",
+            tierNumber: "Tier 2",
+            tierName: "Directorate Apex Command",
+            levelBadge: "Pay Level 22 (Apex Cadre)",
+            badgeColor: "bg-blue-600 text-white",
+            statutoryRef: "Notif. 1808-AR&AH & Notif. 1809-AR&AH dt. 18.06.2025",
+            description: "Directorate of Animal Health & Veterinary Services (DAH&VS), Prani Sampad Bhawan, Salt Lake. Technical leadership, statewide veterinary services, and epidemic defense.",
+            postsCount: "1 Post",
+            groups: ["secretariat"],
+            nodes: [
+                {
+                    id: "dir-dahvs",
+                    title: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    office: "Directorate Headquarters, Prani Sampad Bhawan, LB-2, Sector-III, Salt Lake, Kolkata-700106",
+                    payLevel: "Level 22 (ROPA 2019)",
+                    cadre: "Apex Head of WBAH&VS Cadre",
+                    posts: "1 Post (Incumbent: Dr. Nikhil Kumar Shit)",
+                    headOfOffice: true,
+                    hooNote: "Principal Head of Department / Head of Directorate",
+                    superior: "Additional Chief Secretary / Principal Secretary, ARD Department",
+                    subordinates: "8+1 Additional Directors, 23 Joint Directors (Districts), IAH&VB, Central Mega-Farms",
+                    sarReporting: "Reporting Officer for Addl. Directors & JDs; Accepting Authority for DDs, ADs, BLDOs & VOs",
+                    functions: "Overall technical and administrative command of the 1,794 reconstituted cadre posts. Implementation of state disease control, livestock breeding programs, statutory licensing, animal welfare, and cadre discipline.",
+                    legalBasis: "Notification No. 1808-AR&AH/3A-08/23 dt. 18.06.2025 & WBAH&VS Reconstitution Rules 2025",
+                    tags: ["Apex Command", "Pay Level 22", "Directorate Head", "Protected Post"]
+                },
+                {
+                    id: "dir-hq-cells",
+                    title: "Directorate Core Headquarters Staff Cells",
+                    office: "Prani Sampad Bhawan, Salt Lake, Kolkata",
+                    payLevel: "Pay Level 19 - 21 (DD / JD / AD Rank)",
+                    cadre: "WBAH&VS Directorate Officers & Ministerial Staff",
+                    posts: "5 Functional Cells",
+                    headOfOffice: false,
+                    hooNote: "Directorate Headquarters Cells",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "Section Officers, Statistical Officers, Technical Assistants",
+                    sarReporting: "Reports to DAH&VS",
+                    functions: "1. Law & Disciplinary Proceeding Cell\n2. Budget, Accounts & Audit Cell\n3. Planning, MIS, IT & Statistical Cell\n4. State Disease Surveillance & Rapid Response Cell\n5. Central Stores, Logistics & Medicine Procurement Cell",
+                    legalBasis: "Directorate Establishment Manual & WB Financial Rules",
+                    tags: ["HQ Cells", "Directorate", "Monitoring"]
+                }
+            ]
+        },
+        {
+            id: "tier-3",
+            tierNumber: "Tier 3",
+            tierName: "Functional & Zonal Directorate Wings",
+            levelBadge: "Pay Level 21",
+            badgeColor: "bg-purple-600 text-white",
+            statutoryRef: "Notif. 1809-AR&AH Schedule • Order No. 51-AR&AH dt. 07.01.2026",
+            description: "8+1 Sanctioned Additional Director Posts overseeing state technical programs, biological research & vaccine manufacturing, and the 4 administrative zonal divisions.",
+            postsCount: "8 + 1 Posts",
+            groups: ["zones", "iahvb"],
+            nodes: [
+                {
+                    id: "ad-iahvb",
+                    title: "Additional Director, ARD (IAH&VB & RDDL, Belgachia)",
+                    office: "Institute of Animal Health & Veterinary Biologicals, 37, Kshudiram Bose Sarani, Belgachia, Kolkata-700037",
+                    payLevel: "Level 21 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Directorate Cadre",
+                    posts: "1 Post",
+                    headOfOffice: true,
+                    hooNote: "Declared Head of Office vide Order No. 51-AR&AH dt. 07.01.2026",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "Joint Director (IAH&VB), Joint Director (RDDL), Research Officers, DDs & ADs (Virology, Bacteriology, Parasitology, Pathology)",
+                    sarReporting: "Reports to DAH&VS; Reviewing for JDs & DDs of IAH&VB; Accepting for IAH&VB Technical Staff",
+                    functions: "Autonomous technical and financial head of state vaccine production (Anthrax, HS, BQ, Rabies, Ranikhet), animal disease diagnosis, epidemiology reference lab, quality testing, and RDDL network supervision.",
+                    legalBasis: "Order No. 51-AR&AH dt. 07.01.2026 & Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Order 51", "IAH&VB", "Head of Office", "Vaccine Biologicals"]
+                },
+                {
+                    id: "ad-ah",
+                    title: "Additional Director, ARD (Animal Health & Epidemic Control)",
+                    office: "Directorate HQ, Prani Sampad Bhawan, Salt Lake",
+                    payLevel: "Level 21 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Directorate Cadre",
+                    posts: "1 Post",
+                    headOfOffice: false,
+                    hooNote: "Statewide Technical Wing Head",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "Joint Directors of ARD (District AH wings), State Polyclinic coordinators",
+                    sarReporting: "Reports to DAH&VS; Reviewing for technical officers in AH wing",
+                    functions: "Statewide disease surveillance, mass immunization campaigns (FMD, PPR, Brucellosis), disaster contingency, veterinary hospital clinical standards, veterinary medicines & equipment procurement.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Animal Health", "Epidemic Control", "Clinical Governance"]
+                },
+                {
+                    id: "ad-ap",
+                    title: "Additional Director, ARD (Animal Production & Breeding)",
+                    office: "Directorate HQ, Prani Sampad Bhawan, Salt Lake",
+                    payLevel: "Level 21 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Directorate Cadre",
+                    posts: "1 Post",
+                    headOfOffice: false,
+                    hooNote: "Statewide Production Wing Head",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "Joint Directors (Mega-Farms), DDs (Cattle Production & AI), Fodder specialists",
+                    sarReporting: "Reports to DAH&VS; Reviewing for Farm JDs and Cattle Production DDs",
+                    functions: "State breeding policy, Artificial Insemination (AI) coverage expansion, fodder seed production, conservation of indigenous breeds (Bengal Goat, Garole Sheep, Siri Cattle), mega-farm production monitoring.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Animal Production", "Breeding", "Mega-Farms"]
+                },
+                {
+                    id: "ad-nb",
+                    title: "Additional Director, ARD (North Bengal Setup, Siliguri)",
+                    office: "North Bengal Development Department Complex / Siliguri Directorate Wing",
+                    payLevel: "Level 21 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Directorate Cadre",
+                    posts: "1 Post",
+                    headOfOffice: true,
+                    hooNote: "Zonal Head of Office for North Bengal",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "8 District Joint Directors: Darjeeling, Kalimpong, Jalpaiguri, Alipurduar, Cooch Behar, Uttar Dinajpur, Dakshin Dinajpur, Malda",
+                    sarReporting: "Reports to DAH&VS; Reviewing Officer for North Bengal Joint Directors",
+                    functions: "Regional coordination of animal health, livestock development, hill cattle breeding, disease prevention in tea garden belts and international border zones of North Bengal.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["North Bengal", "Siliguri", "Zonal Head", "8 Districts"]
+                },
+                {
+                    id: "ad-zones",
+                    title: "Additional Directors, ARD (Zonal Divisions: Zone I, II, III, IV)",
+                    office: "Zonal Offices: Presidency (Kolkata), Burdwan, Medinipur, Malda",
+                    payLevel: "Level 21 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Directorate Cadre",
+                    posts: "4 Zonal Posts",
+                    headOfOffice: true,
+                    hooNote: "Divisional Zonal Heads",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "District Joint Directors within respective Administrative Division",
+                    sarReporting: "Reports to DAH&VS; Reviewing Officer for respective District Joint Directors",
+                    functions: "Divisional supervision of district performance, dispute resolution, inter-district resource balancing, disaster mobilization, and compliance monitoring.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Divisional Zones", "Presidency", "Burdwan", "Medinipur", "Malda"]
+                }
+            ]
+        },
+        {
+            id: "tier-4",
+            tierNumber: "Tier 4",
+            tierName: "District Directorate Heads & Central Mega-Farms",
+            levelBadge: "Pay Level 20",
+            badgeColor: "bg-indigo-600 text-white",
+            statutoryRef: "Order No. 575-AR&AH/3A-12/2025 dt. 27.02.2026",
+            description: "23 District Joint Directors declared statutory Heads of Office with financial powers, along with Joint Directors heading Central State Mega-Farms & Regional Diagnostic Labs.",
+            postsCount: "23 Districts + Farms",
+            groups: ["districts", "farms", "iahvb"],
+            nodes: [
+                {
+                    id: "jd-districts",
+                    title: "Joint Directors of ARD (District Heads)",
+                    office: "Offices of the Joint Director of ARD across 23 Districts of West Bengal",
+                    payLevel: "Level 20 (ROPA 2019)",
+                    cadre: "WBAH&VS Senior Administrative Cadre",
+                    posts: "23 District Posts + Siliguri Sub-Division",
+                    headOfOffice: true,
+                    hooNote: "Declared Head of Office with DDO & Financial Powers vide Order No. 575-AR&AH dt. 27.02.2026",
+                    superior: "Respective Zonal Addl. Director & Director, AH&VS",
+                    subordinates: "5 District Deputy Directors, Project Officer, 26 Polyclinic DDs, 344 BLDOs",
+                    sarReporting: "Reporting Officer for District DDs & PO; Reviewing Officer for BLDOs; Reports to Zonal Addl. Director",
+                    functions: "Statutory Head of Office for all ARD establishments in the district. Approves district expenditure, supervises 344 blocks, chairs District Animal Welfare Committees, liaises with District Magistrate (DM) and Zilla Parishad.",
+                    legalBasis: "Order No. 575-AR&AH/3A-12/2025 dt. 27.02.2026 & WB Financial Rules",
+                    tags: ["Order 575", "Head of Office", "District Head", "Financial DDO"]
+                },
+                {
+                    id: "jd-hclf",
+                    title: "Joint Director, Haringhata Central Livestock Farm (HCLF)",
+                    office: "Haringhata Central Livestock Farm Complex, Mohanpur, Nadia-741246",
+                    payLevel: "Level 20 (ROPA 2019)",
+                    cadre: "WBAH&VS Special Administrative Cadre",
+                    posts: "41 Sanctioned Cadre Posts (Farm Setup)",
+                    headOfOffice: true,
+                    hooNote: "Declared Head of Office for HCLF Estate",
+                    superior: "Additional Director (Animal Production) & DAH&VS",
+                    subordinates: "Deputy Directors (Farms, Dairy, Feed Mill), Assistant Directors, Veterinary Officers",
+                    sarReporting: "Reports to Addl. Director (AP); Reviewing for HCLF Officers",
+                    functions: "Executive management of West Bengal's largest livestock breeding estate (2,500+ acres). Operates high-yielding dairy herds, central feed manufacturing mill, elite germplasm bank, and certified fodder seed multiplication plots.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025 & Order No. 575-AR&AH",
+                    tags: ["HCLF Haringhata", "Mega-Farm", "41 Cadre Posts", "Germplasm"]
+                },
+                {
+                    id: "jd-other-farms",
+                    title: "Joint Directors / In-Charge, State Mega-Farms (Kalyani & Salboni)",
+                    office: "State Livestock Farm (SLF) Kalyani & Central Sheep & AH Farm (CSAHF) Salboni",
+                    payLevel: "Level 20 / Senior DD (Level 19)",
+                    cadre: "WBAH&VS Institutional Cadre",
+                    posts: "SLF Kalyani (12 posts) • CSAHF Salboni (14 posts)",
+                    headOfOffice: true,
+                    hooNote: "Institutional Head of Office",
+                    superior: "Additional Director (AP) & DAH&VS",
+                    subordinates: "Deputy Directors, Farm Managers, Veterinary Officers",
+                    sarReporting: "Reports to Addl. Director (AP); Reviewing for Farm Staff",
+                    functions: "SLF Kalyani: Cross-bred cattle elite breeding, fodder seed certification. CSAHF Salboni: Conservation of Garole sheep and Bengal black goat seedstock, pasture management in Jangalmahal.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["SLF Kalyani", "CSAHF Salboni", "Farms", "Conservation"]
+                },
+                {
+                    id: "jd-rddl",
+                    title: "Joint Directors / Heads, Regional Disease Diagnostic Labs (RDDLs)",
+                    office: "5 RDDLs: Belgachia Central, Jalpaiguri, Bethuadahari, Garbeta, Bardhaman",
+                    payLevel: "Level 20 / Senior DD (Level 19)",
+                    cadre: "WBAH&VS Specialist Diagnostic Cadre",
+                    posts: "5 Regional Diagnostic Hubs",
+                    headOfOffice: true,
+                    hooNote: "Regional Laboratory Head of Office",
+                    superior: "Additional Director (IAH&VB) & DAH&VS",
+                    subordinates: "Specialist Pathologists, Virologists, Microbiologists, Lab Technicians",
+                    sarReporting: "Reports to Addl. Director (IAH&VB)",
+                    functions: "Regional confirmatory testing for Anthrax, Brucella, Avian Influenza, PPR, ASF. Serological surveillance, sample banking, and epidemic outbreak investigations.",
+                    legalBasis: "Order No. 51-AR&AH dt. 07.01.2026 & Central DAH&D Guidelines",
+                    tags: ["RDDL", "IAH&VB", "Disease Diagnostics", "Biosafety"]
+                }
+            ]
+        },
+        {
+            id: "tier-5",
+            tierNumber: "Tier 5",
+            tierName: "Operational Specialists, Polyclinics & Breeding Stations",
+            levelBadge: "Pay Level 19",
+            badgeColor: "bg-emerald-600 text-white",
+            statutoryRef: "Notif. 1808-AR&AH • 50-Point Roster Schedule (242 Posts)",
+            description: "242 Sanctioned Deputy Director posts under statutory 50-point roster. 5 district functional wings, 26 State Veterinary Polyclinics (130 specialist posts), 8 poultry breeding stations, and training institutes.",
+            postsCount: "242 Sanctioned Posts",
+            groups: ["districts", "polyclinics", "farms"],
+            nodes: [
+                {
+                    id: "dd-district-wings",
+                    title: "Deputy Directors (5 District Core Wings)",
+                    office: "Offices of the JD ARD in 23 Districts",
+                    payLevel: "Level 19 (ROPA 2019)",
+                    cadre: "WBAH&VS Reconstituted DD Cadre (50-Point Roster)",
+                    posts: "115 Posts (5 per District across 23 Districts)",
+                    headOfOffice: false,
+                    hooNote: "District Functional Wing Directors",
+                    superior: "Joint Director of ARD (District Head)",
+                    subordinates: "Assistant Directors (VR&I, Fodder), BLDOs, Technical Assistants",
+                    sarReporting: "Reporting Officer for BLDOs in their discipline; Reports to District JD",
+                    functions: "1. DD (Animal Health): District-wide disease control, hospital monitoring.\n2. DD (Cattle Production & AI): Semen distribution, crossbreeding drives.\n3. DD (Fodder Development): Minikit supply, seed demonstration.\n4. DD (Microbiology & Lab): District laboratory diagnostics.\n5. Project Officer (PO) / DD (Special Projects): RKVY, NRLM, state subsidy schemes.",
+                    legalBasis: "Notification No. 1808-AR&AH & Order No. 575-AR&AH",
+                    tags: ["5 Core Wings", "Level 19", "District Specialists", "50-Point Roster"]
+                },
+                {
+                    id: "dd-polyclinics",
+                    title: "Deputy Directors (In-Charge, 26 State Veterinary Polyclinics)",
+                    office: "26 State Veterinary Polyclinics situated across West Bengal",
+                    payLevel: "Level 19 (ROPA 2019)",
+                    cadre: "WBAH&VS Clinical Specialist Cadre",
+                    posts: "26 DD Posts (+ 104 Specialist VOs = 130 Clinical Specialists)",
+                    headOfOffice: true,
+                    hooNote: "Declared Head of Office for Polyclinic Establishment",
+                    superior: "Joint Director of ARD (District) & Additional Director (AH)",
+                    subordinates: "4 Specialist Veterinary Officers each: Surgery, Medicine, Gynaecology & Obstetrics, Diagnostics",
+                    sarReporting: "Reporting Officer for 4 Specialist VOs; Reports to District JD",
+                    functions: "Apex tertiary clinical care for large and small animals. Multi-specialty veterinary surgeries, radiographic & ultrasonographic imaging, advanced obstetrics, inpatient critical care, and emergency trauma referral center.",
+                    legalBasis: "Notification No. 1808-AR&AH & Order No. 575-AR&AH",
+                    tags: ["Polyclinic", "26 Centers", "130 Specialists", "Tertiary Care"]
+                },
+                {
+                    id: "dd-poultry-stations",
+                    title: "Deputy Directors / Managers, 8 State Poultry & Duck Stations",
+                    office: "Kakdwip, Nimpith, Gobardanga, Ranaghat, Durgapur, Balurghat, Mohitnagar, Golapbag",
+                    payLevel: "Level 19 (ROPA 2019)",
+                    cadre: "WBAH&VS Production Cadre",
+                    posts: "8 Intensive Stations",
+                    headOfOffice: true,
+                    hooNote: "Breeding Station Head of Office",
+                    superior: "Additional Director (AP) & District Joint Director",
+                    subordinates: "Assistant Directors, Hatchery Officers, Farm Supervisors",
+                    sarReporting: "Reports to Addl. Director (AP) / District JD",
+                    functions: "Hatchery management, production and supply of day-old chicks and ducklings (RIR, Vanaraja, Khaki Campbell) to rural self-help groups (SHGs), biosecurity and genetic improvement of avian germplasm.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Poultry Stations", "Hatcheries", "Avian Breeding", "SHG Supply"]
+                },
+                {
+                    id: "dd-training-institutes",
+                    title: "Deputy Directors / Principals, Animal Husbandry Training Institutes",
+                    office: "AHTI Medinipur, Salboni, and Regional Training Centres",
+                    payLevel: "Level 19 (ROPA 2019)",
+                    cadre: "WBAH&VS Training Cadre",
+                    posts: "Training Setup",
+                    headOfOffice: true,
+                    hooNote: "Training Institute Head of Office",
+                    superior: "Director of Animal Health & Veterinary Services (DAH&VS)",
+                    subordinates: "Assistant Directors (Lecturers), Instructors, Trainee Paravets",
+                    sarReporting: "Reports to DAH&VS",
+                    functions: "Institutional pre-service and in-service training for Livestock Development Assistants (LDAs), refresher courses on modern artificial insemination, biosecurity protocols, cold chain management, and skill certification.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Training Institute", "AHTI Medinipur", "Capacity Building", "Paravets"]
+                }
+            ]
+        },
+        {
+            id: "tier-6",
+            tierNumber: "Tier 6",
+            tierName: "Block Animal Husbandry Tier",
+            levelBadge: "Pay Level 16 / 17",
+            badgeColor: "bg-amber-600 text-white",
+            statutoryRef: "Panchayat Act • WBAH&VS Reconstitution Rules 2025",
+            description: "344 Block Livestock Development Offices (BLDOs) driving grassroots livestock administration, artificial insemination, and departmental scheme execution across every block of West Bengal.",
+            postsCount: "344 BLDOs",
+            groups: ["districts"],
+            nodes: [
+                {
+                    id: "bldo-blocks",
+                    title: "Block Livestock Development Officers (BLDOs)",
+                    office: "344 Block Livestock Development Offices across all Community Development Blocks",
+                    payLevel: "Level 16 / Level 17 (WBAH&VS)",
+                    cadre: "WBAH&VS Operational Cadre",
+                    posts: "344 Sanctioned Block Posts",
+                    headOfOffice: true,
+                    hooNote: "Block Head of Office & DDO for Block ARD Setup",
+                    superior: "Joint Director of ARD (District) & respective District DDs",
+                    subordinates: "Block LDAs, Veterinary Pharmacists, Prani Bandhus, Prani Mitras",
+                    sarReporting: "Reporting: Respective DD/PO • Reviewing: Joint Director • Accepting: DAH&VS",
+                    functions: "Chief administrative executive of ARD at the Block/Panchayat Samiti level. Executes state livestock incentive schemes, manages disaster relief, supervises doorstep AI services, administers block drug store, coordinates with BDO.",
+                    legalBasis: "Order No. 575-AR&AH dt. 27.02.2026 & West Bengal Panchayat Act",
+                    tags: ["BLDO", "344 Blocks", "Panchayat Samiti", "Field Executive"]
+                },
+                {
+                    id: "ad-specialist-wings",
+                    title: "Assistant Directors (Specialized Wings: VR&I, Fodder, Small Animals)",
+                    office: "District Headquarters & Sub-Divisional Offices",
+                    payLevel: "Level 16 / 17 (ROPA 2019)",
+                    cadre: "WBAH&VS Technical Cadre",
+                    posts: "District Sub-Wings",
+                    headOfOffice: false,
+                    hooNote: "District Specialist Wing Officers",
+                    superior: "Respective Deputy Director & Joint Director of ARD",
+                    subordinates: "Field Assistants, Inseminators, Demonstration Staff",
+                    sarReporting: "Reports to respective DD; Reviewing: Joint Director; Accepting: DAH&VS",
+                    functions: "Vaccine Research & Investigation (VR&I), cold chain logistics, fodder demonstration plots, small animal extension (Black Bengal goat, piggery multiplication).",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Assistant Directors", "VR&I", "Fodder", "Small Animals"]
+                }
+            ]
+        },
+        {
+            id: "tier-7",
+            tierNumber: "Tier 7",
+            tierName: "Field Primary Veterinary Clinical Infrastructure",
+            levelBadge: "Pay Level 16",
+            badgeColor: "bg-rose-600 text-white",
+            statutoryRef: "Notif. 1809-AR&AH Cadre Schedule (703 Hospitals + 1962 MVUs)",
+            description: "Primary animal health backbone: 87 State Animal Health Centres (SAHC), 342 Block Animal Health Centres (BAHC), 274 Additional Block Animal Health Centres (ABAHC), and Mobile Veterinary Units.",
+            postsCount: "703 Centres + MVUs",
+            groups: ["districts"],
+            nodes: [
+                {
+                    id: "vo-hospitals",
+                    title: "Veterinary Officers (SAHC / BAHC / ABAHC)",
+                    office: "87 SAHCs, 342 BAHCs, 274 ABAHCs situated throughout rural and urban West Bengal",
+                    payLevel: "Level 16 (ROPA 2019)",
+                    cadre: "WBAH&VS Entry & Clinical Cadre",
+                    posts: "703 Sanctioned Primary Clinical Centres",
+                    headOfOffice: false,
+                    hooNote: "Clinical Centre In-Charge",
+                    superior: "Block Livestock Development Officer (BLDO) & District DD (AH)",
+                    subordinates: "Livestock Development Assistants (LDAs), Dressers, Attendants",
+                    sarReporting: "Reporting: Respective DD/PO • Reviewing: Joint Director • Accepting: DAH&VS",
+                    functions: "Direct frontline veterinary medical care, out-patient consultations, minor and major surgeries, preventive rabies prophylaxis, emergency obstetrical interventions, post-mortem examinations, epidemic outbreak reporting.",
+                    legalBasis: "Notification No. 1809-AR&AH dt. 18.06.2025",
+                    tags: ["Veterinary Officers", "SAHC", "BAHC", "ABAHC", "Primary Healthcare"]
+                },
+                {
+                    id: "vo-mvu",
+                    title: "Veterinary Officers, Mobile Veterinary Units (MVUs)",
+                    office: "1962 Mobile Veterinary Units operating in rural and remote gram panchayats",
+                    payLevel: "Level 16 (ROPA 2019)",
+                    cadre: "WBAH&VS Clinical Cadre",
+                    posts: "Doorstep Ambulatory Network",
+                    headOfOffice: false,
+                    hooNote: "Mobile Unit Clinician",
+                    superior: "Block Livestock Development Officer (BLDO) & District DD (AH)",
+                    subordinates: "Paravet, Driver-cum-Attendant",
+                    sarReporting: "Reports to BLDO & DD (AH)",
+                    functions: "Doorstep emergency veterinary healthcare, clinical treatment of animals in remote villages, organized vaccination camps, rapid response during natural disasters (floods, cyclones).",
+                    legalBasis: "State MVU Mission & GoI DAHD Scheme",
+                    tags: ["MVU", "Doorstep Healthcare", "Ambulatory", "Disaster Response"]
+                }
+            ]
+        }
+    ];
+
+    let currentOrganogramFilter = 'all';
+    let collapsedTiers = {};
+
+    function getOrganogramNodeById(nodeId) {
+        for (const tier of ARD_ORGANOGRAM_DATA) {
+            for (const node of tier.nodes) {
+                if (node.id === nodeId) return { node, tier };
+            }
+        }
+        return null;
+    }
+
+    function renderSARFlowDiagram() {
+        return `
+        <div class="space-y-6">
+            <!-- Banner -->
+            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-5 text-white shadow-md border border-blue-700">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900">Statutory Performance Appraisal</span>
+                            <span class="text-xs text-blue-200">Memo No. 926-AR&AH/3A-08/2021 dt. 25.04.2022 & Memo No. 1393 dt. 08.06.2026</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mt-1">West Bengal Animal Health & Veterinary Services (WBAH&VS) SAR / ACR Statutory Channels</h3>
+                        <p class="text-xs text-blue-100 mt-1 max-w-3xl">
+                            All performance appraisals (Self Appraisal Reports / Annual Confidential Reports) within the 1,794-post cadre flow through strictly designated 3-tier statutory appraisal chains.
+                        </p>
+                    </div>
+                    <div class="text-right text-xs">
+                        <div class="font-bold text-amber-300">Timelines</div>
+                        <div class="text-blue-200 text-[11px]">Self: By 30 Apr • Reporting: By 31 May<br>Review: By 30 Jun • Accept: By 31 Jul</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flowcards Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Flow 1: Field Officers & BLDOs -->
+                <div class="bg-white rounded-xl border-2 border-rose-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="bg-rose-50 border-b border-rose-200 p-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white uppercase">Channel 1</span>
+                        <h4 class="font-bold text-sm text-slate-900 mt-1">Field Clinical Cadre & BLDOs</h4>
+                        <p class="text-[11px] text-slate-500">VOs (SAHC / BAHC / ABAHC / MVU) & BLDOs (Pay Level 16 / 17)</p>
+                    </div>
+                    <div class="p-4 space-y-4 flex-1">
+                        <!-- Step 1 -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Step 1: Self Appraisal Submission</div>
+                            <div class="font-semibold text-xs text-slate-800 mt-0.5">Veterinary Officer / BLDO</div>
+                            <div class="text-[11px] text-slate-500">Submits SAR Form 1 with quantitative targets</div>
+                        </div>
+                        <div class="flex justify-center text-rose-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div class="text-[10px] font-bold text-amber-700 uppercase">Step 2: Reporting Officer</div>
+                            <div class="font-bold text-xs text-amber-950 mt-0.5">Respective Deputy Director / PO</div>
+                            <div class="text-[11px] text-amber-800">Assigns numerical score, pen-picture & integrity note</div>
+                        </div>
+                        <div class="flex justify-center text-rose-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <div class="text-[10px] font-bold text-indigo-700 uppercase">Step 3: Reviewing Officer</div>
+                            <div class="font-bold text-xs text-indigo-950 mt-0.5">Joint Director of ARD (District)</div>
+                            <div class="text-[11px] text-indigo-800">Reviews grading, records remarks or disagreement</div>
+                        </div>
+                        <div class="flex justify-center text-rose-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <div class="text-[10px] font-bold text-emerald-700 uppercase">Step 4: Accepting Authority</div>
+                            <div class="font-bold text-xs text-emerald-950 mt-0.5">Director of AH&VS (Apex Cadre - Level 22)</div>
+                            <div class="text-[11px] text-emerald-800">Final acceptance and custody in dossier register</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow 2: Deputy Directors & POs -->
+                <div class="bg-white rounded-xl border-2 border-emerald-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="bg-emerald-50 border-b border-emerald-200 p-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white uppercase">Channel 2</span>
+                        <h4 class="font-bold text-sm text-slate-900 mt-1">Deputy Directors & Project Officers</h4>
+                        <p class="text-[11px] text-slate-500">District DDs, Polyclinic DDs, Poultry DDs (Pay Level 19 - 242 Posts)</p>
+                    </div>
+                    <div class="p-4 space-y-4 flex-1">
+                        <!-- Step 1 -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Step 1: Self Appraisal Submission</div>
+                            <div class="font-semibold text-xs text-slate-800 mt-0.5">Deputy Director / PO</div>
+                            <div class="text-[11px] text-slate-500">Submits SAR Form 2 with district milestone achievements</div>
+                        </div>
+                        <div class="flex justify-center text-emerald-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div class="text-[10px] font-bold text-amber-700 uppercase">Step 2: Reporting Officer</div>
+                            <div class="font-bold text-xs text-amber-950 mt-0.5">Joint Director of ARD (District / Mega-Farm)</div>
+                            <div class="text-[11px] text-amber-800">Evaluates district wing output, leadership & integrity</div>
+                        </div>
+                        <div class="flex justify-center text-emerald-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <div class="text-[10px] font-bold text-indigo-700 uppercase">Step 3: Reviewing Officer</div>
+                            <div class="font-bold text-xs text-indigo-950 mt-0.5">Additional Director of ARD (Zonal / Functional)</div>
+                            <div class="text-[11px] text-indigo-800">Divisional quality audit and appraisal review</div>
+                        </div>
+                        <div class="flex justify-center text-emerald-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <div class="text-[10px] font-bold text-emerald-700 uppercase">Step 4: Accepting Authority</div>
+                            <div class="font-bold text-xs text-emerald-950 mt-0.5">Director of AH&VS (Apex Cadre - Level 22)</div>
+                            <div class="text-[11px] text-emerald-800">Final acceptance and DPC benchmark certification</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow 3: Joint Directors & Additional Directors -->
+                <div class="bg-white rounded-xl border-2 border-purple-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="bg-purple-50 border-b border-purple-200 p-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white uppercase">Channel 3</span>
+                        <h4 class="font-bold text-sm text-slate-900 mt-1">Joint Directors & Additional Directors</h4>
+                        <p class="text-[11px] text-slate-500">District JDs, Farm JDs, RDDL JDs, Addl. Directors (Pay Level 20 & 21)</p>
+                    </div>
+                    <div class="p-4 space-y-4 flex-1">
+                        <!-- Step 1 -->
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Step 1: Self Appraisal Submission</div>
+                            <div class="font-semibold text-xs text-slate-800 mt-0.5">Joint Director / Additional Director</div>
+                            <div class="text-[11px] text-slate-500">Submits SAR Form 3 with executive leadership achievements</div>
+                        </div>
+                        <div class="flex justify-center text-purple-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div class="text-[10px] font-bold text-amber-700 uppercase">Step 2: Reporting Officer</div>
+                            <div class="font-bold text-xs text-amber-950 mt-0.5">Director of AH&VS (Apex Cadre - Level 22)</div>
+                            <div class="text-[11px] text-amber-800">Technical leadership assessment and statewide impact</div>
+                        </div>
+                        <div class="flex justify-center text-purple-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <div class="text-[10px] font-bold text-indigo-700 uppercase">Step 3: Reviewing Officer</div>
+                            <div class="font-bold text-xs text-indigo-950 mt-0.5">Special Secretary, ARD Department</div>
+                            <div class="text-[11px] text-indigo-800">Secretariat review of administrative and fiscal performance</div>
+                        </div>
+                        <div class="flex justify-center text-purple-500">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <div class="text-[10px] font-bold text-emerald-700 uppercase">Step 4: Accepting Authority</div>
+                            <div class="font-bold text-xs text-emerald-950 mt-0.5">Additional Chief Secretary / Principal Secretary</div>
+                            <div class="text-[11px] text-emerald-800">Final acceptance by Government for Apex Promotion</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    function renderOrganogram() {
+        const container = document.getElementById('organogramTreeContainer');
+        if (!container) return;
+
+        if (currentOrganogramFilter === 'sar') {
+            container.innerHTML = renderSARFlowDiagram();
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        const searchQuery = (document.getElementById('organogramSearch')?.value || '').trim().toLowerCase();
+
+        let visibleTiers = [];
+
+        ARD_ORGANOGRAM_DATA.forEach(tier => {
+            // Check if tier matches current filter
+            let tierMatchesGroup = (currentOrganogramFilter === 'all') || tier.groups.includes(currentOrganogramFilter);
+
+            // Filter nodes inside tier
+            const filteredNodes = tier.nodes.filter(node => {
+                let nodeMatchesGroup = (currentOrganogramFilter === 'all') || 
+                                       tier.groups.includes(currentOrganogramFilter) ||
+                                       (node.tags && node.tags.some(t => t.toLowerCase().includes(currentOrganogramFilter)));
+
+                if (!nodeMatchesGroup) return false;
+
+                if (!searchQuery) return true;
+
+                // Match against search query
+                const haystack = [
+                    node.title,
+                    node.office,
+                    node.payLevel,
+                    node.cadre,
+                    node.functions,
+                    node.superior,
+                    node.subordinates,
+                    node.legalBasis,
+                    ...(node.tags || [])
+                ].join(' ').toLowerCase();
+
+                return haystack.includes(searchQuery);
+            });
+
+            if (filteredNodes.length > 0) {
+                visibleTiers.push({
+                    tier,
+                    nodes: filteredNodes
+                });
+            }
+        });
+
+        if (visibleTiers.length === 0) {
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-3">
+                        <i data-lucide="filter-x" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-800">No Administrative Nodes Match Your Query</h3>
+                    <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                        Try searching with different keywords (e.g. "Polyclinic", "HCLF", "IAH&VB", "Joint Director", "Level 20") or reset the filter pills.
+                    </p>
+                    <button onclick="window.setOrganogramFilter('all'); document.getElementById('organogramSearch').value = ''; window.renderOrganogram();" class="mt-4 px-4 py-2 rounded-lg bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 transition">
+                        Reset All Filters
+                    </button>
+                </div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        let html = '';
+
+        visibleTiers.forEach(({ tier, nodes }) => {
+            const isCollapsed = !!collapsedTiers[tier.id];
+
+            html += `
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200" id="${tier.id}">
+                <!-- Tier Header -->
+                <div class="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-wbblue-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none" onclick="window.toggleOrganogramTier('${tier.id}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl ${tier.badgeColor} font-black text-xs flex items-center justify-center shadow shrink-0">
+                            ${tier.tierNumber.replace('Tier ', 'T')}
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-base sm:text-lg font-black tracking-tight text-white">${tier.tierName}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${tier.badgeColor}">
+                                    ${tier.levelBadge}
+                                </span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-blue-200 border border-white/20">
+                                    ${tier.postsCount}
+                                </span>
+                            </div>
+                            <p class="text-xs text-blue-200 mt-1 line-clamp-1 max-w-3xl">${tier.description}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-blue-200 shrink-0 self-end sm:self-center">
+                        <span class="text-[11px] text-amber-300 font-mono hidden md:inline-block">${tier.statutoryRef}</span>
+                        <div class="p-1 rounded-lg bg-white/10 hover:bg-white/20 transition">
+                            <i data-lucide="${isCollapsed ? 'chevron-right' : 'chevron-down'}" class="w-5 h-5 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tier Nodes Content -->
+                <div class="${isCollapsed ? 'hidden' : 'p-5'} space-y-4 bg-slate-50/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${nodes.map(node => `
+                            <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:border-wbblue-400 transition-all flex flex-col justify-between group">
+                                <div class="space-y-3">
+                                    <!-- Card Header -->
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="space-y-1 flex-1">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                                                    ${node.payLevel}
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                                    ${node.posts}
+                                                </span>
+                                                ${node.headOfOffice ? `
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                                        <i data-lucide="check-circle" class="w-3 h-3"></i> Head of Office
+                                                    </span>
+                                                ` : ''}
+                                            </div>
+                                            <h4 class="font-bold text-sm text-slate-900 group-hover:text-wbblue-700 transition leading-snug pt-1">
+                                                ${node.title}
+                                            </h4>
+                                            <div class="text-[11px] text-slate-500 line-clamp-1 flex items-center gap-1">
+                                                <i data-lucide="map-pin" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                                                <span>${node.office}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Summary Bullets -->
+                                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1.5 text-[11px]">
+                                        <div class="flex items-start gap-1.5 text-slate-700">
+                                            <span class="text-slate-400 shrink-0 font-semibold">Reports to:</span>
+                                            <span class="font-medium text-slate-900 line-clamp-1">${node.superior}</span>
+                                        </div>
+                                        <div class="flex items-start gap-1.5 text-slate-700">
+                                            <span class="text-slate-400 shrink-0 font-semibold">Subordinates:</span>
+                                            <span class="font-medium text-slate-900 line-clamp-1">${node.subordinates}</span>
+                                        </div>
+                                        <div class="flex items-start gap-1.5 text-slate-700">
+                                            <span class="text-purple-600 shrink-0 font-bold">SAR Channel:</span>
+                                            <span class="font-medium text-slate-900 line-clamp-1">${node.sarReporting}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tags Strip -->
+                                    <div class="flex flex-wrap gap-1">
+                                        ${(node.tags || []).map(tag => `
+                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-medium bg-slate-100 text-slate-600">
+                                                ${tag}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- Action Button -->
+                                <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                                    <span class="text-[10px] text-slate-400 font-mono">${node.cadre.substring(0, 24)}...</span>
+                                    <button onclick="window.openOrganogramModal('${node.id}')" class="px-3 py-1 text-xs font-semibold text-wbblue-700 hover:text-white hover:bg-wbblue-800 rounded-lg border border-wbblue-300 hover:border-wbblue-800 transition flex items-center gap-1">
+                                        <span>Inspect Node</span>
+                                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function toggleOrganogramTier(tierId) {
+        collapsedTiers[tierId] = !collapsedTiers[tierId];
+        renderOrganogram();
+    }
+
+    function expandAllOrganogram() {
+        collapsedTiers = {};
+        renderOrganogram();
+    }
+
+    function collapseAllOrganogram() {
+        ARD_ORGANOGRAM_DATA.forEach(t => {
+            collapsedTiers[t.id] = true;
+        });
+        renderOrganogram();
+    }
+
+    function setOrganogramFilter(filterKey) {
+        currentOrganogramFilter = filterKey;
+
+        // Update pill styling
+        const pills = document.querySelectorAll('.organogram-filter-btn');
+        pills.forEach(pill => {
+            const f = pill.getAttribute('data-filter');
+            if (f === filterKey) {
+                pill.className = 'organogram-filter-btn px-3 py-1 rounded-lg font-bold bg-slate-900 text-white shadow-sm transition';
+            } else {
+                let baseColor = 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200';
+                if (f === 'secretariat') baseColor = 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100';
+                else if (f === 'zones') baseColor = 'bg-purple-50 text-purple-900 border-purple-300 hover:bg-purple-100';
+                else if (f === 'districts') baseColor = 'bg-indigo-50 text-indigo-900 border-indigo-300 hover:bg-indigo-100';
+                else if (f === 'polyclinics') baseColor = 'bg-teal-50 text-teal-900 border-teal-300 hover:bg-teal-100';
+                else if (f === 'iahvb') baseColor = 'bg-rose-50 text-rose-900 border-rose-300 hover:bg-rose-100';
+                else if (f === 'farms') baseColor = 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100';
+                else if (f === 'sar') baseColor = 'bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100';
+                pill.className = `organogram-filter-btn px-3 py-1 rounded-lg font-semibold ${baseColor} border transition`;
+            }
+        });
+
+        renderOrganogram();
+    }
+
+    function filterOrganogram() {
+        renderOrganogram();
+    }
+
+    function openOrganogramModal(nodeId) {
+        const item = getOrganogramNodeById(nodeId);
+        if (!item) return;
+        const { node, tier } = item;
+
+        const modal = document.getElementById('organogramNodeModal');
+        if (!modal) return;
+
+        document.getElementById('nodeModalTitle').innerHTML = `
+            <i data-lucide="network" class="w-5 h-5 text-amber-300 shrink-0"></i>
+            <span>${node.title}</span>
+        `;
+        document.getElementById('nodeModalSubtitle').innerText = `${tier.tierNumber}: ${tier.tierName} • ${node.office}`;
+
+        const content = document.getElementById('nodeModalContent');
+        content.innerHTML = `
+            <div class="space-y-4">
+                <!-- Badges Header -->
+                <div class="flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-800 text-white">
+                        ${node.payLevel}
+                    </span>
+                    <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-900 border border-blue-300">
+                        Sanctioned Posts: ${node.posts}
+                    </span>
+                    <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-100 text-purple-900 border border-purple-300">
+                        ${node.cadre}
+                    </span>
+                    ${node.headOfOffice ? `
+                        <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-600 text-white shadow-sm flex items-center gap-1">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Declared Head of Office (HOO)
+                        </span>
+                    ` : ''}
+                </div>
+
+                <!-- 2-Column Administrative Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-200 space-y-1">
+                        <div class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Superior Command (Reports To)</div>
+                        <div class="text-xs font-bold text-blue-950">${node.superior}</div>
+                        <div class="text-[11px] text-blue-700">Immediate Administrative & Technical Authority</div>
+                    </div>
+                    <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-1">
+                        <div class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Direct Subordinate Command</div>
+                        <div class="text-xs font-bold text-emerald-950">${node.subordinates}</div>
+                        <div class="text-[11px] text-emerald-700">Offices, Specialists & Institutions within Jurisdiction</div>
+                    </div>
+                </div>
+
+                <!-- Statutory Head of Office Status & Financial Delegation -->
+                <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="award" class="w-4 h-4 text-amber-700 shrink-0"></i>
+                        <span class="text-xs font-bold text-amber-950">Statutory Head of Office Status & Delegation</span>
+                    </div>
+                    <p class="text-xs text-amber-900 leading-relaxed">
+                        ${node.hooNote}. Exercises designated Drawing & Disbursing Officer (DDO) and financial sanctioning powers under the West Bengal Financial Rules (WBFR) and delegation orders.
+                    </p>
+                </div>
+
+                <!-- Statutory SAR / ACR Appraisal Hierarchy -->
+                <div class="p-3.5 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-purple-700 shrink-0"></i>
+                        <span class="text-xs font-bold text-purple-950">SAR / ACR Performance Appraisal Reporting Hierarchy</span>
+                    </div>
+                    <div class="p-2 bg-white rounded-lg border border-purple-200 text-xs font-semibold text-purple-900">
+                        ${node.sarReporting}
+                    </div>
+                    <div class="text-[11px] text-purple-700">
+                        Statutory compliance mandated vide ARD Memo No. 926-AR&AH/3A-08/2021 dt. 25.04.2022 & Memo No. 1393 dt. 08.06.2026.
+                    </div>
+                </div>
+
+                <!-- Core Mandates & Functions -->
+                <div class="p-3.5 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-4 h-4 text-slate-700 shrink-0"></i>
+                        <span class="text-xs font-bold text-slate-900">Core Administrative Responsibilities & Functions</span>
+                    </div>
+                    <div class="text-xs text-slate-700 whitespace-pre-line leading-relaxed pl-2 border-l-2 border-slate-300">
+                        ${node.functions}
+                    </div>
+                </div>
+
+                <!-- Legal & Administrative Authority -->
+                <div class="p-3 bg-slate-100 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-slate-800">Statutory Sanction:</span>
+                        <span class="font-mono text-slate-700 ml-1">${node.legalBasis}</span>
+                    </div>
+                    <div class="font-bold text-slate-700">
+                        ${tier.statutoryRef}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    function closeOrganogramModal() {
+        const modal = document.getElementById('organogramNodeModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // Bind modal close buttons
+    const btnClose = document.getElementById('btnCloseOrganogramNodeModal');
+    if (btnClose) btnClose.addEventListener('click', closeOrganogramModal);
+
+    const btnCloseFooter = document.getElementById('btnCloseOrganogramNodeFooter');
+    if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeOrganogramModal);
+
+    const modal = document.getElementById('organogramNodeModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeOrganogramModal();
+        });
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeOrganogramModal();
+    });
+
+    // Expose functions globally
+    window.renderOrganogram = renderOrganogram;
+    window.toggleOrganogramTier = toggleOrganogramTier;
+    window.expandAllOrganogram = expandAllOrganogram;
+    window.collapseAllOrganogram = collapseAllOrganogram;
+    window.setOrganogramFilter = setOrganogramFilter;
+    window.filterOrganogram = filterOrganogram;
+    window.openOrganogramModal = openOrganogramModal;
+    window.closeOrganogramModal = closeOrganogramModal;
+})();
+
 });
