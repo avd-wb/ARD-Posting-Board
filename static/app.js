@@ -32,6 +32,82 @@ document.addEventListener('DOMContentLoaded', () => {
         suPosts: []
     };
 
+    // --- VISITOR & ACCESS INTELLIGENCE TELEMETRY ENGINE ---
+    function getOrCreateVisitorSession() {
+        let id = localStorage.getItem('ard_visitor_session_id');
+        if (!id) {
+            id = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('ard_visitor_session_id', id);
+        }
+        return id;
+    }
+
+    const telemetryState = {
+        sessionId: getOrCreateVisitorSession(),
+        activeSeconds: 0,
+        lastReportedSeconds: 0,
+        currentPage: '50-Point Roster',
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        clientGeo: null
+    };
+
+    function sendTelemetryPing(eventType = 'heartbeat', pageTitle = null) {
+        if (pageTitle) telemetryState.currentPage = pageTitle;
+        const delta = Math.max(0, telemetryState.activeSeconds - telemetryState.lastReportedSeconds);
+        telemetryState.lastReportedSeconds = telemetryState.activeSeconds;
+
+        const payload = {
+            session_id: telemetryState.sessionId,
+            event_type: eventType,
+            page: telemetryState.currentPage,
+            time_spent_delta: delta,
+            screen_resolution: telemetryState.screenResolution,
+            client_geo: telemetryState.clientGeo,
+            user_agent: navigator.userAgent
+        };
+
+        try {
+            if (navigator.sendBeacon && (eventType === 'unload' || eventType === 'hide')) {
+                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                navigator.sendBeacon('/api/analytics/track', blob);
+            } else {
+                fetch('/api/analytics/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                }).catch(() => {});
+            }
+        } catch (e) {
+            // Non-blocking telemetry
+        }
+    }
+    window.sendTelemetryPing = sendTelemetryPing;
+
+    function initVisitorTelemetry() {
+        sendTelemetryPing('pageview', '50-Point Roster');
+
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                telemetryState.activeSeconds++;
+            }
+        }, 1000);
+
+        setInterval(() => {
+            if (telemetryState.activeSeconds > telemetryState.lastReportedSeconds) {
+                sendTelemetryPing('heartbeat');
+            }
+        }, 20000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                sendTelemetryPing('hide');
+            }
+        });
+        window.addEventListener('pagehide', () => sendTelemetryPing('unload'));
+        window.addEventListener('beforeunload', () => sendTelemetryPing('unload'));
+    }
+
     // --- INITIALIZATION ---
     initTabs();
     initOverview();
@@ -48,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpotlightSearch();
     initPolicyGuideModal();
     initLivePolicyEvaluator();
+    initVisitorTelemetry();
+    initVisitorAnalyticsUI();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -172,6 +250,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.scrollTo({ top: window.scrollY + rect.top - 60, behavior: 'smooth' });
                 }
             }
+        }
+
+        // 8. Telemetry tracking for tab navigation
+        if (window.sendTelemetryPing) {
+            const tabNameMap = {
+                'tab-roster': '50-Point Roster',
+                'tab-master-orders': 'Master Schedule',
+                'tab-obliterated': 'Obliterated Posts',
+                'tab-cadre': 'Cadre & Vacancies',
+                'tab-displaced': 'Displaced Officers',
+                'tab-cascade': 'Cascade Simulation',
+                'tab-orders': 'Official Orders',
+                'tab-visual-grid': 'Visual Cadre Grid',
+                'tab-master-directory': 'Master Directory',
+                'tab-organogram': 'Department Organogram'
+            };
+            window.sendTelemetryPing('tab_switch', tabNameMap[targetTab] || targetTab);
         }
 
         if (window.lucide) window.lucide.createIcons();
@@ -2806,6 +2901,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = await res.json();
             window.activeDossierOfficer = d;
 
+            if (window.sendTelemetryPing) {
+                window.sendTelemetryPing('dossier_view', `Officer Dossier: ${d.officer_name} (${d.hrms_id})`);
+            }
+
             subtitle.innerText = `${d.officer_name} | HRMS: ${d.hrms_id} | ${d.source_category}`;
 
             btnAI.onclick = () => {
@@ -5414,4 +5513,271 @@ ${r.statutory_justification}
     window.closeOrganogramModal = closeOrganogramModal;
 })();
 
+    // =========================================================================
+    // VISITOR & ACCESS INTELLIGENCE MODAL CONTROLLER
+    // =========================================================================
+
+    let analyticsRefreshInterval = null;
+
+    function formatDuration(totalSec) {
+        if (!totalSec || totalSec <= 0) return '0s';
+        if (totalSec < 60) return `${totalSec}s`;
+        const mins = Math.floor(totalSec / 60);
+        const secs = totalSec % 60;
+        if (mins < 60) return `${mins}m ${secs}s`;
+        const hrs = Math.floor(mins / 60);
+        const remMins = mins % 60;
+        return `${hrs}h ${remMins}m`;
+    }
+
+    function timeAgo(isoStr) {
+        if (!isoStr) return '—';
+        const diffMs = Date.now() - new Date(isoStr).getTime();
+        const diffSec = Math.floor(diffMs / 1000);
+        if (diffSec < 15) return 'Just now';
+        if (diffSec < 60) return `${diffSec}s ago`;
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return `${diffMin}m ago`;
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return `${diffHr}h ago`;
+        return `${Math.floor(diffHr / 24)}d ago`;
+    }
+
+    async function loadVisitorAnalytics() {
+        const totalIPsEl = document.getElementById('analyticsTotalIPs');
+        const activeNowEl = document.getElementById('analyticsActiveNow');
+        const avgTimeEl = document.getElementById('analyticsAvgTime');
+        const totalTimeEl = document.getElementById('analyticsTotalTime');
+        const totalIntEl = document.getElementById('analyticsTotalInteractions');
+        const citiesList = document.getElementById('analyticsTopCitiesList');
+        const devicesList = document.getElementById('analyticsDevicesList');
+        const popularList = document.getElementById('analyticsPopularPagesList');
+        const tableBody = document.getElementById('analyticsSessionsTableBody');
+        const searchInput = document.getElementById('analyticsSearchInput');
+        const query = searchInput ? searchInput.value.trim() : '';
+
+        try {
+            const [statsRes, sessionsRes] = await Promise.all([
+                fetch('/api/analytics/stats'),
+                fetch(`/api/analytics/sessions?search=${encodeURIComponent(query)}`)
+            ]);
+
+            const stats = await statsRes.json();
+            const sessionsData = await sessionsRes.json();
+
+            // 1. Update KPI Cards
+            if (totalIPsEl) totalIPsEl.innerText = (stats.total_unique_ips || 0).toLocaleString();
+            if (activeNowEl) activeNowEl.innerText = (stats.active_now || 0).toLocaleString();
+            if (avgTimeEl) avgTimeEl.innerText = formatDuration(stats.avg_time_seconds);
+            if (totalTimeEl) totalTimeEl.innerText = `Total: ${formatDuration(stats.total_time_seconds)} across sessions`;
+            if (totalIntEl) totalIntEl.innerText = (stats.total_pageviews || 0).toLocaleString();
+
+            // 2. Render Top Locations
+            if (citiesList) {
+                const cities = stats.top_cities || [];
+                if (cities.length === 0) {
+                    citiesList.innerHTML = '<div class="text-slate-400 text-center py-4">No location records yet.</div>';
+                } else {
+                    const maxCount = Math.max(...cities.map(c => c.count), 1);
+                    citiesList.innerHTML = cities.map(c => {
+                        const pct = Math.round((c.count / maxCount) * 100);
+                        return `
+                            <div class="space-y-1">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-slate-800">${c.city || 'Unknown'}${c.region ? `, ${c.region}` : ''}</span>
+                                    <span class="font-mono text-slate-500 font-semibold">${c.count} ${c.count === 1 ? 'visit' : 'visits'}</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-wbblue-600 rounded-full" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // 3. Render Devices & Platforms
+            if (devicesList) {
+                const devices = stats.devices || {};
+                const osBreakdown = stats.os_breakdown || {};
+                const browsers = stats.browsers || {};
+
+                const devEntries = Object.entries(devices);
+                if (devEntries.length === 0) {
+                    devicesList.innerHTML = '<div class="text-slate-400 text-center py-4">No device records yet.</div>';
+                } else {
+                    devicesList.innerHTML = `
+                        <div class="space-y-2">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Device Type</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${devEntries.map(([k, v]) => `
+                                    <span class="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 text-xs font-bold flex items-center gap-1.5">
+                                        <i data-lucide="${k === 'Mobile' ? 'smartphone' : k === 'Tablet' ? 'tablet' : 'laptop'}" class="w-3.5 h-3.5 text-purple-700"></i>
+                                        <span>${k}: <strong>${v}</strong></span>
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-2">Operating Systems</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${Object.entries(osBreakdown).map(([k, v]) => `
+                                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold border border-slate-200">
+                                        ${k}: ${v}
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-2">Browsers</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${Object.entries(browsers).map(([k, v]) => `
+                                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold border border-slate-200">
+                                        ${k}: ${v}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 4. Render Popular Modules
+            if (popularList) {
+                const popular = stats.popular_pages || [];
+                if (popular.length === 0) {
+                    popularList.innerHTML = '<div class="text-slate-400 text-center py-4">No module data yet.</div>';
+                } else {
+                    popularList.innerHTML = popular.map((p, idx) => `
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px] shrink-0 font-mono">${idx + 1}</span>
+                                <span class="font-bold text-slate-800 truncate">${p.page}</span>
+                            </div>
+                            <span class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md text-[11px] shrink-0">${p.count} views</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // 5. Render Sessions Table
+            if (tableBody) {
+                const sessions = sessionsData.sessions || [];
+                if (sessions.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">No matching visitor sessions recorded yet.</td></tr>`;
+                } else {
+                    tableBody.innerHTML = sessions.map(s => {
+                        const statusBadge = s.is_active
+                            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span><span>Online</span></span>`
+                            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold border border-slate-200"><span>Idle</span></span>`;
+
+                        const devIcon = s.device_type === 'Mobile' ? 'smartphone' : (s.device_type === 'Tablet' ? 'tablet' : 'laptop');
+                        const pagesVisited = s.pages_visited || [];
+                        const pagesHtml = pagesVisited.length > 0
+                            ? pagesVisited.slice(-4).map(p => `<span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80 text-[10px] font-medium mr-1 mb-1">${p}</span>`).join('')
+                            : `<span class="text-slate-400">—</span>`;
+
+                        return `
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${s.is_active ? 'bg-emerald-50/20' : ''}">
+                                <td class="py-2.5 px-3 whitespace-nowrap">${statusBadge}</td>
+                                <td class="py-2.5 px-3 font-mono font-bold text-wbblue-900 whitespace-nowrap">${s.ip_address}</td>
+                                <td class="py-2.5 px-4">
+                                    <div class="font-bold text-slate-900">${s.city}${s.region ? `, ${s.region}` : ''}</div>
+                                    <div class="text-[10px] text-slate-500">${s.country}</div>
+                                </td>
+                                <td class="py-2.5 px-3 whitespace-nowrap">
+                                    <div class="flex items-center gap-1.5 font-medium text-slate-800 text-xs">
+                                        <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-slate-500"></i>
+                                        <span>${s.device_type}</span>
+                                    </div>
+                                    <div class="text-[10px] font-mono text-slate-500">${s.os} • ${s.browser}</div>
+                                </td>
+                                <td class="py-2.5 px-3 font-mono font-bold text-purple-900 whitespace-nowrap">
+                                    ${formatDuration(s.total_time_seconds)}
+                                </td>
+                                <td class="py-2.5 px-4 max-w-xs">
+                                    <div class="flex flex-wrap">${pagesHtml}</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                    ${timeAgo(s.last_seen)}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            if (window.lucide) lucide.createIcons();
+        } catch (err) {
+            console.error('Error loading visitor analytics:', err);
+        }
+    }
+
+    function openVisitorAnalyticsModal() {
+        const modal = document.getElementById('visitorAnalyticsModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            loadVisitorAnalytics();
+            if (analyticsRefreshInterval) clearInterval(analyticsRefreshInterval);
+            analyticsRefreshInterval = setInterval(loadVisitorAnalytics, 10000);
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
+    function closeVisitorAnalyticsModal() {
+        const modal = document.getElementById('visitorAnalyticsModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            if (analyticsRefreshInterval) {
+                clearInterval(analyticsRefreshInterval);
+                analyticsRefreshInterval = null;
+            }
+        }
+    }
+
+    function initVisitorAnalyticsUI() {
+        const btnOpenHeader = document.getElementById('btnOpenTrafficAnalytics');
+        if (btnOpenHeader) btnOpenHeader.addEventListener('click', openVisitorAnalyticsModal);
+
+        const btnOpenDrawer = document.getElementById('btnDrawerTrafficAnalytics');
+        if (btnOpenDrawer) {
+            btnOpenDrawer.addEventListener('click', () => {
+                const mobileDrawer = document.getElementById('mobileDrawerModal');
+                if (mobileDrawer) mobileDrawer.classList.add('hidden');
+                openVisitorAnalyticsModal();
+            });
+        }
+
+        const btnClose = document.getElementById('btnCloseVisitorAnalytics');
+        if (btnClose) btnClose.addEventListener('click', closeVisitorAnalyticsModal);
+
+        const btnRefresh = document.getElementById('btnRefreshAnalytics');
+        if (btnRefresh) btnRefresh.addEventListener('click', loadVisitorAnalytics);
+
+        const btnClear = document.getElementById('btnClearAnalytics');
+        if (btnClear) {
+            btnClear.addEventListener('click', async () => {
+                if (confirm('Are you sure you want to reset all visitor and access logs?')) {
+                    await fetch('/api/analytics/clear', { method: 'POST' });
+                    loadVisitorAnalytics();
+                }
+            });
+        }
+
+        const modal = document.getElementById('visitorAnalyticsModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeVisitorAnalyticsModal();
+            });
+        }
+
+        const searchInput = document.getElementById('analyticsSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(loadVisitorAnalytics, 300));
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeVisitorAnalyticsModal();
+        });
+    }
+
+    window.openVisitorAnalyticsModal = openVisitorAnalyticsModal;
+    window.closeVisitorAnalyticsModal = closeVisitorAnalyticsModal;
+    window.loadVisitorAnalytics = loadVisitorAnalytics;
 });
