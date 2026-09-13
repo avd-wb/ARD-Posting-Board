@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initBackupManager();
     initShareModal();
     initAICopilot();
+    initBetaSyncCountdown();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -1173,6 +1174,85 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Rollback failed: ' + e.message);
             }
         };
+    }
+
+    // --- 84-HOUR DATA SYNC COUNTDOWN TIMER ---
+    function initBetaSyncCountdown() {
+        const elH = document.getElementById('countdownHours');
+        const elM = document.getElementById('countdownMinutes');
+        const elS = document.getElementById('countdownSeconds');
+        const elStatus = document.getElementById('countdownBadgeStatus');
+        const card = document.getElementById('countdownCard');
+
+        if (!elH || !elM || !elS) return;
+
+        // Baseline official start time: 15:45:00 on 2026-09-13 IST (+05:30)
+        let startTime = new Date('2026-09-13T15:45:00+05:30').getTime();
+        const TOTAL_DURATION_MS = 84 * 60 * 60 * 1000; // 84 hours
+
+        // Fallback if client device clock is significantly off 2026
+        const nowCheck = Date.now();
+        if (Math.abs(nowCheck - startTime) > 30 * 24 * 3600 * 1000) {
+            const today1545 = new Date();
+            today1545.setHours(15, 45, 0, 0);
+            startTime = today1545.getTime();
+        }
+
+        const targetTime = startTime + TOTAL_DURATION_MS;
+
+        let forceElapsed = false;
+        if (card) {
+            card.addEventListener('click', () => {
+                forceElapsed = !forceElapsed;
+                tick();
+            });
+        }
+
+        function tick() {
+            const now = Date.now();
+            let remainingMs = targetTime - now;
+
+            // Before 15:45:
+            if (now < startTime && !forceElapsed) {
+                const tMinusSec = Math.max(0, Math.ceil((startTime - now) / 1000));
+                const tMinusM = Math.floor(tMinusSec / 60);
+                const tMinusS = tMinusSec % 60;
+
+                elH.textContent = '84';
+                elM.textContent = '00';
+                elS.textContent = '00';
+
+                if (elStatus) {
+                    elStatus.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Starts 15:45 (T-${String(tMinusM).padStart(2, '0')}:${String(tMinusS).padStart(2, '0')})</span>`;
+                    elStatus.className = 'text-[10px] font-bold text-amber-300 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 inline-flex items-center';
+                }
+            } else {
+                // Active 84-hour countdown (or forced preview on click)
+                if (forceElapsed && now < startTime) {
+                    const elapsed = Math.floor((now % (3600 * 1000)) / 1000);
+                    remainingMs = TOTAL_DURATION_MS - (elapsed * 1000);
+                }
+
+                if (remainingMs < 0) remainingMs = 0;
+
+                const totalSec = Math.floor(remainingMs / 1000);
+                const hours = Math.floor(totalSec / 3600);
+                const minutes = Math.floor((totalSec % 3600) / 60);
+                const seconds = totalSec % 60;
+
+                elH.textContent = String(hours).padStart(2, '0');
+                elM.textContent = String(minutes).padStart(2, '0');
+                elS.textContent = String(seconds).padStart(2, '0');
+
+                if (elStatus) {
+                    elStatus.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active 84h Sync Lock</span>`;
+                    elStatus.className = 'text-[10px] font-bold text-emerald-300 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 inline-flex items-center';
+                }
+            }
+        }
+
+        tick();
+        setInterval(tick, 1000);
     }
 
     // --- SHARE ONLINE MODAL LOGIC ---
