@@ -112,7 +112,7 @@ def build_corrected_master(ts=None):
         "Transferred to Substantive post",
         "Service utilized at",
         "remarks",
-        "Comments (Debi Da)"
+        "Administrative Directives & Remarks"
     ]
 
     # --- TAB 1: Full_Promotion_Transfer_List ---

@@ -243,7 +243,7 @@ def check_and_sync():
 
     col_n_hdr = ws.cell(row=1, column=14).value
     if not col_n_hdr:
-        ws.cell(row=1, column=14, value="Comments (Debi Da)")
+        ws.cell(row=1, column=14, value="Administrative Directives & Remarks")
 
     changes_detected = []
     updated_baseline = dict(baseline)

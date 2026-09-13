@@ -99,7 +99,7 @@ def build_workbook():
         "Transferred to Substantive Post (DD Level 19)",
         "Service Utilized at (Field / Administrative Post)",
         "Official Remarks",
-        "Comments (Debi Da)",
+        "Administrative Directives & Remarks",
         "Audit & Sanction Status Flags"
     ]
 
@@ -152,7 +152,7 @@ def build_workbook():
         flag_str = " | ".join(flags)
 
         row_out.append(official_rem)
-        # Debi Da comments
+        # Administrative Directive comments
         row_out.append(col_n_comments.get(r, ""))
         # Audit flags
         row_out.append(flag_str)
@@ -171,7 +171,7 @@ def build_workbook():
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             elif c in [6, 7, 10]:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
-            elif c == 14: # Debi Da comments
+            elif c == 14: # Administrative Directive comments
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
                 if cell.value:
                     cell.font = font_bold
@@ -398,7 +398,7 @@ def build_workbook():
         "Sl No.",
         "Original Master Row",
         "Officer Name",
-        "Proposed Target Posting / Direction (Debi Da)",
+        "Proposed Target Posting / Administrative Directive",
         "Review Note / Special Comments",
         "Administrative Action Required"
     ]
@@ -486,7 +486,7 @@ def build_workbook():
         ws.column_dimensions["K"].width = 38  # Substantive Post
         ws.column_dimensions["L"].width = 38  # SU Post
         ws.column_dimensions["M"].width = 32  # Official Remarks
-        ws.column_dimensions["N"].width = 30  # Debi Da Comments
+        ws.column_dimensions["N"].width = 30  # Administrative Directive Comments
         ws.column_dimensions["O"].width = 45  # Audit & Flags
 
     # Tab 3 adjustments

@@ -461,7 +461,7 @@ def build_resolved_master(timestamp_str=None):
         "Transferred to Substantive post ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
         "Service utilized at ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
         "remarks",
-        "Comments (Debi Da)"
+        "Administrative Directives & Remarks"
     ]
 
     # --- TAB 1: Full_Promotion_Transfer_List ---

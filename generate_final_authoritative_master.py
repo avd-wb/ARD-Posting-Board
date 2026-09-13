@@ -90,7 +90,7 @@ def build_master():
         "Transferred Substantive Post",
         "Service Utilized At (SU)",
         "Administrative Remarks",
-        "Comments (Debi Da Directive)"
+        "Administrative Directives & Remarks"
     ]
 
     for c_idx, h in enumerate(headers, 1):

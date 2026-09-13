@@ -240,7 +240,7 @@ def create_hq_accommodation_workbooks(ts=None):
     ws_dash.cell(tot_r + 2, 1, "INFLOW: OFFICERS HOLDING SUBSTANTIVE POSTS OUTSIDE HQ WITH SU AT DIRECTORATE HQ (5 OFFICERS)").font = Font(name="Arial", size=11, bold=True, color="1F497D")
     ws_dash.row_dimensions[tot_r + 2].height = 22
 
-    inflow_headers = ["Master Sl", "Roster Sl", "Officer Name", "Substantive Sanctioned Post", "Substantive District / Set-up", "Service Utilized (SU) Deployment at HQ", "Review Note (Debi Da)"]
+    inflow_headers = ["Master Sl", "Roster Sl", "Officer Name", "Substantive Sanctioned Post", "Substantive District / Set-up", "Service Utilized (SU) Deployment at HQ", "Administrative Review Notes"]
     ws_dash.row_dimensions[tot_r + 3].height = 26
     for c_idx, h in enumerate(inflow_headers, 1):
         cell = ws_dash.cell(tot_r + 3, c_idx, h)
@@ -287,7 +287,7 @@ def create_hq_accommodation_workbooks(ts=None):
     roster_headers = [
         "Master Sl", "242 Roster Sl", "Officer Name", "Present Designation", "Present District",
         "Transfer Basis", "Substantive Post at Directorate HQ", "Field Accommodation (SU District)",
-        "Service Utilized At (Establishment & Block)", "Comments (Debi Da)", "Administrative Accommodation Rationale"
+        "Service Utilized At (Establishment & Block)", "Administrative Directives & Remarks", "Administrative Accommodation Rationale"
     ]
     ws_roster.append(roster_headers)
     ws_roster.row_dimensions[1].height = 28

@@ -254,7 +254,7 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "Transferred to Substantive post ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
         "Service utilized at ( <designation>, <establishment>, <block only for BLDO, ABAHC, BAHC>, <District>)",
         "remarks",
-        "Comments (Debi Da)"
+        "Administrative Directives & Remarks"
     ]
 
     ws.row_dimensions[1].height = 45
@@ -761,7 +761,7 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         "K": 52,  # Transferred to Substantive post
         "L": 48,  # Service utilized at
         "M": 45,  # remarks
-        "N": 40   # comments (Debi Da)
+        "N": 40   # comments (Administrative Directive)
     }
     for col_letter, width in col_widths.items():
         ws.column_dimensions[col_letter].width = width
