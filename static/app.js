@@ -43,8 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOrders();
     loadDisplacedPool();
     initSimulationControls();
-    initBackupManager();
-    initShareModal();
     initBetaSyncCountdown();
     initKPICardClickHandlers();
     initSpotlightSearch();
@@ -2163,107 +2161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Disabled per administrative directive
     }
 
-    // --- BACKUP & RESTORE MANAGER LOGIC ---
-    function initBackupManager() {
-        const modal = document.getElementById('backupModal');
-        const btnOpen = document.getElementById('btnOpenBackupModal');
-        const btnClose = document.getElementById('btnCloseBackupModal');
-        const btnCloseFooter = document.getElementById('btnCloseBackupFooter');
-        const btnCreate = document.getElementById('btnCreateBackupNow');
-        const inputTag = document.getElementById('inputBackupTag');
-        const tbody = document.getElementById('backupTableBody');
-        const countEl = document.getElementById('backupListCount');
-
-        if (btnOpen) {
-            btnOpen.addEventListener('click', async () => {
-                modal.classList.remove('hidden');
-                await loadBackups();
-            });
-        }
-
-        if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
-        if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
-
-        async function loadBackups() {
-            try {
-                const res = await fetch('/api/backup/list');
-                const json = await res.json();
-                const list = json.backups || [];
-                countEl.innerText = `${list.length} snapshots available`;
-
-                if (list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs">No backups found.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = list.map(b => {
-                    const dateStr = b.created_at.split('T')[0] + ' ' + b.created_at.split('T')[1].slice(0, 8);
-                    return `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="py-2.5 px-3 font-mono text-[11px] text-slate-700">${dateStr}</td>
-                            <td class="py-2.5 px-3 font-mono font-semibold text-slate-800 text-[11px]">${b.filename}</td>
-                            <td class="py-2.5 px-2 font-mono text-[11px] text-slate-500">${b.size_mb} MB</td>
-                            <td class="py-2.5 px-3 text-right">
-                                <button onclick="restoreBackupSnapshot('${b.filename}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] rounded transition">
-                                    Restore
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (e) {
-                console.error('Error loading backups:', e);
-            }
-        }
-
-        btnCreate.addEventListener('click', async () => {
-            const tag = inputTag.value.trim() || 'manual';
-            try {
-                const res = await fetch('/api/backup/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tag: tag })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`Snapshot Created Successfully!\n\nFile: ${data.filename}\nSize: ${data.size_mb} MB`);
-                    inputTag.value = '';
-                    await loadBackups();
-                } else {
-                    alert('Backup error: ' + data.error);
-                }
-            } catch (e) {
-                alert('Failed to create backup: ' + e.message);
-            }
-        });
-
-        window.restoreBackupSnapshot = async function(filename) {
-            if (!confirm(`Are you sure you want to rollback to snapshot:\n${filename}?\n\nCurrent state will be automatically backed up before rollback.`)) {
-                return;
-            }
-            try {
-                const res = await fetch('/api/backup/restore', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: filename })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`Rollback Complete!\n\nDatabase has been restored from ${filename}.\nSafety backup taken before restore: ${data.safety_copy}`);
-                    modal.classList.add('hidden');
-                    await initOverview();
-                    await loadRoster();
-                    await loadObliterated();
-                    await loadCadre();
-                    await loadSimulationHistory();
-                } else {
-                    alert('Rollback error: ' + data.error);
-                }
-            } catch (e) {
-                alert('Rollback failed: ' + e.message);
-            }
-        };
-    }
 
     // --- 84-HOUR DATA SYNC COUNTDOWN TIMER ---
     function initBetaSyncCountdown() {
@@ -2344,17 +2241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(tick, 1000);
     }
 
-    // --- SHARE ONLINE MODAL LOGIC ---
-    function initShareModal() {
-        const modal = document.getElementById('shareModal');
-        const btnOpen = document.getElementById('btnOpenShareModal');
-        const btnClose = document.getElementById('btnCloseShareModal');
-        const btnCloseFooter = document.getElementById('btnCloseShareFooter');
 
-        if (btnOpen) btnOpen.addEventListener('click', () => modal.classList.remove('hidden'));
-        if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
-        if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
-    }
 
     // --- TAB 6: LOAD DISPLACED OFFICERS POOL ---
     async function loadDisplacedPool() {
