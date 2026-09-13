@@ -39,6 +39,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 FILE_CLAUDE = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/Promotion_242_1st_Draft_Partially_Verified_20260913_0818.xlsx"
+if not os.path.exists(FILE_CLAUDE):
+    FILE_CLAUDE = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/_superseded/Promotion_242_1st_Draft_Partially_Verified_20260913_0818.xlsx"
 FILE_413_MOD = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/4.13 am mod 20260913_0012_WB_ARD_Comprehensive_Posting_and_Transfer_Master_Sheet_0.03MB_mb.xlsx"
 FILE_VAC = "/Users/nirmalyaranjansarkar/Projects/AVD/_00_Sources/01_Verified_Sources /From AD HQ/Vacancy of DD.xlsx"
 
@@ -153,7 +155,9 @@ def build_resolved_master(timestamp_str=None):
     if not timestamp_str:
         timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M")
     
-    filename = f"Promotion_242_1st_Dradt_{timestamp_str}.xlsx"
+    # Correct spelling "Dradt" -> "Draft" and add suffix ".AG" / "_AG"
+    filename = f"Promotion_242_1st_Draft_{timestamp_str}.AG.xlsx"
+    filename_alt = f"Promotion_242_1st_Draft_{timestamp_str}_AG.xlsx"
     out_avd = os.path.join(DIR_AVD, filename)
     out_ag = os.path.join(DIR_AG, filename)
 
@@ -766,19 +770,26 @@ def build_resolved_master(timestamp_str=None):
     print(f"Saving to {out_ag}...")
     wb_out.save(out_ag)
 
-    print(f"Uploading {filename} to Google Drive folder {DRIVE_FOLDER_ID}...")
-    cmd = [
-        "rclone", "copyto",
-        out_ag,
-        f"gdrive:{filename}",
-        "--drive-root-folder-id", DRIVE_FOLDER_ID,
-        "-v"
-    ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode == 0:
-        print(f"Successfully uploaded {filename} to Google Drive!")
-    else:
-        print(f"Upload failed:\n{res.stderr}")
+    # Also save with _AG suffix for maximum compatibility
+    out_avd_alt = os.path.join(DIR_AVD, filename_alt)
+    out_ag_alt = os.path.join(DIR_AG, filename_alt)
+    wb_out.save(out_avd_alt)
+    wb_out.save(out_ag_alt)
+
+    for fn, fpath in [(filename, out_ag), (filename_alt, out_ag_alt)]:
+        print(f"Uploading {fn} to Google Drive folder {DRIVE_FOLDER_ID}...")
+        cmd = [
+            "rclone", "copyto",
+            fpath,
+            f"gdrive:{fn}",
+            "--drive-root-folder-id", DRIVE_FOLDER_ID,
+            "-v"
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            print(f"Successfully uploaded {fn} to Google Drive!")
+        else:
+            print(f"Upload failed for {fn}:\n{res.stderr}")
 
     return filename
 
