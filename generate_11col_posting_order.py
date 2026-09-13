@@ -231,7 +231,7 @@ def populate_11_col_sheet(ws, roster_rows, oblit_rows, lateral_rows, cadre_by_hr
         except Exception:
             baseline = {}
 
-    # Load Column N comments written by Debi Da (never overwrite or clear)
+    # Load Column N comments written by Directorate (never overwrite or clear)
     comments_n = {}
     if os.path.exists('column_n_comments.json'):
         try:

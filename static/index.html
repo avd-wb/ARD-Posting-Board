@@ -871,42 +871,6 @@
 
         <!-- ==================== TAB 5: OFFICIAL ORDERS REPOSITORY ==================== -->
         <div id="tab-orders" class="tab-content hidden">
-            <!-- Executive Action Bar: Repository, Snapshots & Publishing Tools -->
-            <div class="bg-gradient-to-r from-slate-900 via-wbblue-950 to-slate-900 border border-slate-700/60 rounded-xl p-4 mb-4 shadow-md text-white">
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-700 text-slate-200 uppercase tracking-wider">Executive Repository</span>
-                            <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-                                <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
-                                Official Order Repository, Gazette & Live Sharing
-                            </h3>
-                        </div>
-                        <p class="text-xs text-slate-300 mt-0.5">Access official gazette notifications, online repository archives, and system snapshot rollback controls.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <a href="https://drive.google.com/drive/folders/1CVYm1gZ9tlRg_XXTKgUBHuWZQuXMhNLp?usp=drive_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-900/80 hover:bg-blue-800 text-blue-200 hover:text-white font-semibold text-xs rounded-lg border border-blue-500/50 shadow-sm transition" title="Open Official Live Synced Google Drive Backup Folder">
-                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-300"></i>
-                            <span>Google Drive Folder</span>
-                        </a>
-
-                        <a href="/api/simulation/view-order-html" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white font-medium text-xs rounded-lg border border-slate-600 shadow-sm transition" title="Printable Official Gazette Notification">
-                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-                            <span>Gazette Order</span>
-                        </a>
-
-                        <button id="btnOpenBackupModal" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
-                            <i data-lucide="database-backup" class="w-3.5 h-3.5 text-cyan-300"></i>
-                            <span>Backup & Restore</span>
-                        </button>
-
-                        <button id="btnOpenShareModal" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs rounded-lg border border-slate-600 transition shadow-sm">
-                            <i data-lucide="share-2" class="w-3.5 h-3.5 text-amber-300"></i>
-                            <span>Share Online</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1477,14 +1441,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Bottom Row: App Install Quick-Link -->
-            <div class="flex items-center justify-center sm:justify-end gap-3 text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-                <button id="btnFooterInstallApp" class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition">
-                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-                    <span>Install App (iOS / Android)</span>
-                </button>
-            </div>
         </div>
     </footer>
 
@@ -1988,123 +1944,7 @@
     </div>
 
 
-    <!-- ==================== INSTALL APP POPUP MODAL (PWA & iOS GUIDE) ==================== -->
-    <div id="installAppModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200 flex flex-col">
-            <!-- Modal Header -->
-            <div class="p-4 sm:p-5 bg-gradient-to-r from-wbblue-900 via-wbblue-800 to-teal-900 text-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner shrink-0">
-                        <i data-lucide="smartphone" class="w-6 h-6 text-amber-300"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-bold text-base">Install ARD Posting App</h3>
-                            <span class="text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-200 px-2 py-0.5 rounded border border-amber-300/40">Beta</span>
-                        </div>
-                        <p class="text-xs text-blue-200 mt-0.5">Faster access, fullscreen layout & instant cadre updates</p>
-                    </div>
-                </div>
-                <button id="btnCloseInstallModal" class="text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
 
-            <!-- Modal Body -->
-            <div class="p-5 space-y-4 text-xs text-slate-700">
-                <!-- Device Segmented Tabs -->
-                <div class="flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-                    <button id="tabInstallIOS" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-900 bg-white shadow-xs flex items-center justify-center gap-1.5 transition">
-                        <i data-lucide="apple" class="w-4 h-4 text-slate-800"></i>
-                        <span>iPhone / iPad (iOS)</span>
-                    </button>
-                    <button id="tabInstallAndroid" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center gap-1.5 transition">
-                        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-600"></i>
-                        <span>Android & PC (Chrome)</span>
-                    </button>
-                </div>
-
-                <!-- iOS Instructions Panel -->
-                <div id="panelInstallIOS" class="space-y-3">
-                    <div class="p-3 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2.5">
-                        <div class="font-bold text-blue-900 flex items-center gap-1.5 text-xs">
-                            <i data-lucide="compass" class="w-4 h-4 text-blue-600"></i>
-                            <span>How to Install on iPhone / iPad in Safari:</span>
-                        </div>
-                        <ol class="space-y-2 text-blue-950 text-xs pl-1">
-                            <li class="flex items-start gap-2">
-                                <span class="flex h-5 w-5 rounded-full bg-blue-600 text-white font-bold text-[11px] items-center justify-center shrink-0 mt-0.5">1</span>
-                                <div>
-                                    Tap the <strong>Share button</strong>
-                                    <span class="inline-flex items-center px-1.5 py-0.5 bg-white rounded border border-blue-300 text-blue-600 font-bold text-[11px] mx-1">
-                                        <i data-lucide="share" class="w-3.5 h-3.5 mr-0.5"></i> Share
-                                    </span>
-                                    in Safari toolbar (bottom on iPhone, top on iPad).
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <span class="flex h-5 w-5 rounded-full bg-blue-600 text-white font-bold text-[11px] items-center justify-center shrink-0 mt-0.5">2</span>
-                                <div>
-                                    Scroll down the options list and tap <strong>"Add to Home Screen"</strong>
-                                    <span class="inline-flex items-center px-1.5 py-0.5 bg-white rounded border border-blue-300 text-slate-800 font-bold text-[11px] mx-1">
-                                        <i data-lucide="plus-square" class="w-3.5 h-3.5 mr-0.5 text-emerald-600"></i> Add to Home Screen
-                                    </span>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <span class="flex h-5 w-5 rounded-full bg-blue-600 text-white font-bold text-[11px] items-center justify-center shrink-0 mt-0.5">3</span>
-                                <div>
-                                    Tap <strong>"Add"</strong> in the top-right corner. The <strong>ARD Posting App</strong> will appear on your Home Screen!
-                                </div>
-                            </li>
-                        </ol>
-                    </div>
-                    <p class="text-[11px] text-slate-500 italic">
-                        * Note: On iOS, this requires Apple Safari. If using Chrome on iPhone, tap Share &rarr; Open in Safari &rarr; Add to Home Screen.
-                    </p>
-                </div>
-
-                <!-- Android & Chrome / Desktop Panel -->
-                <div id="panelInstallAndroid" class="space-y-3 hidden">
-                    <div class="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3">
-                        <div class="font-bold text-emerald-900 flex items-center gap-1.5 text-xs">
-                            <i data-lucide="globe" class="w-4 h-4 text-emerald-600"></i>
-                            <span>Install via Chrome / Edge / Android:</span>
-                        </div>
-                        
-                        <button id="btnNativeInstallPrompt" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                            <i data-lucide="smartphone" class="w-4 h-4 text-amber-200"></i>
-                            <span>1-Click Install App Now</span>
-                        </button>
-
-                        <div class="pt-2 border-t border-emerald-200 text-emerald-950 text-xs space-y-1.5">
-                            <p class="font-semibold text-[11px]">Manual Chrome Step:</p>
-                            <p>Tap the 3-dots menu <span class="font-bold">(⋮)</span> in the top-right corner &rarr; tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Beta Developing Stage Disclaimer inside Popup -->
-                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-amber-900 text-[11px] leading-snug">
-                    <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
-                    <div>
-                        <strong>Notice:</strong> This web application is a <strong>Beta Version in Developing Stage</strong>. Live synchronization and administrative verification by ARD Department are ongoing.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Footer Actions -->
-            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
-                <button id="btnDismissInstallToday" class="text-xs text-slate-500 hover:text-slate-800 font-medium px-3 py-2 rounded-lg hover:bg-slate-200/60 transition">
-                    Don't show again today
-                </button>
-                <button id="btnProceedToApp" class="px-5 py-2 text-xs font-bold text-white bg-wbblue-800 hover:bg-wbblue-700 rounded-xl shadow-md transition flex items-center gap-1.5">
-                    <span>Proceed to App</span>
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- ==================== GOOGLE MATERIAL 3 MOBILE BOTTOM NAVIGATION BAR (<md) ==================== -->
     <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-2xl px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform duration-200">
@@ -2289,13 +2129,6 @@
                     </div>
                 </div>
 
-                <!-- Section 3: Quick Utilities & Actions -->
-                <div class="pt-2 border-t border-slate-100 space-y-2">
-                    <button id="btnMobileDrawerInstallApp" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition active:scale-95 touch-target">
-                        <i data-lucide="smartphone" class="w-4 h-4 text-amber-300"></i>
-                        <span>Install ARD Mobile App (iOS & Android)</span>
-                    </button>
-                </div>
             </div>
         </div>
     </div>

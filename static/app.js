@@ -45,14 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initSimulationControls();
     initBackupManager();
     initShareModal();
-    initAICopilot();
     initBetaSyncCountdown();
     initKPICardClickHandlers();
-    initInstallAppModal();
     initSpotlightSearch();
     initPolicyGuideModal();
     initLivePolicyEvaluator();
-    initDataExporterModal();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -231,26 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mobileDrawer) {
             mobileDrawer.addEventListener('click', (e) => {
                 if (e.target === mobileDrawer) closeDrawer();
-            });
-        }
-
-        // Mobile Drawer Quick Action: Install App
-        const btnDrawerInstall = document.getElementById('btnMobileDrawerInstallApp');
-        if (btnDrawerInstall) {
-            btnDrawerInstall.addEventListener('click', () => {
-                closeDrawer();
-                const btnHeaderInstall = document.getElementById('btnOpenInstallModal');
-                if (btnHeaderInstall) btnHeaderInstall.click();
-            });
-        }
-
-        // Mobile Drawer Quick Action: AI Assistant
-        const btnDrawerAI = document.getElementById('btnMobileDrawerAIAssistant');
-        if (btnDrawerAI) {
-            btnDrawerAI.addEventListener('click', () => {
-                closeDrawer();
-                const aiDrawer = document.getElementById('aiDrawer');
-                if (aiDrawer) aiDrawer.classList.remove('translate-x-full');
             });
         }
     }
@@ -2377,207 +2354,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnOpen) btnOpen.addEventListener('click', () => modal.classList.remove('hidden'));
         if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
         if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
-    }
-
-    // --- INSTALL APP POPUP MODAL (PWA & iOS GUIDE) ---
-    function initInstallAppModal() {
-        const modal = document.getElementById('installAppModal');
-        const tabIOS = document.getElementById('tabInstallIOS');
-        const tabAndroid = document.getElementById('tabInstallAndroid');
-        const panelIOS = document.getElementById('panelInstallIOS');
-        const panelAndroid = document.getElementById('panelInstallAndroid');
-        const btnClose = document.getElementById('btnCloseInstallModal');
-        const btnProceed = document.getElementById('btnProceedToApp');
-        const btnDismissToday = document.getElementById('btnDismissInstallToday');
-        const btnOpenHeader = document.getElementById('btnOpenInstallModal');
-        const btnOpenFooter = document.getElementById('btnFooterInstallApp');
-        const btnNativePrompt = document.getElementById('btnNativeInstallPrompt');
-
-        if (!modal) return;
-
-        // Platform detection
-        const userAgent = window.navigator.userAgent || '';
-        const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
-                      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
-
-        function showTab(tab) {
-            if (tab === 'ios') {
-                tabIOS?.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-                tabIOS?.classList.remove('text-slate-500');
-                tabAndroid?.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-                tabAndroid?.classList.add('text-slate-500');
-                panelIOS?.classList.remove('hidden');
-                panelAndroid?.classList.add('hidden');
-            } else {
-                tabAndroid?.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-                tabAndroid?.classList.remove('text-slate-500');
-                tabIOS?.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-                tabIOS?.classList.add('text-slate-500');
-                panelAndroid?.classList.remove('hidden');
-                panelIOS?.classList.add('hidden');
-            }
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        // Set initial device tab based on detected platform
-        showTab(isIOS ? 'ios' : 'android');
-
-        if (tabIOS) tabIOS.addEventListener('click', () => showTab('ios'));
-        if (tabAndroid) tabAndroid.addEventListener('click', () => showTab('android'));
-
-        function openModal() {
-            modal.classList.remove('hidden');
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-        }
-
-        window.openInstallModal = openModal;
-        window.closeInstallModal = closeModal;
-
-        if (btnClose) btnClose.addEventListener('click', closeModal);
-        if (btnProceed) btnProceed.addEventListener('click', closeModal);
-        if (btnOpenHeader) btnOpenHeader.addEventListener('click', openModal);
-        if (btnOpenFooter) btnOpenFooter.addEventListener('click', openModal);
-
-        // Click outside backdrop to dismiss
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
-        });
-
-        // "Don't show again today" stores timestamp in localStorage
-        if (btnDismissToday) {
-            btnDismissToday.addEventListener('click', () => {
-                const tomorrow = Date.now() + 24 * 60 * 60 * 1000;
-                localStorage.setItem('ard_install_popup_dismissed_until', tomorrow.toString());
-                closeModal();
-            });
-        }
-
-        // Native PWA install prompt handler
-        let deferredPrompt = null;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (btnNativePrompt) {
-                btnNativePrompt.onclick = async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        console.log(`[PWA] Install prompt outcome: ${outcome}`);
-                        deferredPrompt = null;
-                        closeModal();
-                    }
-                };
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            console.log('[PWA] ARD Posting Board installed successfully');
-            closeModal();
-        });
-
-        // Auto popup on app open if not in standalone mode and not dismissed today
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                             window.navigator.standalone === true;
-        const dismissedUntil = localStorage.getItem('ard_install_popup_dismissed_until');
-        const isDismissed = dismissedUntil && Date.now() < parseInt(dismissedUntil, 10);
-
-        if (!isStandalone && !isDismissed) {
-            setTimeout(() => {
-                openModal();
-            }, 1200);
-        }
-    }
-
-    // --- AI COPILOT INTERACTION ---
-    function initAICopilot() {
-        const btnToggle = document.getElementById('btnToggleAIChat');
-        const drawer = document.getElementById('aiDrawer');
-        if (!btnToggle || !drawer) return;
-
-        const btnClose = document.getElementById('btnCloseAIDrawer');
-        const form = document.getElementById('aiChatForm');
-        const input = document.getElementById('aiInputText');
-        const messages = document.getElementById('aiMessages');
-
-        btnToggle.addEventListener('click', () => {
-            drawer.classList.toggle('translate-x-full');
-        });
-        btnClose.addEventListener('click', () => {
-            drawer.classList.add('translate-x-full');
-        });
-
-        document.querySelectorAll('.ai-quick-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                input.value = btn.innerText.trim();
-                form.dispatchEvent(new Event('submit'));
-            });
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
-
-            // Append user message
-            messages.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="bg-indigo-600 text-white rounded-xl rounded-tr-none px-3.5 py-2 max-w-[85%] text-xs shadow-sm">
-                        ${text}
-                    </div>
-                </div>
-            `;
-            input.value = '';
-            messages.scrollTop = messages.scrollHeight;
-
-            // Append typing indicator
-            const typingId = 'typing-' + Date.now();
-            messages.innerHTML += `
-                <div id="${typingId}" class="flex justify-start">
-                    <div class="bg-slate-100 text-slate-600 rounded-xl rounded-tl-none px-3 py-2 text-xs flex items-center gap-1.5 border border-slate-200">
-                        <span class="animate-bounce">●</span>
-                        <span class="animate-bounce [animation-delay:0.2s]">●</span>
-                        <span class="animate-bounce [animation-delay:0.4s]">●</span>
-                    </div>
-                </div>
-            `;
-            messages.scrollTop = messages.scrollHeight;
-
-            try {
-                const res = await fetch('/api/ai/query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: text })
-                });
-                const data = await res.json();
-                document.getElementById(typingId)?.remove();
-
-                const formatted = data.response
-                    .replace(/### (.*)/g, '<div class="font-bold text-slate-800 text-xs mt-1 mb-0.5">$1</div>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/`([^`]+)`/g, '<code class="bg-indigo-50 text-indigo-700 px-1 py-0.2 rounded font-mono text-[10px]">$1</code>')
-                    .replace(/- (.*)/g, '<div class="text-[11px] text-slate-700 my-0.5 leading-tight">• $1</div>')
-                    .replace(/\n/g, '<br>');
-
-                messages.innerHTML += `
-                    <div class="flex justify-start">
-                        <div class="bg-white border border-slate-200 text-slate-800 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-[90%] text-xs shadow-sm space-y-1">
-                            ${formatted}
-                        </div>
-                    </div>
-                `;
-                messages.scrollTop = messages.scrollHeight;
-                lucide.createIcons();
-            } catch (err) {
-                document.getElementById(typingId)?.remove();
-                messages.innerHTML += `
-                    <div class="text-rose-500 text-xs p-2">Failed to get AI response.</div>
-                `;
-            }
-        });
     }
 
     // --- TAB 6: LOAD DISPLACED OFFICERS POOL ---

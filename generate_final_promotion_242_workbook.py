@@ -10,7 +10,7 @@ Tabs:
 3. 4_Column_Posting_Order - Official 4-column Government Notification format
 4. DD_Vacancy_Balance - Establishment balance sheet of 244 Sanctioned DD posts
 5. Discrepancy_Register - 33-point verified audit register
-6. Lateral_Field_Adjustments - 13 consequential/field adjustments (Debi Da Rows 313-325)
+6. Lateral_Field_Adjustments - 13 consequential/field adjustments (Administrative Review Rows 313-325)
 7. Sources_and_Method - Provenance, methodology, and data sources
 """
 
@@ -411,7 +411,7 @@ def build_workbook():
     ws6.row_dimensions[1].height = 28
 
     for idx, off in enumerate(bottom_officers, start=1):
-        action = "Issue executive transfer order in cadre" if off["target_posting"] != "?" else "Clarification required from Debi Da"
+        action = "Issue executive transfer order in cadre" if off["target_posting"] != "?" else "Clarification required from Directorate"
         row_vals = [
             idx,
             off["row"],

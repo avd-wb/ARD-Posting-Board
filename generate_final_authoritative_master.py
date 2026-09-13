@@ -13,7 +13,7 @@ Enforces:
 6. Dr. Nabadwip Kumar Sarkar: BLDO Basirhat-I, North 24 Parganas
 7. Dr. Tarun Kumar Saha Roy: DD Howrah Substantive + VO BAHC Shyampur-I SU
 8. Dr. Manas Kundu: BLDO Kulpi, South 24 Parganas
-9. Clean incorporation of all Debi Da handwritten directives from Column 14.
+9. Clean incorporation of all Administrative Directives from Column 14.
 """
 
 import os

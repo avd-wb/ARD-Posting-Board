@@ -8,9 +8,9 @@ Complete 323-Officer Promotion-cum-Transfer Master Order:
 1. 242 DD Promotions (Roster Sl 1-242)
 2. 53 Post Abolition Redeployments (Sl 243-295)
 3. 15 Promotee Accommodation Redeployments (Sl 296-310)
-4. 13 Executive Lateral Transfers from Debi Da's review (Sl 311-323)
+4. 13 Executive Lateral Transfers from Directorate review (Sl 311-323)
 
-All 238 Column N directives from Debi Da fully EFFECTED into Substantive, SU, and Remarks.
+All 238 Column N directives from Directorate fully EFFECTED into Substantive, SU, and Remarks.
 Automatically uploads each iteration to Google Drive folder: 1BgJE4thWGsCLv4qFHqmWobW_met8UuEL.
 """
 

@@ -265,7 +265,7 @@ def check_and_sync():
         rem_val = ws.cell(row=r, column=13).value or ""
         rem_str = str(rem_val).strip()
 
-        # Column N: Comments written by Debi Da (NEVER OVERWRITE OR CLEAR)
+        # Column N: Comments written by Directorate (NEVER OVERWRITE OR CLEAR)
         col_n_val = ws.cell(row=r, column=14).value
         col_n_str = str(col_n_val).strip() if col_n_val is not None else ""
 
@@ -275,14 +275,14 @@ def check_and_sync():
         prev_su = prev_entry.get("su", "").strip()
         prev_col_n = prev_entry.get("comment_n", "").strip()
 
-        # Check if Debi Da commented in Column N, or edited cells manually, or edited Column M
+        # Check if Administrative Directive commented in Column N, or edited cells manually, or edited Column M
         col_n_changed = (col_n_str and col_n_str != prev_col_n)
         sub_or_su_manually_edited = (cur_sub and prev_sub and cur_sub != prev_sub) or (cur_su and prev_su and cur_su != prev_su)
         remark_changed = (rem_str and rem_str != prev_rem)
 
         if col_n_changed or sub_or_su_manually_edited or remark_changed:
             if col_n_changed:
-                log(f"Detected Debi Da's comment in Column N at Row {r} (Sl {sl_global}, {name}): '{col_n_str}' (Previous: '{prev_col_n}')")
+                log(f"Detected Administrative Directive in Column N at Row {r} (Sl {sl_global}, {name}): '{col_n_str}' (Previous: '{prev_col_n}')")
                 new_sub, new_su, action_desc = apply_parsed_directive(
                     sl_242=sl_242,
                     sl_global=sl_global,
@@ -294,7 +294,7 @@ def check_and_sync():
                     pres_dist=dist
                 )
             elif sub_or_su_manually_edited:
-                log(f"Detected direct manual cell edit by Debi Da at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
+                log(f"Detected direct manual cell edit by Directorate at Row {r} (Sl {sl_global}, {name}): Sub='{cur_sub}', SU='{cur_su}'")
                 new_sub, new_su = clean_post_string(cur_sub), clean_post_string(cur_su)
                 action_desc = "Manual cell edit preserved"
             else:
