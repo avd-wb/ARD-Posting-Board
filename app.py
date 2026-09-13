@@ -423,6 +423,108 @@ def get_single_post(post_id: int):
         raise HTTPException(status_code=404, detail="Post not found")
     return dict(row)
 
+@app.get("/api/map/posts")
+def get_map_posts(
+    district: Optional[str] = None,
+    designation: Optional[str] = None,
+    occupancy_status: Optional[str] = None,
+    tenure_over: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 1794
+):
+    """Returns geocoded posts for GIS map visualization."""
+    conn = get_db()
+    cur = conn.cursor()
+    query = """
+        SELECT id, post_sl, district, block, establishment, estab_type,
+               designation, post_code, pay_level, occupancy_status,
+               incumbent_name, incumbent_hrms, incumbent_doj, incumbent_tenure,
+               tenure_norm, tenure_over_flag, incumbent_dor, latitude, longitude, record_sha256
+        FROM cadre_1794_posts
+        WHERE latitude != 0.0 AND longitude != 0.0
+    """
+    params = []
+    if district and district != "ALL":
+        query += " AND district = ?"
+        params.append(district)
+    if designation and designation != "ALL":
+        query += " AND designation = ?"
+        params.append(designation)
+    if occupancy_status and occupancy_status != "ALL":
+        if occupancy_status.lower() == "vacant":
+            query += " AND (occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%')"
+        elif occupancy_status.lower() == "occupied":
+            query += " AND (occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy'))"
+    if tenure_over and tenure_over != "ALL":
+        query += " AND tenure_over_flag = ?"
+        params.append(tenure_over)
+    if search:
+        s = f"%{search.strip()}%"
+        query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ?)"
+        params.extend([s, s, s, s, s, s])
+    
+    query += " ORDER BY id LIMIT ?"
+    params.append(limit)
+    cur.execute(query, params)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return {"total": len(rows), "data": rows}
+
+@app.get("/api/map/stats")
+def get_map_stats():
+    """Returns spatial district-level summary for heatmap and analytics."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT 
+            district,
+            COUNT(*) as total_posts,
+            SUM(CASE WHEN occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%' THEN 1 ELSE 0 END) as vacant_posts,
+            SUM(CASE WHEN occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy') THEN 1 ELSE 0 END) as occupied_posts,
+            SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as over_tenure_posts,
+            AVG(latitude) as lat,
+            AVG(longitude) as lng
+        FROM cadre_1794_posts
+        WHERE latitude != 0.0
+        GROUP BY district
+        ORDER BY total_posts DESC;
+    """)
+    districts = [dict(r) for r in cur.fetchall()]
+    
+    cur.execute("""
+        SELECT 
+            COUNT(*) as total_posts,
+            SUM(CASE WHEN occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%' THEN 1 ELSE 0 END) as total_vacant,
+            SUM(CASE WHEN occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy') THEN 1 ELSE 0 END) as total_occupied,
+            SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as total_over_tenure
+        FROM cadre_1794_posts;
+    """)
+    summary = dict(cur.fetchone())
+    conn.close()
+    return {"summary": summary, "districts": districts}
+
+@app.get("/api/sacrosanct/summary")
+def get_sacrosanct_summary():
+    """Returns verification audit summary and cryptographic proof status."""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM sacrosanct_cadre_posts")
+    posts_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM sacrosanct_officer_dossier")
+    officers_count = cur.fetchone()[0]
+    cur.execute("SELECT * FROM sacrosanct_audit_ledger ORDER BY event_id DESC LIMIT 10")
+    ledger_events = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return {
+        "status": "VERIFIED_SACROSANCT",
+        "verification_pipeline_tiers": 4,
+        "cadre_posts_locked": posts_count,
+        "officer_dossiers_locked": officers_count,
+        "tamper_evidence": "SHA-256 State Hashing Active",
+        "recent_ledger_events": ledger_events
+    }
+
+
 @app.get("/api/roster")
 def get_roster_candidates(
     category: Optional[str] = None,

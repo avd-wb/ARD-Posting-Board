@@ -228,6 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
             loadObliterated();
         } else if (targetTab === 'tab-cadre') {
             loadCadre();
+        } else if (targetTab === 'tab-map') {
+            loadCadreGisMap();
         } else if (targetTab === 'tab-cascade') {
             loadSimulationHistory();
             loadCascadingBackfills();
@@ -259,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'tab-master-orders': 'Master Schedule',
                 'tab-obliterated': 'Obliterated Posts',
                 'tab-cadre': 'Cadre & Vacancies',
+                'tab-map': 'Cadre GIS Map',
                 'tab-displaced': 'Displaced Officers',
                 'tab-cascade': 'Cascade Simulation',
                 'tab-orders': 'Official Orders',
@@ -5797,6 +5800,281 @@ ${r.statutory_justification}
             if (e.key === 'Escape') closeVisitorAnalyticsModal();
         });
     }
+
+    // =========================================================================
+    // CADRE GIS GEO-MAP MODULE (1,794 POSTS & 23 DISTRICTS)
+    // =========================================================================
+    let gisMapInstance = null;
+    let gisMarkersLayer = null;
+    let gisPostsCache = [];
+    let gisMarkersMap = new Map();
+
+    function createGisPinIcon(occupancyStatus, tenureOverFlag, postCode) {
+        let bgColor = '#2563eb';
+        let borderCol = '#1d4ed8';
+        let labelText = 'P';
+        let title = 'Occupied Post';
+
+        if (occupancyStatus === 'Clear Vacancy' || (occupancyStatus && occupancyStatus.includes('Vacant'))) {
+            bgColor = '#10b981';
+            borderCol = '#059669';
+            labelText = 'V';
+            title = 'Clear Vacancy';
+        } else if (postCode === 'DIR' || postCode === 'ADDL') {
+            bgColor = '#8b5cf6';
+            borderCol = '#6d28d9';
+            labelText = '★';
+            title = 'Apex Cadre Post';
+        } else if (tenureOverFlag === 'Yes') {
+            bgColor = '#ef4444';
+            borderCol = '#b91c1c';
+            labelText = '!';
+            title = 'Over-Tenure Post (>3-4 yrs)';
+        }
+
+        return L.divIcon({
+            className: 'gis-custom-marker',
+            html: `<div title="${title}" style="background-color:${bgColor};border:2px solid ${borderCol};color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,0.35);cursor:pointer;transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">${labelText}</div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -12]
+        });
+    }
+
+    async function loadCadreGisMap() {
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet GIS library not yet loaded. Retrying in 200ms...');
+            setTimeout(loadCadreGisMap, 200);
+            return;
+        }
+
+        const mapContainer = document.getElementById('cadreGisMap');
+        if (!mapContainer) return;
+
+        if (!gisMapInstance) {
+            gisMapInstance = L.map('cadreGisMap', {
+                center: [23.8, 87.9],
+                zoom: 7,
+                minZoom: 6,
+                maxZoom: 18,
+                zoomControl: true,
+                scrollWheelZoom: true
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(gisMapInstance);
+
+            gisMarkersLayer = L.layerGroup().addTo(gisMapInstance);
+
+            ['gisDistrictFilter', 'gisDesigFilter', 'gisStatusFilter', 'gisTenureFilter'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', () => filterAndRenderGisMarkers());
+            });
+
+            const searchEl = document.getElementById('gisSearchInput');
+            if (searchEl) {
+                searchEl.addEventListener('input', debounce(() => filterAndRenderGisMarkers(), 300));
+            }
+
+            const btnReset = document.getElementById('btnResetGisMap');
+            if (btnReset) {
+                btnReset.addEventListener('click', () => {
+                    const distF = document.getElementById('gisDistrictFilter');
+                    const desigF = document.getElementById('gisDesigFilter');
+                    const statusF = document.getElementById('gisStatusFilter');
+                    const tenureF = document.getElementById('gisTenureFilter');
+                    const searchF = document.getElementById('gisSearchInput');
+                    if (distF) distF.value = 'ALL';
+                    if (desigF) desigF.value = 'ALL';
+                    if (statusF) statusF.value = 'ALL';
+                    if (tenureF) tenureF.value = 'ALL';
+                    if (searchF) searchF.value = '';
+                    gisMapInstance.setView([23.8, 87.9], 7);
+                    filterAndRenderGisMarkers();
+                });
+            }
+
+            await loadGisStats();
+        }
+
+        setTimeout(() => {
+            if (gisMapInstance) gisMapInstance.invalidateSize();
+        }, 150);
+
+        if (gisPostsCache.length === 0) {
+            await fetchAllGisPosts();
+        } else {
+            filterAndRenderGisMarkers();
+        }
+    }
+
+    async function loadGisStats() {
+        try {
+            const res = await fetch('/api/map/stats');
+            const data = await res.json();
+            if (!data) return;
+
+            if (data.summary) {
+                const elT = document.getElementById('gisStatTotal');
+                const elV = document.getElementById('gisStatVacant');
+                const elO = document.getElementById('gisStatOccupied');
+                const elOT = document.getElementById('gisStatOverTenure');
+                if (elT) elT.innerText = data.summary.total_posts.toLocaleString();
+                if (elV) elV.innerText = data.summary.total_vacant.toLocaleString();
+                if (elO) elO.innerText = data.summary.total_occupied.toLocaleString();
+                if (elOT) elOT.innerText = data.summary.total_over_tenure.toLocaleString();
+            }
+
+            const distSelect = document.getElementById('gisDistrictFilter');
+            if (distSelect && distSelect.options.length <= 1) {
+                distSelect.innerHTML = '<option value="ALL">All Districts (23)</option>' +
+                    data.districts.map(d => `<option value="${d.district}">${d.district} (${d.total_posts} posts - ${d.vacant_posts} vac)</option>`).join('');
+            }
+
+            const cardsContainer = document.getElementById('gisDistrictCards');
+            if (cardsContainer && data.districts) {
+                cardsContainer.innerHTML = data.districts.map(d => {
+                    const vacPct = d.total_posts > 0 ? Math.round((d.vacant_posts / d.total_posts) * 100) : 0;
+                    return `
+                        <div class="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm cursor-pointer transition flex flex-col justify-between" onclick="window.selectDistrictOnMap('${d.district}', ${d.lat}, ${d.lng})">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold text-slate-800 text-xs truncate">${d.district}</span>
+                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full ${vacPct > 40 ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-700'}">${vacPct}% Vac</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 text-[10px] text-slate-500 font-mono mt-1">
+                                <div><span class="text-slate-400 block text-[9px]">TOTAL</span><strong class="text-slate-800">${d.total_posts}</strong></div>
+                                <div><span class="text-emerald-600 block text-[9px]">VAC</span><strong class="text-emerald-700">${d.vacant_posts}</strong></div>
+                                <div><span class="text-rose-600 block text-[9px]">OVER</span><strong class="text-rose-700">${d.over_tenure_posts}</strong></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error('Failed to load GIS stats:', err);
+        }
+    }
+
+    async function fetchAllGisPosts() {
+        const loadingEl = document.getElementById('gisMapLoading');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+
+        try {
+            const res = await fetch('/api/map/posts?limit=1794');
+            const json = await res.json();
+            gisPostsCache = json.data || [];
+            filterAndRenderGisMarkers();
+        } catch (err) {
+            console.error('Failed to fetch GIS posts:', err);
+        } finally {
+            if (loadingEl) loadingEl.classList.add('hidden');
+        }
+    }
+
+    function filterAndRenderGisMarkers() {
+        if (!gisMarkersLayer || !gisMapInstance) return;
+
+        const distVal = document.getElementById('gisDistrictFilter')?.value || 'ALL';
+        const desigVal = document.getElementById('gisDesigFilter')?.value || 'ALL';
+        const statusVal = document.getElementById('gisStatusFilter')?.value || 'ALL';
+        const tenureVal = document.getElementById('gisTenureFilter')?.value || 'ALL';
+        const searchVal = (document.getElementById('gisSearchInput')?.value || '').trim().toLowerCase();
+
+        gisMarkersLayer.clearLayers();
+        gisMarkersMap.clear();
+
+        const bounds = [];
+
+        const filtered = gisPostsCache.filter(p => {
+            if (distVal !== 'ALL' && p.district !== distVal) return false;
+            if (desigVal !== 'ALL' && !p.designation.toLowerCase().includes(desigVal.toLowerCase())) return false;
+            
+            const isVac = p.occupancy_status === 'Clear Vacancy' || (p.occupancy_status && p.occupancy_status.includes('Vacant'));
+            if (statusVal === 'vacant' && !isVac) return false;
+            if (statusVal === 'occupied' && isVac) return false;
+
+            if (tenureVal !== 'ALL' && p.tenure_over_flag !== tenureVal) return false;
+
+            if (searchVal) {
+                const combined = `${p.designation} ${p.establishment} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''}`.toLowerCase();
+                if (!combined.includes(searchVal)) return false;
+            }
+
+            return true;
+        });
+
+        filtered.forEach(p => {
+            if (!p.latitude || !p.longitude) return;
+
+            const icon = createGisPinIcon(p.occupancy_status, p.tenure_over_flag, p.post_code);
+            const marker = L.marker([p.latitude, p.longitude], { icon });
+
+            const isVac = p.occupancy_status === 'Clear Vacancy' || (p.occupancy_status && p.occupancy_status.includes('Vacant'));
+
+            const popupContent = `
+                <div style="font-family:system-ui,-apple-system,sans-serif;min-width:240px;max-width:280px;padding:4px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                        <span style="font-size:10px;font-weight:bold;color:#64748b;text-transform:uppercase;">Post #${p.post_sl} · ${p.district}</span>
+                        <span style="font-size:9px;font-weight:bold;padding:2px 6px;border-radius:9999px;background:${isVac ? '#dcfce7' : '#dbeafe'};color:${isVac ? '#166534' : '#1e40af'};">${p.occupancy_status}</span>
+                    </div>
+                    <div style="font-weight:bold;font-size:13px;color:#0f172a;line-height:1.2;margin-bottom:2px;">${p.designation}</div>
+                    <div style="font-size:11px;color:#475569;">${p.establishment} (${p.block || 'HQ'})</div>
+                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0;font-size:11px;">
+                        ${isVac ? `
+                            <div style="color:#15803d;font-weight:600;">Sanctioned Clear Vacancy</div>
+                            <div style="color:#64748b;font-size:10px;">Pay Level: ${p.pay_level || 'Level 16-22'}</div>
+                        ` : `
+                            <div style="font-weight:600;color:#0f172a;">${p.incumbent_name}</div>
+                            <div style="color:#64748b;font-family:monospace;font-size:10px;">HRMS: ${p.incumbent_hrms || 'N/A'} • Tenure: ${p.incumbent_tenure || '-'}</div>
+                            ${p.tenure_over_flag === 'Yes' ? '<div style="color:#e11d48;font-weight:bold;font-size:10px;margin-top:2px;">⚠️ Over-Tenure Norm (>3-4 yrs)</div>' : ''}
+                            ${p.incumbent_hrms ? `<button onclick="window.openOfficerDossier('${p.incumbent_hrms}')" style="margin-top:6px;width:100%;padding:4px 8px;font-size:11px;font-weight:bold;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;">View Officer Dossier</button>` : ''}
+                        `}
+                    </div>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent);
+            gisMarkersLayer.addLayer(marker);
+            gisMarkersMap.set(p.id, marker);
+
+            bounds.push([p.latitude, p.longitude]);
+        });
+
+        if (distVal !== 'ALL' && bounds.length > 0) {
+            gisMapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+        }
+    }
+
+    function selectDistrictOnMap(districtName, lat, lng) {
+        const distSelect = document.getElementById('gisDistrictFilter');
+        if (distSelect) distSelect.value = districtName;
+        if (gisMapInstance && lat && lng) {
+            gisMapInstance.setView([lat, lng], 10);
+        }
+        filterAndRenderGisMarkers();
+    }
+    window.selectDistrictOnMap = selectDistrictOnMap;
+
+    function viewPostOnMap(lat, lng, postId) {
+        if (!lat || !lng) {
+            alert('Geographic coordinates not available for this post.');
+            return;
+        }
+        window.switchTab('tab-map');
+
+        setTimeout(() => {
+            if (gisMapInstance) {
+                gisMapInstance.setView([lat, lng], 13, { animate: true });
+                const marker = gisMarkersMap.get(postId);
+                if (marker) {
+                    marker.openPopup();
+                }
+            }
+        }, 300);
+    }
+    window.viewPostOnMap = viewPostOnMap;
 
     window.openVisitorAnalyticsModal = openVisitorAnalyticsModal;
     window.closeVisitorAnalyticsModal = closeVisitorAnalyticsModal;
