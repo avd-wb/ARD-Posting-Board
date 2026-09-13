@@ -643,7 +643,6 @@ def ai_cadre_query(req: AIQueryRequest):
 Official Facts & Statutory Rules:
 - Notification No. 1809 (18.06.2025): Total 1,794 active sanctioned cadre posts (1,044 occupied, 750 clear vacancies).
 - Notification No. 1808 (18.06.2025): 106 abolished/obliterated posts (84 active serving incumbents awaiting rehabilitation).
-- Dr. Nirmalya Ranjan Sarkar (HRMS 2014000243) is on the obliterated post of Asstt. Director ARD(SA) Hooghly (Sl 48 of Memo 1808), joined 2024-12-23 via Order 4246. Directorate HQ Post 54/445 is a clear vacancy.
 - 50-Point Roster: 242 candidates promoted to 242 available unblocked Deputy Director posts (Level 17/19).
 - Transfer Policy Memo 291: Maximum tenure in general zones is 5 years; in difficult/hill zones (Darjeeling, Kalimpong, Alipurduar, Coochbehar, Jalpaiguri, Uttar/Dakshin Dinajpur, Jungle Mahal) is 4 years.
 - Superannuation: WBSR Rule 75(a) - retirement on the last day of the month of turning 60 years.
@@ -661,27 +660,8 @@ Always provide authoritative, accurate, statutory answers with clear formatting 
 
     response_text = ""
 
-    # Check for Nirmalya Ranjan Sarkar query
-    if ("nirmalya" in q and "sarkar" in q) or "2014000243" in q or "nirmalya" in q:
-        cur.execute("SELECT * FROM obliterated_posts_1808 WHERE hrms_id = '2014000243' OR (officer_name LIKE '%Nirmalya%' AND officer_name LIKE '%Sarkar%')")
-        row = cur.fetchone()
-        if row:
-            r = dict(row)
-            response_text = f"""### 👤 Officer Truth Record: Dr. Nirmalya Ranjan Sarkar
-- **HRMS ID**: `{r['hrms_id']}`
-- **Designation / Obliterated Post**: **{r['post_name']}**
-- **Establishment**: {r['establishment']}
-- **District / Block**: {r['district']} | {r['block']}
-- **Statutory Status**: **OBLITERATED** under **Notification No. 1808-AR&AH/3A-08/23 dt. 18.06.2025** (Sl. No. {r['oblit_sl']}).
-- **Administrative Position**: Displaced active serving officer awaiting rehabilitation into active cadre.
-- **Rehabilitation Status**: `{r['rehabilitation_status']}` (Substantive Post: {r['substantive_post_name'] or 'Pending'}, SU Post: {r['su_post_name'] or 'None'}).
-- **Correction Note**: He does **not** occupy Post 54/445 at Directorate HQ Kolkata (that is a clear vacancy).
-"""
-        else:
-            response_text = "Record for Dr. Nirmalya Ranjan Sarkar not located."
-
     # Check for retirement query
-    elif "retire" in q or "superannuat" in q or "dor" in q:
+    if "retire" in q or "superannuat" in q or "dor" in q:
         cur.execute("""
         SELECT incumbent_name, incumbent_hrms, designation, district, 
                incumbent_dor
