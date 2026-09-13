@@ -2,7 +2,7 @@
 """
 build_full_promotion_transfer_master.py
 Generates the authoritative executive Excel deliverable:
-Promotion_242_1st_Dradt_20260913_0803.xlsx
+Promotion_242_1st_Dradt_<yyyymmdd>_<hhmm>.xlsx
 
 Complete 323-Officer Promotion-cum-Transfer Master Order:
 1. 242 DD Promotions (Roster Sl 1-242)
@@ -11,18 +11,23 @@ Complete 323-Officer Promotion-cum-Transfer Master Order:
 4. 13 Executive Lateral Transfers from Debi Da's review (Sl 311-323)
 
 All 238 Column N directives from Debi Da fully EFFECTED into Substantive, SU, and Remarks.
+Automatically uploads each iteration to Google Drive folder: 1BgJE4thWGsCLv4qFHqmWobW_met8UuEL.
 """
 
 import os
 import re
+import sys
+import datetime
+import subprocess
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 FILE_CLAUDE = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/20260913_AVD_DDP_Verified_Posting_Order_and_Discrepancy_Register.xlsx"
 FILE_413_MOD = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/4.13 am mod 20260913_0012_WB_ARD_Comprehensive_Posting_and_Transfer_Master_Sheet_0.03MB_mb.xlsx"
-OUTPUT_LOCAL_AVD = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026/Promotion_242_1st_Dradt_20260913_0803.xlsx"
-OUTPUT_LOCAL_AG = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_1st_Dradt_20260913_0803.xlsx"
+DRIVE_FOLDER_ID = "1BgJE4thWGsCLv4qFHqmWobW_met8UuEL"
+DIR_AVD = "/Users/nirmalyaranjansarkar/Projects/AVD/10_ARD_DD_Promotion_2026"
+DIR_AG = "/Users/nirmalyaranjansarkar/Projects/AVD_AG"
 
 def clean(v):
     return str(v).strip() if v is not None else ""
@@ -95,7 +100,6 @@ def parse_directive(comm, curr_sub, curr_su, pres_post, dist):
         rem = 'Posting under departmental verification / review'
         return sub, su, rem
 
-    # Compound directives: e.g. 'DDARD, Haringhata Farm SU as BMF Haringhata'
     if 'su as' in c_lower or 'su at' in c_lower:
         m = re.split(r'(?i)\bsu\s+(?:as|at)\s+', c)
         dd_part = m[0].strip()
@@ -108,14 +112,12 @@ def parse_directive(comm, curr_sub, curr_su, pres_post, dist):
         rem = f'Promoted to {sub} | Service utilized at {su_part}'
         return sub, su, rem
 
-    # Pure Substantive DD directive
     if any(k in c_lower for k in ['ddard', 'dd ', 'dd,', 'deputy director']):
         sub = parse_dd_target(c, curr_sub)
         su = 'Nil'
         rem = f'Promoted to {sub}'
         return sub, su, rem
 
-    # Pure SU directive
     if any(k in c_lower for k in ['bldo', 'vo', 'sahc', 'bahc', 'adahc', 'polyclinic']):
         su = format_field_post(c, dist)
         rem = f'Service utilized at {c} (Pay Level 19 at District HQ)'
@@ -124,7 +126,15 @@ def parse_directive(comm, curr_sub, curr_su, pres_post, dist):
     rem = f'Posting aligned per review note: {c}'
     return sub, su, rem
 
-def run():
+def build_iteration(timestamp_str=None):
+    if not timestamp_str:
+        timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    
+    filename = f"Promotion_242_1st_Dradt_{timestamp_str}.xlsx"
+    out_avd = os.path.join(DIR_AVD, filename)
+    out_ag = os.path.join(DIR_AG, filename)
+
+    print(f"=== Generating Iteration: {filename} ===")
     print("Loading source workbooks...")
     wb_c = openpyxl.load_workbook(FILE_CLAUDE, data_only=True)
     ws_c_master = wb_c["Master_Posting_Order"]
@@ -135,7 +145,6 @@ def run():
     wb_413 = openpyxl.load_workbook(FILE_413_MOD, data_only=True)
     ws_413 = wb_413["11_Column_Master_Posting_Order"]
 
-    # Extract all Column N comments
     col_n_comments = {}
     for r in range(2, 312):
         comm = ws_413.cell(r, 14).value
@@ -143,7 +152,7 @@ def run():
 
     officers = []
 
-    # 1. 310 Officers (Rows 2 to 311)
+    # 1. 310 Master Officers
     for r in range(2, 312):
         sl = ws_c_master.cell(r, 1).value
         sl242 = ws_c_master.cell(r, 2).value
@@ -225,8 +234,6 @@ def run():
             "comments": item[13]
         })
 
-    print(f"Total officers compiled for Master Posting Order: {len(officers)}")
-
     wb_out = openpyxl.Workbook()
     wb_out.remove(wb_out.active)
 
@@ -266,12 +273,10 @@ def run():
         "Comments (Debi Da)"
     ]
 
-    # TAB 1: Full_Promotion_Transfer_List (28 chars)
-    print("Writing Tab 1: Full_Promotion_Transfer_List (323 officers)...")
+    # TAB 1: Full_Promotion_Transfer_List
     ws1 = wb_out.create_sheet(title="Full_Promotion_Transfer_List")
     ws1.views.sheetView[0].showGridLines = True
     ws1.append(headers_14)
-
     for c in range(1, len(headers_14) + 1):
         cell = ws1.cell(1, c)
         cell.fill = navy_header_fill
@@ -281,20 +286,8 @@ def run():
 
     for off in officers:
         row_vals = [
-            off["sl"],
-            off["sl242"],
-            off["name"],
-            off["desig"],
-            off["estab"],
-            off["block"],
-            off["dist"],
-            off["pres_post"],
-            off["pres_su"],
-            off["basis"],
-            off["sub_post"],
-            off["su_post"],
-            off["remarks"],
-            off["comments"]
+            off["sl"], off["sl242"], off["name"], off["desig"], off["estab"], off["block"], off["dist"],
+            off["pres_post"], off["pres_su"], off["basis"], off["sub_post"], off["su_post"], off["remarks"], off["comments"]
         ]
         ws1.append(row_vals)
         curr_r = ws1.max_row
@@ -309,19 +302,15 @@ def run():
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             elif c == 14:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-                if cell.value:
-                    cell.font = font_bold
+                if cell.value: cell.font = font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
     ws1.freeze_panes = "D2"
 
     # TAB 2: Promotion_242_Only
-    print("Writing Tab 2: Promotion_242_Only...")
     ws2 = wb_out.create_sheet(title="Promotion_242_Only")
     ws2.views.sheetView[0].showGridLines = True
     ws2.append(headers_14)
-
     for c in range(1, len(headers_14) + 1):
         cell = ws2.cell(1, c)
         cell.fill = steel_header_fill
@@ -331,20 +320,8 @@ def run():
 
     for off in officers[:242]:
         row_vals = [
-            off["sl"],
-            off["sl242"],
-            off["name"],
-            off["desig"],
-            off["estab"],
-            off["block"],
-            off["dist"],
-            off["pres_post"],
-            off["pres_su"],
-            off["basis"],
-            off["sub_post"],
-            off["su_post"],
-            off["remarks"],
-            off["comments"]
+            off["sl"], off["sl242"], off["name"], off["desig"], off["estab"], off["block"], off["dist"],
+            off["pres_post"], off["pres_su"], off["basis"], off["sub_post"], off["su_post"], off["remarks"], off["comments"]
         ]
         ws2.append(row_vals)
         curr_r = ws2.max_row
@@ -359,19 +336,15 @@ def run():
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             elif c == 14:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-                if cell.value:
-                    cell.font = font_bold
+                if cell.value: cell.font = font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
     ws2.freeze_panes = "D2"
 
     # TAB 3: Transfers_and_Displaced_81
-    print("Writing Tab 3: Transfers_and_Displaced_81...")
     ws3 = wb_out.create_sheet(title="Transfers_and_Displaced_81")
     ws3.views.sheetView[0].showGridLines = True
     ws3.append(headers_14)
-
     for c in range(1, len(headers_14) + 1):
         cell = ws3.cell(1, c)
         cell.fill = accent_header_fill
@@ -381,20 +354,8 @@ def run():
 
     for off in officers[242:]:
         row_vals = [
-            off["sl"],
-            off["sl242"],
-            off["name"],
-            off["desig"],
-            off["estab"],
-            off["block"],
-            off["dist"],
-            off["pres_post"],
-            off["pres_su"],
-            off["basis"],
-            off["sub_post"],
-            off["su_post"],
-            off["remarks"],
-            off["comments"]
+            off["sl"], off["sl242"], off["name"], off["desig"], off["estab"], off["block"], off["dist"],
+            off["pres_post"], off["pres_su"], off["basis"], off["sub_post"], off["su_post"], off["remarks"], off["comments"]
         ]
         ws3.append(row_vals)
         curr_r = ws3.max_row
@@ -409,18 +370,14 @@ def run():
                 cell.alignment = Alignment(horizontal="center", vertical="center")
             elif c == 14:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-                if cell.value:
-                    cell.font = font_bold
+                if cell.value: cell.font = font_bold
             else:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
     ws3.freeze_panes = "D2"
 
     # TAB 4: 4_Column_Government_Order
-    print("Writing Tab 4: 4_Column_Government_Order...")
     ws4 = wb_out.create_sheet(title="4_Column_Government_Order")
     ws4.views.sheetView[0].showGridLines = True
-
     preamble = [
         ["GOVERNMENT OF WEST BENGAL", "", "", ""],
         ["Animal Resources Development Department", "", "", ""],
@@ -429,16 +386,13 @@ def run():
         ["Comprehensive Order: Promotion to Deputy Director, ARD (Pay Level 19) & Consequential Lateral Transfers", "", "", ""],
         ["Sl No.", "Name of the Officer with Present Posting", "Place of Posting on Promotion / Transfer (Substantive Post)", "Service Utilized Post (if any) / Remarks"]
     ]
-    for row in preamble:
-        ws4.append(row)
-
+    for row in preamble: ws4.append(row)
     for r in range(1, 6):
         ws4.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
         cell = ws4.cell(r, 1)
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.font = Font(name="Calibri", size=12 if r in [1, 4] else 11, bold=True)
         ws4.row_dimensions[r].height = 24
-
     for c in range(1, 5):
         cell = ws4.cell(6, c)
         cell.fill = navy_header_fill
@@ -458,15 +412,11 @@ def run():
             cell.font = font_regular
             cell.border = border_thin
             cell.fill = fill_to_use
-            if c == 1:
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-            else:
-                cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-
+            if c == 1: cell.alignment = Alignment(horizontal="center", vertical="center")
+            else: cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
     ws4.freeze_panes = "A7"
 
     # TAB 5: DD_Vacancy_Balance
-    print("Writing Tab 5: DD_Vacancy_Balance...")
     ws5 = wb_out.create_sheet(title="DD_Vacancy_Balance")
     ws5.views.sheetView[0].showGridLines = True
     for r in range(1, ws_c_vac.max_row + 1):
@@ -490,18 +440,13 @@ def run():
                 if status == "OVER-ALLOTTED":
                     cell.fill = crit_alert_fill
                     if c == 5: cell.font = font_bold
-                elif status == "Under-allotted":
-                    cell.fill = alert_fill
-                else:
-                    cell.fill = white_fill
-                if c in [2, 3, 4]:
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
-                else:
-                    cell.alignment = Alignment(horizontal="left", vertical="center")
+                elif status == "Under-allotted": cell.fill = alert_fill
+                else: cell.fill = white_fill
+                if c in [2, 3, 4]: cell.alignment = Alignment(horizontal="center", vertical="center")
+                else: cell.alignment = Alignment(horizontal="left", vertical="center")
     ws5.freeze_panes = "A2"
 
     # TAB 6: Discrepancy_Register
-    print("Writing Tab 6: Discrepancy_Register...")
     ws6 = wb_out.create_sheet(title="Discrepancy_Register")
     ws6.views.sheetView[0].showGridLines = True
     for r in range(1, ws_c_disc.max_row + 1):
@@ -522,21 +467,16 @@ def run():
                 cell = ws6.cell(curr_r, c)
                 cell.font = font_regular
                 cell.border = border_thin
-                if sev == "CRITICAL":
-                    cell.fill = crit_alert_fill
-                elif sev == "HIGH":
-                    cell.fill = alert_fill
-                else:
-                    cell.fill = white_fill
+                if sev == "CRITICAL": cell.fill = crit_alert_fill
+                elif sev == "HIGH": cell.fill = alert_fill
+                else: cell.fill = white_fill
                 if c in [1, 4]:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                     if c == 4: cell.font = font_bold
-                else:
-                    cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+                else: cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
     ws6.freeze_panes = "A2"
 
     # TAB 7: Sources_and_Method
-    print("Writing Tab 7: Sources_and_Method...")
     ws7 = wb_out.create_sheet(title="Sources_and_Method")
     ws7.views.sheetView[0].showGridLines = True
     for r in range(1, ws_c_src.max_row + 1):
@@ -555,7 +495,7 @@ def run():
                 cell.font = font_bold
                 cell.fill = alert_fill
 
-    # Set column widths across all sheets
+    # Optimal column widths
     for ws in [ws1, ws2, ws3]:
         ws.column_dimensions["A"].width = 8
         ws.column_dimensions["B"].width = 10
@@ -594,11 +534,28 @@ def run():
     ws7.column_dimensions["A"].width = 25
     ws7.column_dimensions["B"].width = 65
 
-    print(f"Saving to {OUTPUT_LOCAL_AVD}...")
-    wb_out.save(OUTPUT_LOCAL_AVD)
-    print(f"Saving to {OUTPUT_LOCAL_AG}...")
-    wb_out.save(OUTPUT_LOCAL_AG)
-    print("Full Promotion cum Transfer Master successfully created!")
+    print(f"Saving to {out_avd}...")
+    wb_out.save(out_avd)
+    print(f"Saving to {out_ag}...")
+    wb_out.save(out_ag)
+
+    # Upload to Google Drive
+    print(f"Uploading {filename} to Google Drive folder {DRIVE_FOLDER_ID}...")
+    cmd = [
+        "rclone", "copyto",
+        out_ag,
+        f"gdrive:{filename}",
+        "--drive-root-folder-id", DRIVE_FOLDER_ID,
+        "-v"
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"Successfully uploaded {filename} to Google Drive!")
+    else:
+        print(f"Upload failed:\n{res.stderr}")
+
+    return filename
 
 if __name__ == "__main__":
-    run()
+    ts = sys.argv[1] if len(sys.argv) > 1 else None
+    build_iteration(ts)
