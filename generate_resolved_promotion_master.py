@@ -399,6 +399,24 @@ def build_resolved_master(timestamp_str=None):
         "comments": "Executive lateral transfer to BLDO Kulpi, South 24 Parganas"
     })
 
+    # --- DR. SUBHENDU HALDER (Lateral Transfer to BLDO Mathurapur-I in lieu of Dr. Kartick da) ---
+    officers.append({
+        "sl": len(officers) + 1,
+        "sl242": "-",
+        "name": "Dr. Subhendu Halder",
+        "desig": "Assistant Director, ARD",
+        "estab": "Directorate Headquarters",
+        "block": "-",
+        "dist": "Kolkata",
+        "pres_post": "Assistant Director, ARD, (Veterinary), Directorate Headquarters, Kolkata",
+        "pres_su": "Nil",
+        "basis": "Administrative Lateral Transfer",
+        "sub_post": "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of South 24 Parganas, Mathurapur-I, South 24 Parganas",
+        "su_post": "Nil",
+        "remarks": "Lateral transfer to BLDO Mathurapur-I, South 24 Parganas in lieu of Dr. Kartick Chandra Roy (promoted to DD)",
+        "comments": "Lateral transfer from AD Dte HQ to BLDO Mathurapur-I in lieu of Dr. Kartick da"
+    })
+
     print(f"Compiled {len(officers)} officers with zero collisions and 100% sanction compliance!")
 
     # BUILD EXCEL WORKBOOK
@@ -683,7 +701,8 @@ def build_resolved_master(timestamp_str=None):
         (8, "Hooghly Goghat SU Collision (2 Officers)", "2 officers on SU at ABAHC Goghat-II: Dr. Tuhin Kumar Adak & Dr. Nimai Chandra Mistri", "Separate blocks", "Dr. Tuhin Kumar Adak -> ABAHC Goghat-II; Dr. Nimai Chandra Mistri -> ABAHC Goghat-I"),
         (9, "Concatenated Strings (Rows 264-270)", "Text corruption: 'Haringhata Farm, Haringhata Farm' / 'Directorate Headquarter...'", "Clean designations and locations", "Sanitized to clean, official administrative titles"),
         (10, "13 Consequential Field Transfers", "Appended at foot of master sheet with partial details", "Fully incorporated into cadre transfer order", "All 13 officers assigned active postings and designated as Executive Lateral Transfers"),
-        (11, "Dr. Tarun Kumar Saha Roy (Sl 193) & Dr. Manas Kundu", "Dr. Tarun Kumar Saha Roy needed SU at VO Shyampur-I, Howrah which was occupied by Dr. Manas Kundu", "Transfer Dr. Manas Kundu from VO Shyampur-I to vacant BLDO Kulpi; promote Dr. Tarun Kumar Saha Roy to substantive DD Howrah with SU at VO Shyampur-I", "Dr. Tarun Kumar Saha Roy -> Substantive DD Howrah + SU VO Shyampur-I; Dr. Manas Kundu -> Lateral transfer to BLDO Kulpi, South 24 Parganas. 100% compliant.")
+        (11, "Dr. Tarun Kumar Saha Roy (Sl 193) & Dr. Manas Kundu", "Dr. Tarun Kumar Saha Roy needed SU at VO Shyampur-I, Howrah which was occupied by Dr. Manas Kundu", "Transfer Dr. Manas Kundu from VO Shyampur-I to vacant BLDO Kulpi; promote Dr. Tarun Kumar Saha Roy to substantive DD Howrah with SU at VO Shyampur-I", "Dr. Tarun Kumar Saha Roy -> Substantive DD Howrah + SU VO Shyampur-I; Dr. Manas Kundu -> Lateral transfer to BLDO Kulpi, South 24 Parganas. 100% compliant."),
+        (12, "Dr. Subhendu Halder to BLDO Mathurapur-I", "BLDO Mathurapur-I vacated by Dr. Kartick Chandra Roy (Sl 157) on promotion to DD", "Transfer Dr. Subhendu Halder (AD Dte HQ) to BLDO Mathurapur-I, South 24 Parganas in lieu of Dr. Kartick da", "Dr. Subhendu Halder -> BLDO Mathurapur-I, South 24 Parganas. Active field posting restored.")
     ]
 
     for item in decisions_data:
