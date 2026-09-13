@@ -27,6 +27,7 @@ import httpx
 from posting_engine import PostingEngine
 from backup_manager import BackupManager
 from order_generator import generate_excel_order, generate_docx_order, generate_html_order
+from data_exporter import data_exporter
 
 app = FastAPI(
     title="WB ARD Department - Smart Posting Decision Board & AI Cadre System",
@@ -106,6 +107,14 @@ class PolicyEvaluateRequest(BaseModel):
     substantive_post_id: int
     su_post_id: Optional[int] = None
     officer_type: Optional[str] = "roster"
+
+class ExportQueryRequest(BaseModel):
+    dataset: str = "cadre_posts"
+    filters: Optional[Dict[str, Any]] = None
+    sort_by: Optional[str] = None
+    sort_order: Optional[str] = "asc"
+    selected_columns: Optional[List[str]] = None
+    limit: Optional[int] = None
 
 # --- API ENDPOINTS ---
 
@@ -832,6 +841,134 @@ def export_simulation_docx(session_id: str = "CURRENT_SESSION"):
     """Exports official Secretariat Government Notification in Word .docx format (Memo 391 standard)."""
     file_path = generate_docx_order(session_id)
     return FileResponse(file_path, filename=os.path.basename(file_path), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+# --- DEPARTMENTAL DATA EXPORTER & REPORT BUILDER ENDPOINTS ---
+
+@app.get("/api/export/meta")
+def get_export_metadata_endpoint():
+    """Returns schemas, active filter choices, and presets for custom exports."""
+    return data_exporter.get_export_metadata()
+
+@app.post("/api/export/preview")
+def export_preview_endpoint(req: ExportQueryRequest):
+    """Returns record count, sample rows, and applied filter descriptions."""
+    filters = req.filters or {}
+    limit = req.limit or 10
+    rows, count, descs = data_exporter.fetch_records(
+        req.dataset, filters, req.sort_by, req.sort_order or "asc", limit=limit
+    )
+    schema = data_exporter.get_export_metadata()["datasets"].get(req.dataset, {})
+    return {
+        "dataset": req.dataset,
+        "total_count": count,
+        "sample": rows,
+        "filter_descriptions": descs,
+        "columns": schema.get("columns", [])
+    }
+
+@app.post("/api/export/excel")
+def export_excel_endpoint(req: ExportQueryRequest):
+    """Generates and downloads styled Excel (.xlsx) file based on filters and columns."""
+    filters = req.filters or {}
+    file_path = data_exporter.generate_excel_report(
+        dataset=req.dataset,
+        filters=filters,
+        sort_by=req.sort_by,
+        sort_order=req.sort_order or "asc",
+        selected_columns=req.selected_columns
+    )
+    return FileResponse(
+        file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@app.get("/api/export/excel")
+def export_excel_get_endpoint(
+    dataset: str = "cadre_posts",
+    district: Optional[str] = None,
+    designation: Optional[str] = None,
+    occupancy_status: Optional[str] = None,
+    tenure_filter: Optional[str] = None,
+    superannuation_filter: Optional[str] = None,
+    roster_quota: Optional[str] = None,
+    allotment_status: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: str = "asc"
+):
+    """GET endpoint for direct browser Excel downloads."""
+    filters = {}
+    if district: filters["district"] = district
+    if designation: filters["designation"] = designation
+    if occupancy_status: filters["occupancy_status"] = occupancy_status
+    if tenure_filter: filters["tenure_filter"] = tenure_filter
+    if superannuation_filter: filters["superannuation_filter"] = superannuation_filter
+    if roster_quota: filters["roster_quota"] = roster_quota
+    if allotment_status: filters["allotment_status"] = allotment_status
+
+    file_path = data_exporter.generate_excel_report(
+        dataset=dataset,
+        filters=filters,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+    return FileResponse(
+        file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@app.post("/api/export/docx")
+def export_docx_endpoint(req: ExportQueryRequest):
+    """Generates and downloads official Word (.docx) file based on filters and columns."""
+    filters = req.filters or {}
+    file_path = data_exporter.generate_docx_report(
+        dataset=req.dataset,
+        filters=filters,
+        sort_by=req.sort_by,
+        sort_order=req.sort_order or "asc",
+        selected_columns=req.selected_columns
+    )
+    return FileResponse(
+        file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+@app.get("/api/export/docx")
+def export_docx_get_endpoint(
+    dataset: str = "cadre_posts",
+    district: Optional[str] = None,
+    designation: Optional[str] = None,
+    occupancy_status: Optional[str] = None,
+    tenure_filter: Optional[str] = None,
+    superannuation_filter: Optional[str] = None,
+    roster_quota: Optional[str] = None,
+    allotment_status: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: str = "asc"
+):
+    """GET endpoint for direct browser Word (.docx) downloads."""
+    filters = {}
+    if district: filters["district"] = district
+    if designation: filters["designation"] = designation
+    if occupancy_status: filters["occupancy_status"] = occupancy_status
+    if tenure_filter: filters["tenure_filter"] = tenure_filter
+    if superannuation_filter: filters["superannuation_filter"] = superannuation_filter
+    if roster_quota: filters["roster_quota"] = roster_quota
+    if allotment_status: filters["allotment_status"] = allotment_status
+
+    file_path = data_exporter.generate_docx_report(
+        dataset=dataset,
+        filters=filters,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+    return FileResponse(
+        file_path,
+        filename=os.path.basename(file_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
 
 @app.get("/api/simulation/view-order-html", response_class=HTMLResponse)
 def view_simulation_order_html(session_id: str = "CURRENT_SESSION"):
