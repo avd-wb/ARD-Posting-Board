@@ -220,7 +220,7 @@ def build_resolved_master(timestamp_str=None):
 
     # Pool of available sanctioned posts for regularization of excess
     pool_posts = (
-        [('Directorate Headquarters', 'Deputy Director, ARD, O/O the DAH & VS, W.B., Directorate Headquarters')] * 12 +
+        [('Directorate Headquarters', 'Deputy Director, ARD, O/O the DAH & VS, W.B., Directorate Headquarters')] * 11 +
         [('I.A.H. & V.B., (R. & T.)', 'Deputy Director, ARD, I.A.H. & V.B., (R. & T.)')] * 8 +
         [('State Livestock Farm, Kalyani', 'Deputy Director, ARD, State Livestock Farm, Kalyani')] * 3 +
         [('State Poultry Farm, Tollygunge', 'Deputy Director, State Poultry Farm, Tollygunge')] * 1 +
@@ -228,7 +228,7 @@ def build_resolved_master(timestamp_str=None):
         [('Regional Laboratory, Bardhaman', 'Deputy Director, ARD, Regional Laboratory, Bardhaman')] * 1 +
         [('Regional Laboratory, Jalpaiguri', 'Deputy Director, ARD, Regional Laboratory, Jalpaiguri')] * 1 +
         [('Disease Investigation cum Clinical Laboratory, Darjeeling', 'Deputy Director, ARD, Disease Investigation cum Clinical Laboratory, Darjeeling')] * 1 +
-        [('Haringhata Farm', 'Deputy Director, ARD, Haringhata Farm, Nadia')] * 3 +
+        [('Haringhata Farm', 'Deputy Director, ARD, Haringhata Farm, Nadia')] * 2 +
         [('Set up of North Bengal', 'Deputy Director, ARD, Set up of North Bengal')] * 1 +
         [('Zone - II', 'Deputy Director, ARD, Zone - II')] * 1 +
         [('Zone - III', 'Deputy Director, ARD, Zone - III')] * 1 +
@@ -319,6 +319,29 @@ def build_resolved_master(timestamp_str=None):
             su_post = "Veterinary Officer, ABAHC, Sub-Divisional and Block Level Set up of Hooghly, Goghat-I, Hooghly"
             rem = "Service utilized at ABAHC Goghat-I, Hooghly"
 
+        # --- DR. TARUN KUMAR SAHA ROY (Sl 193) ---
+        if sl == 193 or ("tarun" in name.lower() and "saha" in name.lower()):
+            sub_post = "Deputy Director, ARD, District Office, Howrah"
+            su_post = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Howrah, Shyampur-I, Howrah"
+            rem = "Promoted to DD Level 19 at Howrah; Service utilized as VO, BAHC, Shyampur-I, Howrah"
+            comm = "Substantive DDARD Howrah; SU VO Shyampur-I Howrah (vacated by Dr. Manas Kundu)"
+
+        # --- HOWRAH BALANCING PER REVIEW NOTES (SL 56, SL 62 & SL 167) ---
+        if sl == 56 or "jayanta chowdhury" in name.lower():
+            sub_post = "Deputy Director, ARD, O/O the DAH & VS, W.B., Directorate Headquarters"
+            su_post = "Nil"
+            rem = "Promoted to DD Level 19 at Directorate HQ per review note"
+        elif sl == 62 or "somnath nag" in name.lower():
+            sub_post = "Deputy Director, ARD, Haringhata Farm, Nadia"
+            su_post = "Nil"
+            rem = "Promoted to DD Level 19 at Haringhata Farm per review note"
+        elif sl == 167 or "shubhankar bhattacharyya" in name.lower():
+            new_est, reg_post = pool_posts[pool_idx]
+            pool_idx += 1
+            sub_post = reg_post
+            su_post = pres_post
+            rem = f"Promoted to DD against sanctioned vacancy ({reg_post.split(',')[0]}); SU retained at present station"
+
         # --- A4: REGULARIZATION OF 62 EXCESS DD PROMOTEES ---
         # If this is one of the 242 promotees (sl242 != '-')
         if sl242 not in ['-', None, '']:
@@ -357,6 +380,24 @@ def build_resolved_master(timestamp_str=None):
             "remarks": rem,
             "comments": comm
         })
+
+    # --- DR. MANAS KUNDU (Lateral Transfer to BLDO Kulpi) ---
+    officers.append({
+        "sl": len(officers) + 1,
+        "sl242": "-",
+        "name": "Dr. Manas Kundu",
+        "desig": "Veterinary Officer",
+        "estab": "Sub-Divisional and Block Level Set up of Howrah",
+        "block": "Shyampur-I",
+        "dist": "Howrah",
+        "pres_post": "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Howrah, Shyampur-I, Howrah",
+        "pres_su": "Nil",
+        "basis": "Administrative Lateral Transfer",
+        "sub_post": "Block Livestock Development Officer, Sub-Divisional and Block Level Set up of South 24 Parganas, Kulpi, South 24 Parganas",
+        "su_post": "Nil",
+        "remarks": "Lateral transfer to vacant BLDO Kulpi, South 24 Parganas per executive instruction; vacates VO Shyampur-I for Dr. Tarun Kumar Saha Roy (SU)",
+        "comments": "Executive lateral transfer to BLDO Kulpi, South 24 Parganas"
+    })
 
     print(f"Compiled {len(officers)} officers with zero collisions and 100% sanction compliance!")
 
@@ -641,7 +682,8 @@ def build_resolved_master(timestamp_str=None):
         (7, "Raiganj Polyclinic Collision (2 Officers)", "2 officers allotted: Dr. Nilanjan Mandal & Dr. Nirparaj Pradhan", "Accommodate nearby in Uttar Dinajpur", "Dr. Nilanjan Mandal -> VO Polyclinic Raiganj; Dr. Nirparaj Pradhan -> BAHC Kaliaganj"),
         (8, "Hooghly Goghat SU Collision (2 Officers)", "2 officers on SU at ABAHC Goghat-II: Dr. Tuhin Kumar Adak & Dr. Nimai Chandra Mistri", "Separate blocks", "Dr. Tuhin Kumar Adak -> ABAHC Goghat-II; Dr. Nimai Chandra Mistri -> ABAHC Goghat-I"),
         (9, "Concatenated Strings (Rows 264-270)", "Text corruption: 'Haringhata Farm, Haringhata Farm' / 'Directorate Headquarter...'", "Clean designations and locations", "Sanitized to clean, official administrative titles"),
-        (10, "13 Consequential Field Transfers", "Appended at foot of master sheet with partial details", "Fully incorporated into cadre transfer order", "All 13 officers assigned active postings and designated as Executive Lateral Transfers")
+        (10, "13 Consequential Field Transfers", "Appended at foot of master sheet with partial details", "Fully incorporated into cadre transfer order", "All 13 officers assigned active postings and designated as Executive Lateral Transfers"),
+        (11, "Dr. Tarun Kumar Saha Roy (Sl 193) & Dr. Manas Kundu", "Dr. Tarun Kumar Saha Roy needed SU at VO Shyampur-I, Howrah which was occupied by Dr. Manas Kundu", "Transfer Dr. Manas Kundu from VO Shyampur-I to vacant BLDO Kulpi; promote Dr. Tarun Kumar Saha Roy to substantive DD Howrah with SU at VO Shyampur-I", "Dr. Tarun Kumar Saha Roy -> Substantive DD Howrah + SU VO Shyampur-I; Dr. Manas Kundu -> Lateral transfer to BLDO Kulpi, South 24 Parganas. 100% compliant.")
     ]
 
     for item in decisions_data:
