@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAICopilot();
     initBetaSyncCountdown();
     initKPICardClickHandlers();
+    initInstallAppModal();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -1288,6 +1289,119 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnCloseFooter) btnCloseFooter.addEventListener('click', () => modal.classList.add('hidden'));
     }
 
+    // --- INSTALL APP POPUP MODAL (PWA & iOS GUIDE) ---
+    function initInstallAppModal() {
+        const modal = document.getElementById('installAppModal');
+        const tabIOS = document.getElementById('tabInstallIOS');
+        const tabAndroid = document.getElementById('tabInstallAndroid');
+        const panelIOS = document.getElementById('panelInstallIOS');
+        const panelAndroid = document.getElementById('panelInstallAndroid');
+        const btnClose = document.getElementById('btnCloseInstallModal');
+        const btnProceed = document.getElementById('btnProceedToApp');
+        const btnDismissToday = document.getElementById('btnDismissInstallToday');
+        const btnOpenHeader = document.getElementById('btnOpenInstallModal');
+        const btnOpenFooter = document.getElementById('btnFooterInstallApp');
+        const btnNativePrompt = document.getElementById('btnNativeInstallPrompt');
+
+        if (!modal) return;
+
+        // Platform detection
+        const userAgent = window.navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
+                      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+        function showTab(tab) {
+            if (tab === 'ios') {
+                tabIOS?.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
+                tabIOS?.classList.remove('text-slate-500');
+                tabAndroid?.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
+                tabAndroid?.classList.add('text-slate-500');
+                panelIOS?.classList.remove('hidden');
+                panelAndroid?.classList.add('hidden');
+            } else {
+                tabAndroid?.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
+                tabAndroid?.classList.remove('text-slate-500');
+                tabIOS?.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
+                tabIOS?.classList.add('text-slate-500');
+                panelAndroid?.classList.remove('hidden');
+                panelIOS?.classList.add('hidden');
+            }
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        // Set initial device tab based on detected platform
+        showTab(isIOS ? 'ios' : 'android');
+
+        if (tabIOS) tabIOS.addEventListener('click', () => showTab('ios'));
+        if (tabAndroid) tabAndroid.addEventListener('click', () => showTab('android'));
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        window.openInstallModal = openModal;
+        window.closeInstallModal = closeModal;
+
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (btnProceed) btnProceed.addEventListener('click', closeModal);
+        if (btnOpenHeader) btnOpenHeader.addEventListener('click', openModal);
+        if (btnOpenFooter) btnOpenFooter.addEventListener('click', openModal);
+
+        // Click outside backdrop to dismiss
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // "Don't show again today" stores timestamp in localStorage
+        if (btnDismissToday) {
+            btnDismissToday.addEventListener('click', () => {
+                const tomorrow = Date.now() + 24 * 60 * 60 * 1000;
+                localStorage.setItem('ard_install_popup_dismissed_until', tomorrow.toString());
+                closeModal();
+            });
+        }
+
+        // Native PWA install prompt handler
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (btnNativePrompt) {
+                btnNativePrompt.onclick = async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`[PWA] Install prompt outcome: ${outcome}`);
+                        deferredPrompt = null;
+                        closeModal();
+                    }
+                };
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('[PWA] ARD Posting Board installed successfully');
+            closeModal();
+        });
+
+        // Auto popup on app open if not in standalone mode and not dismissed today
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                             window.navigator.standalone === true;
+        const dismissedUntil = localStorage.getItem('ard_install_popup_dismissed_until');
+        const isDismissed = dismissedUntil && Date.now() < parseInt(dismissedUntil, 10);
+
+        if (!isStandalone && !isDismissed) {
+            setTimeout(() => {
+                openModal();
+            }, 1200);
+        }
+    }
+
     // --- AI COPILOT INTERACTION ---
     function initAICopilot() {
         const btnToggle = document.getElementById('btnToggleAIChat');
@@ -1985,8 +2099,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof item === 'object' && item !== null) {
                         const sl = item.posting_sl || idx + 1;
                         const post = item.post || item.designation || 'Cadre Post';
-                        const est = item.establishment || item.office || '—';
-                        const dist = item.district || '';
+                        const est = item.establishment || item.office || '';
+                        const div = item.division || item.district || '';
                         const fromDate = item.from || '';
                         const toDate = item.to || '';
                         const charge = item.charge_type || 'Main charge';
@@ -2000,12 +2114,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span class="font-bold text-slate-900 text-xs">${post}</span>
                                         ${charge ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${charge.includes('SU') || charge.includes('deputation') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${charge}</span>` : ''}
                                     </div>
-                                    <div class="text-xs text-slate-700">
-                                        <strong>Station / Office:</strong> ${est} ${dist ? `(${dist})` : ''}
-                                    </div>
-                                    <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                                    ${est && est !== post ? `<div class="text-xs text-slate-700"><strong>Station / Office:</strong> ${est}</div>` : ''}
+                                    ${div ? `<div class="text-xs text-slate-600"><strong>Division / Zone:</strong> ${div}</div>` : ''}
+                                    <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 pt-0.5">
                                         <i data-lucide="calendar" class="w-3 h-3 text-slate-400"></i>
-                                        <span>Tenure: ${fromDate || 'Entry'} to ${toDate || 'Present'}</span>
+                                        <span>Tenure: <strong class="text-slate-700">${fromDate || 'Entry'}</strong> to <strong class="text-slate-700">${toDate || 'Present'}</strong></span>
                                     </div>
                                 </div>
                             </div>
