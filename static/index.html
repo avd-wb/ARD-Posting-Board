@@ -244,15 +244,6 @@
 
                 <!-- Right: Header Actions (Search, Countdown, Menu) -->
                 <div class="flex items-center space-x-2 shrink-0">
-                    <!-- Live Traffic & Visitor Intelligence Trigger -->
-                    <button id="btnOpenTrafficAnalytics" class="inline-flex items-center gap-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg px-2.5 py-1.5 cursor-pointer transition shadow-xs touch-target" title="Live Visitor & Access Intelligence">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span class="text-xs font-semibold hidden md:inline">Traffic</span>
-                    </button>
 
                     <!-- Universal Spotlight Search Trigger -->
                     <div id="btnOpenSpotlightHeader" class="hidden sm:inline-flex items-center gap-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 rounded-lg px-2.5 py-1.5 cursor-pointer transition shadow-xs">
@@ -1486,6 +1477,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Footer Bottom Sub-bar with Invisible Dot Trigger -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 select-none">
+                <div>Government of West Bengal · Animal Resources Development Department</div>
+                <div class="flex items-center gap-1.5 text-[11px] text-slate-600">
+                    <span>Internal Decision Support System</span>
+                    <!-- Invisible dot: 100% invisible by default, appears only when hovered -->
+                    <button id="btnFooterSecretTraffic" type="button" class="w-4 h-4 inline-flex items-center justify-center cursor-pointer p-0.5 rounded-full group focus:outline-none" title="">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 opacity-0 group-hover:opacity-100 group-hover:bg-emerald-400 group-hover:ring-4 group-hover:ring-emerald-500/20 transition-all duration-300 ease-out"></span>
+                    </button>
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -2065,27 +2068,6 @@
                             <span class="text-[10px] text-slate-500 leading-tight">Complete personnel index</span>
                         </button>
                     </div>
-                </div>
-
-                <!-- Section 3: Live Access & Visitor Intelligence -->
-                <div>
-                    <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Telemetry & Edge Analytics</h4>
-                    <button id="btnDrawerTrafficAnalytics" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-slate-700 transition active:scale-98 text-left w-full shadow-sm">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 flex items-center justify-center shrink-0">
-                            <i data-lucide="activity" class="w-5 h-5"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5">
-                                <div class="font-bold text-xs text-white">Live Traffic & Visitors</div>
-                                <span class="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[9px] font-bold flex items-center gap-1">
-                                    <span class="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    <span>LIVE</span>
-                                </span>
-                            </div>
-                            <div class="text-[11px] text-slate-400 truncate">IP addresses, locations, devices & time spent</div>
-                        </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-                    </button>
                 </div>
 
             </div>

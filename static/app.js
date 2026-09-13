@@ -5744,6 +5744,17 @@ ${r.statutory_justification}
             });
         }
 
+        const btnFooterSecret = document.getElementById('btnFooterSecretTraffic');
+        if (btnFooterSecret) btnFooterSecret.addEventListener('click', openVisitorAnalyticsModal);
+
+        // Optional discrete admin shortcut: Alt+Shift+T
+        window.addEventListener('keydown', (e) => {
+            if (e.altKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+                e.preventDefault();
+                openVisitorAnalyticsModal();
+            }
+        });
+
         const btnClose = document.getElementById('btnCloseVisitorAnalytics');
         if (btnClose) btnClose.addEventListener('click', closeVisitorAnalyticsModal);
 
