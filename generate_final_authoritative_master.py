@@ -133,9 +133,10 @@ def build_master():
             final_rem = "Promoted to Deputy Director, ARD, Directorate Headquarters"
             final_basis = "Promotion"
         elif rsl_int == 132 or "dilip halder" in name_str.lower():
+            # Dr. Dilip Halder (SC) - Option 4 (Kalyani Field Deployment)
             final_sub = "Deputy Director, ARD, State Livestock Farm, Kalyani"
-            final_su = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Hooghly, Polba-Dadpur, Hooghly"
-            final_rem = "Promoted to Deputy Director, ARD, State Livestock Farm, Kalyani; service utilized as Veterinary Officer, BAHC, Polba-Dadpur, Hooghly"
+            final_su = "Veterinary Officer, BAHC, Sub-Divisional and Block Level Set up of Nadia District, Kalyani, Nadia"
+            final_rem = "Promoted to Deputy Director, ARD, State Livestock Farm, Kalyani; service utilized as Veterinary Officer, BAHC, Kalyani, Nadia"
             final_basis = "Promotion"
         elif rsl_int == 242 or "basudev datta" in name_str.lower():
             final_sub = "Deputy Director, ARD, Quarantine Station, Naxalbari, Siliguri"
