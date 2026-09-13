@@ -59,50 +59,176 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- TAB SWITCHING ---
-    function initTabs() {
+    // --- TAB SWITCHING & MOBILE NAVIGATION ---
+    function switchTab(targetTab) {
+        if (!targetTab) return;
+        state.currentTab = targetTab;
+
+        // 1. Desktop Tab Buttons
         const tabButtons = document.querySelectorAll('.tab-btn');
-        tabButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetTab = btn.getAttribute('data-tab');
-                state.currentTab = targetTab;
-
-                tabButtons.forEach(b => {
-                    b.classList.remove('bg-wbblue-800', 'text-white');
-                    b.classList.add('text-blue-200', 'hover:bg-wbblue-800/60');
-                });
-                btn.classList.add('bg-wbblue-800', 'text-white');
-                btn.classList.remove('text-blue-200', 'hover:bg-wbblue-800/60');
-
-                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
-                const activeContent = document.getElementById(targetTab);
-                if (activeContent) {
-                    activeContent.classList.remove('hidden');
-                }
-
-                if (window.setActiveKPICard) {
-                    if (targetTab === 'tab-roster') window.setActiveKPICard('kpiCardRoster');
-                    else if (targetTab === 'tab-obliterated') window.setActiveKPICard('kpiCardObliterated');
-                    else if (targetTab === 'tab-cadre') window.setActiveKPICard('kpiCardTotalPosts');
-                    else if (targetTab === 'tab-displaced') window.setActiveKPICard('kpiCardCollisions');
-                }
-
-                if (targetTab === 'tab-master-orders') {
-                    loadMasterOrders();
-                } else if (targetTab === 'tab-cascade') {
-                    loadSimulationHistory();
-                    loadCascadingBackfills();
-                } else if (targetTab === 'tab-displaced') {
-                    loadDisplacedPool();
-                } else if (targetTab === 'tab-visual-grid') {
-                    window.renderVisualGrid('visualGridBody', false, null);
-                } else if (targetTab === 'tab-master-directory') {
-                    loadMasterDirectory();
-                } else if (targetTab === 'tab-organogram') {
-                    if (window.renderOrganogram) window.renderOrganogram();
-                }
-            });
+        tabButtons.forEach(b => {
+            if (b.getAttribute('data-tab') === targetTab) {
+                b.classList.add('bg-wbblue-800', 'text-white');
+                b.classList.remove('text-blue-200', 'hover:bg-wbblue-800/60');
+            } else {
+                b.classList.remove('bg-wbblue-800', 'text-white');
+                b.classList.add('text-blue-200', 'hover:bg-wbblue-800/60');
+            }
         });
+
+        // 2. Mobile Bottom Bar Buttons
+        const mobileTabButtons = document.querySelectorAll('.mobile-tab-btn');
+        mobileTabButtons.forEach(btn => {
+            const isMatch = btn.getAttribute('data-tab') === targetTab;
+            const pill = btn.querySelector('.tab-pill');
+            const label = btn.querySelector('span:not(.tab-pill)');
+            if (isMatch) {
+                btn.classList.add('text-wbblue-800');
+                btn.classList.remove('text-slate-500');
+                if (pill) {
+                    pill.classList.add('bg-wbblue-100', 'text-wbblue-900');
+                    pill.classList.remove('text-slate-500');
+                }
+                if (label) {
+                    label.classList.add('font-bold');
+                    label.classList.remove('font-medium');
+                }
+            } else {
+                btn.classList.remove('text-wbblue-800');
+                btn.classList.add('text-slate-500');
+                if (pill) {
+                    pill.classList.remove('bg-wbblue-100', 'text-wbblue-900');
+                    pill.classList.add('text-slate-500');
+                }
+                if (label) {
+                    label.classList.remove('font-bold');
+                    label.classList.add('font-medium');
+                }
+            }
+        });
+
+        // 3. Auto-close mobile drawer if open
+        const mobileDrawer = document.getElementById('mobileDrawerModal');
+        if (mobileDrawer && !mobileDrawer.classList.contains('hidden')) {
+            mobileDrawer.classList.add('hidden');
+        }
+
+        // 4. Toggle Content Panes
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
+        const activeContent = document.getElementById(targetTab);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
+
+        // 5. Update KPI card highlights if available
+        if (window.setActiveKPICard) {
+            if (targetTab === 'tab-roster') window.setActiveKPICard('kpiCardRoster');
+            else if (targetTab === 'tab-obliterated') window.setActiveKPICard('kpiCardObliterated');
+            else if (targetTab === 'tab-cadre') window.setActiveKPICard('kpiCardTotalPosts');
+            else if (targetTab === 'tab-displaced') window.setActiveKPICard('kpiCardCollisions');
+        }
+
+        // 6. Trigger specific tab loaders
+        if (targetTab === 'tab-roster') {
+            loadRoster();
+        } else if (targetTab === 'tab-master-orders') {
+            loadMasterOrders();
+        } else if (targetTab === 'tab-obliterated') {
+            loadObliterated();
+        } else if (targetTab === 'tab-cadre') {
+            loadCadre();
+        } else if (targetTab === 'tab-cascade') {
+            loadSimulationHistory();
+            loadCascadingBackfills();
+        } else if (targetTab === 'tab-displaced') {
+            loadDisplacedPool();
+        } else if (targetTab === 'tab-visual-grid') {
+            window.renderVisualGrid('visualGridBody', false, null);
+        } else if (targetTab === 'tab-master-directory') {
+            loadMasterDirectory();
+        } else if (targetTab === 'tab-organogram') {
+            if (window.renderOrganogram) window.renderOrganogram();
+        }
+
+        // 7. Auto scroll smoothly to content top on mobile
+        if (window.innerWidth < 768) {
+            const tabsNav = document.getElementById('navTabs') || document.getElementById('mainContentArea');
+            if (tabsNav) {
+                const rect = tabsNav.getBoundingClientRect();
+                if (rect.top < 0) {
+                    window.scrollTo({ top: window.scrollY + rect.top - 60, behavior: 'smooth' });
+                }
+            }
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+    window.switchTab = switchTab;
+
+    function initTabs() {
+        // Desktop tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+        });
+
+        // Mobile bottom nav tabs
+        document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+        });
+
+        // Mobile drawer tabs
+        document.querySelectorAll('.mobile-drawer-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+        });
+
+        // Mobile Drawer Toggle
+        const mobileDrawer = document.getElementById('mobileDrawerModal');
+        const btnOpenDrawer = document.getElementById('btnOpenMobileDrawer');
+        const btnHeaderMenu = document.getElementById('btnHeaderMobileMenu');
+        const btnCloseDrawer = document.getElementById('btnCloseMobileDrawer');
+        const drawerHandle = document.getElementById('mobileDrawerHandle');
+
+        const openDrawer = () => {
+            if (mobileDrawer) {
+                mobileDrawer.classList.remove('hidden');
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+
+        const closeDrawer = () => {
+            if (mobileDrawer) mobileDrawer.classList.add('hidden');
+        };
+
+        if (btnOpenDrawer) btnOpenDrawer.addEventListener('click', openDrawer);
+        if (btnHeaderMenu) btnHeaderMenu.addEventListener('click', openDrawer);
+        if (btnCloseDrawer) btnCloseDrawer.addEventListener('click', closeDrawer);
+        if (drawerHandle) drawerHandle.addEventListener('click', closeDrawer);
+
+        if (mobileDrawer) {
+            mobileDrawer.addEventListener('click', (e) => {
+                if (e.target === mobileDrawer) closeDrawer();
+            });
+        }
+
+        // Mobile Drawer Quick Action: Install App
+        const btnDrawerInstall = document.getElementById('btnMobileDrawerInstallApp');
+        if (btnDrawerInstall) {
+            btnDrawerInstall.addEventListener('click', () => {
+                closeDrawer();
+                const btnHeaderInstall = document.getElementById('btnOpenInstallModal');
+                if (btnHeaderInstall) btnHeaderInstall.click();
+            });
+        }
+
+        // Mobile Drawer Quick Action: AI Assistant
+        const btnDrawerAI = document.getElementById('btnMobileDrawerAIAssistant');
+        if (btnDrawerAI) {
+            btnDrawerAI.addEventListener('click', () => {
+                closeDrawer();
+                const aiDrawer = document.getElementById('aiDrawer');
+                if (aiDrawer) aiDrawer.classList.remove('translate-x-full');
+            });
+        }
     }
 
     // --- LOAD OVERVIEW KPIS ---
@@ -183,8 +309,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const json = await res.json();
             state.rosterCandidates = json.data;
 
+            const cardsEl = document.getElementById('rosterMobileCards');
+
             if (json.data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">No candidates match current criteria.</td></tr>`;
+                if (cardsEl) cardsEl.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">No candidates match current criteria.</div>`;
                 return;
             }
 
@@ -324,6 +453,129 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tr>
                 `;
             }).join('');
+
+            // Render Mobile Cards Feed (<md Screens)
+            if (cardsEl) {
+                cardsEl.innerHTML = json.data.map(c => {
+                    const isAllotted = c.allotment_status === 'Allotted' || Boolean(c.master_sub);
+                    const statusBadge = isAllotted
+                        ? `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Allotted</span>`
+                        : `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Pending</span>`;
+
+                    const dualBadge = c.is_dual_obliterated === 1
+                        ? `<span class="px-1.5 py-0.2 ml-1 text-[9px] font-semibold bg-rose-100 text-rose-700 border border-rose-200 rounded">Memo 1808</span>`
+                        : '';
+
+                    const dorBadge = (c.dor && c.dor !== '—')
+                        ? `<span class="font-mono text-slate-800 font-bold">${c.dor}</span>`
+                        : (c.service_ends ? `<span class="font-mono text-slate-700 font-medium">${c.service_ends}</span>` : `<span class="text-slate-400">-</span>`);
+
+                    const contactBar = (c.mobile && c.mobile !== '—') ? `
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                            <a href="tel:${c.mobile}" class="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Call (${c.mobile})
+                            </a>
+                            <a href="https://wa.me/91${c.mobile}" target="_blank" class="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+                            </a>
+                        </div>
+                    ` : '';
+
+                    const welfareBadges = [];
+                    if (c.children_board_exams && c.children_board_exams !== '—') {
+                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">Exam: ${c.children_board_exams}</span>`);
+                    }
+                    if (c.spouse_is_wbahvs) {
+                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Spouse WBAHVS</span>`);
+                    }
+                    if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
+                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold">Medical Grounds</span>`);
+                    }
+
+                    return `
+                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60">
+                            <!-- Card Header -->
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-1">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2 py-0.5 rounded-md bg-wbblue-900 text-white font-mono text-[10px] font-bold">Sl ${c.sl_no}</span>
+                                        <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10px] font-bold">Point ${c.roster_point}</span>
+                                        <span class="px-1.5 py-0.5 rounded-md ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 font-bold'} text-[10px]">${c.point_reserved_for} Quota</span>
+                                        <span class="text-[10px] text-slate-500 font-semibold uppercase">(${c.caste})</span>
+                                    </div>
+                                    <div class="font-bold text-sm text-wbblue-950 cursor-pointer pt-0.5 hover:underline" onclick="openOfficerDossier('${c.hrms_id}')">
+                                        ${c.officer_name} ${dualBadge}
+                                    </div>
+                                    <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
+                                        <span>HRMS: <strong>${c.hrms_id || 'N/A'}</strong></span>
+                                        <span>•</span>
+                                        <span>DOR: ${dorBadge}</span>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">${statusBadge}</div>
+                            </div>
+
+                            <!-- Welfare Badges if any -->
+                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1">${welfareBadges.join('')}</div>` : ''}
+
+                            <!-- Present Posting Card -->
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-0.5">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Present Posting</div>
+                                <div class="font-semibold text-slate-800 leading-snug">${c.present_posting || '-'}</div>
+                                <div class="text-[11px] text-slate-500 font-medium">
+                                    ${c.present_block ? `<span class="text-slate-700 font-semibold">${c.present_block} Block</span>, ` : ''}${c.present_district || 'District N/A'}
+                                </div>
+                            </div>
+
+                            <!-- Allotment Result Card -->
+                            <div class="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50/70 to-teal-50/50 border border-emerald-200/80 text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Promotion Allotment Status</div>
+                                ${c.master_sub ? `
+                                    <div class="space-y-1">
+                                        <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1">
+                                            <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                            <span>${c.master_sub}</span>
+                                        </div>
+                                        ${c.master_su && c.master_su !== 'Nil' ? `
+                                            <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1">
+                                                <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                                <span>${c.master_su}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : (isAllotted ? `
+                                    <div class="text-emerald-800 font-bold text-xs flex items-center gap-1">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                        <span>${c.substantive_post_name || 'DD Post'}</span>
+                                    </div>
+                                ` : `<span class="text-amber-700 font-semibold text-xs">Pending Deputy Director Allotment</span>`)}
+                            </div>
+
+                            ${(c.pref_1 && c.pref_1 !== '—') ? `
+                                <div class="text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60 truncate">
+                                    <strong class="text-slate-700">Pref 1:</strong> ${c.pref_1}
+                                </div>
+                            ` : ''}
+
+                            ${contactBar}
+
+                            <!-- 44px Touch Action Buttons -->
+                            <div class="grid grid-cols-3 gap-2 pt-1">
+                                <button onclick="openOfficerDossier('${c.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                    <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
+                                </button>
+                                <button onclick="openDualAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-wbblue-50 hover:bg-wbblue-100 text-wbblue-800 border border-wbblue-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${isAllotted ? 'Modify' : 'Allot'}
+                                </button>
+                                <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             lucide.createIcons();
         } catch (e) {
             console.error('Error loading roster:', e);
@@ -355,8 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const countEl = document.getElementById('masterOrdersShowingCount');
             if (countEl) countEl.innerText = `Showing ${json.count} orders`;
 
+            const cardsEl = document.getElementById('masterOrdersMobileCards');
             if (json.data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400">No orders match current filter criteria.</td></tr>`;
+                if (cardsEl) cardsEl.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">No orders match current filter criteria.</div>`;
                 return;
             }
 
@@ -432,6 +686,98 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tr>
                 `;
             }).join('');
+
+            // Render Mobile Cards Feed (<md Screens)
+            if (cardsEl) {
+                cardsEl.innerHTML = json.data.map(o => {
+                    const isRoster = o.roster_sl && o.roster_sl !== '-';
+                    const is1112 = o.transfer_basis && o.transfer_basis.includes('1112');
+                    const isDisplaced = o.transfer_basis && (o.transfer_basis.includes('Displacement') || o.transfer_basis.includes('Chain'));
+
+                    let basisBadge = `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[10px] font-bold">Transfer</span>`;
+                    if (isRoster) {
+                        basisBadge = `<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold">Promotion to DD</span>`;
+                    } else if (is1112) {
+                        basisBadge = `<span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">1112 TPV Intact</span>`;
+                    } else if (isDisplaced) {
+                        basisBadge = `<span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold">Displacement</span>`;
+                    }
+
+                    const phoneContact = (o.mobile && o.mobile !== '—') ? `
+                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                            <a href="tel:${o.mobile}" class="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Call (${o.mobile})
+                            </a>
+                            <a href="https://wa.me/91${o.mobile}" target="_blank" class="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
+                            </a>
+                        </div>
+                    ` : '';
+
+                    return `
+                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60 ${is1112 ? 'border-l-4 border-amber-400 pl-3' : ''}">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-0.5">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2 py-0.5 rounded-md bg-emerald-800 text-white font-mono text-[10px] font-bold">Order #${o.sl_no}</span>
+                                        ${isRoster ? `<span class="px-1.5 py-0.5 rounded-md bg-wbblue-100 text-wbblue-900 font-mono text-[10px] font-bold">Roster Pt ${o.roster_sl}</span>` : ''}
+                                        ${basisBadge}
+                                    </div>
+                                    <div class="font-bold text-sm text-wbblue-950 cursor-pointer pt-0.5 hover:underline" onclick="${o.hrms_id ? `openOfficerDossier('${o.hrms_id}')` : ''}">
+                                        ${o.officer_name}
+                                    </div>
+                                    <div class="text-[11px] font-mono text-slate-500">
+                                        HRMS: <strong>${o.hrms_id || 'N/A'}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pre-transfer Posting -->
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-0.5">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pre-Transfer / Present Post</div>
+                                <div class="font-semibold text-slate-800 leading-snug">${o.present_post_full || o.present_designation || '-'}</div>
+                                ${o.present_su && o.present_su !== 'Nil' ? `
+                                    <div class="text-[11px] text-teal-700 font-medium">Present SU: ${o.present_su}</div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Authoritative Transferred Post -->
+                            <div class="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50/80 to-teal-50/60 border border-emerald-200 text-xs space-y-1.5">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Transferred Post (Authoritative)</div>
+                                <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1.5">
+                                    <span class="px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                    <span>${o.transferred_substantive_post || '-'}</span>
+                                </div>
+                                ${o.service_utilized_at && o.service_utilized_at !== 'Nil' ? `
+                                    <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1.5">
+                                        <span class="px-1.5 py-0.2 rounded bg-teal-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                        <span>${o.service_utilized_at}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            ${o.administrative_remarks && o.administrative_remarks !== '-' ? `
+                                <div class="text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                                    <strong class="text-slate-700">Remarks:</strong> ${o.administrative_remarks}
+                                </div>
+                            ` : ''}
+
+                            ${phoneContact}
+
+                            <!-- Actions -->
+                            <div class="pt-1">
+                                ${o.hrms_id ? `
+                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="w-full h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                        <i data-lucide="user" class="w-4 h-4 text-slate-600"></i>
+                                        <span>View Complete Personnel Dossier</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
             lucide.createIcons();
         } catch (e) {
             console.error('Error loading master orders:', e);
@@ -460,8 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const json = await res.json();
             state.obliteratedOfficers = json.data;
 
+            const cardsEl = document.getElementById('oblitMobileCards');
             if (json.data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">No obliterated post records found.</td></tr>`;
+                if (cardsEl) cardsEl.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">No obliterated post records found.</div>`;
                 return;
             }
 
@@ -533,6 +881,95 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tr>
                 `;
             }).join('');
+
+            // Render Mobile Cards Feed (<md Screens)
+            if (cardsEl) {
+                cardsEl.innerHTML = json.data.map(o => {
+                    const isRehab = o.rehabilitation_status === 'Rehabilitated';
+                    const isVacant = o.is_vacant === 'Yes';
+                    const statusBadge = isVacant
+                        ? `<span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">Abolished Vacancy</span>`
+                        : isRehab
+                        ? `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Rehabilitated</span>`
+                        : `<span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Pending Rehab</span>`;
+
+                    const trackDisplay = o.is_on_roster === 1
+                        ? `<div class="font-bold text-amber-800 text-xs flex items-center gap-1">
+                             <i data-lucide="award" class="w-3.5 h-3.5 text-amber-600"></i>
+                             <span>50-Pt Roster Promotion (Rank ${o.roster_rank})</span>
+                           </div>`
+                        : isVacant
+                        ? `<span class="text-slate-400 italic text-xs">No incumbent to rehabilitate</span>`
+                        : `<div class="font-semibold text-blue-800 text-xs">Lateral Absorption into Active AD Post</div>`;
+
+                    return `
+                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-800 text-white font-mono text-[10px] font-bold">Oblit #${o.oblit_sl}</span>
+                                        <span class="text-[11px] font-medium text-slate-500">${o.district} • ${o.block || 'HQ'}</span>
+                                    </div>
+                                    <div class="font-bold text-sm text-slate-900 pt-0.5">
+                                        ${o.post_name}
+                                    </div>
+                                    <div class="text-[11px] text-slate-500">${o.establishment}</div>
+                                </div>
+                                <div>${statusBadge}</div>
+                            </div>
+
+                            <!-- Incumbent Details -->
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Serving Incumbent</div>
+                                ${isVacant ? `<div class="text-slate-500 italic">Clear Abolished Vacancy (Vacant Post)</div>` : `
+                                    <div class="font-bold text-slate-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${o.hrms_id}')">
+                                        ${o.officer_name}
+                                    </div>
+                                    <div class="text-[11px] font-mono text-slate-500 flex items-center gap-2">
+                                        <span>HRMS: <strong>${o.hrms_id || '-'}</strong></span>
+                                        <span>•</span>
+                                        <span>Tenure: ${o.tenure || '-'}</span>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- Rehabilitation Status -->
+                            <div class="p-2.5 rounded-xl bg-rose-50/50 border border-rose-100 text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-900">Rehabilitation Strategy & Allocation</div>
+                                <div class="pt-0.5">${trackDisplay}</div>
+                                ${isRehab ? `
+                                    <div class="pt-1 text-slate-900 font-bold text-xs leading-snug flex items-start gap-1">
+                                        <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                        <span>${o.substantive_post_name || 'Cadre Post'}</span>
+                                    </div>
+                                    ${o.su_post_name ? `
+                                        <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1">
+                                            <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                            <span>${o.su_post_name}</span>
+                                        </div>
+                                    ` : ''}
+                                ` : ''}
+                            </div>
+
+                            <!-- Actions -->
+                            ${!isVacant ? `
+                                <div class="grid grid-cols-3 gap-2 pt-1">
+                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                        <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
+                                    </button>
+                                    <button onclick="openDualAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${isRehab ? 'Modify' : 'Rehab'}
+                                    </button>
+                                    <button onclick="openAIAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
+                                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
             lucide.createIcons();
         } catch (e) {
             console.error('Error loading obliterated officers:', e);
@@ -573,8 +1010,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btnCadrePrev').disabled = state.cadreOffset === 0;
             document.getElementById('btnCadreNext').disabled = state.cadreOffset + state.cadreLimit >= json.total;
 
+            const cardsEl = document.getElementById('cadreMobileCards');
             if (json.data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">No cadre posts found matching filters.</td></tr>`;
+                if (cardsEl) cardsEl.innerHTML = `<div class="py-12 text-center text-slate-400 text-xs">No cadre posts found matching filters.</div>`;
                 return;
             }
 
@@ -636,6 +1075,99 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tr>
                 `;
             }).join('');
+
+            // Render Mobile Cards Feed (<md Screens)
+            if (cardsEl) {
+                cardsEl.innerHTML = json.data.map(p => {
+                    const isVacant = p.occupancy_status === 'Vacant';
+                    const isTenureOver = p.tenure_over_flag === 'Yes';
+                    const isAVD = p.avd_member === 'Yes';
+
+                    let occBadge = isVacant
+                        ? `<span class="badge-vacant px-2.5 py-0.5 rounded-full text-[10px] font-bold">Clear Vacancy</span>`
+                        : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+
+                    let tenureBadge = isTenureOver
+                        ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">Over-Tenure</span>`
+                        : '';
+
+                    let avdBadge = isAVD
+                        ? `<span class="badge-avd px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">AVD</span>`
+                        : '';
+
+                    const isApexLocked = !isVacant && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
+
+                    return `
+                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60 ${isVacant ? 'border-l-4 border-emerald-400 pl-3' : ''}">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white font-mono text-[10px] font-bold">Post #${p.id}</span>
+                                        <span class="text-[11px] font-medium text-slate-500">${p.district || '-'} • ${p.block || 'HQ'}</span>
+                                    </div>
+                                    <div class="font-bold text-sm text-slate-900 pt-0.5">
+                                        ${p.designation}
+                                    </div>
+                                    <div class="text-[11px] text-slate-500">${p.establishment}</div>
+                                </div>
+                                <div>${occBadge}</div>
+                            </div>
+
+                            <!-- Incumbent or Vacancy Box -->
+                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-slate-50 border border-slate-200/80'} text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : 'text-slate-400'}">
+                                    ${isVacant ? 'Vacancy Information' : 'Serving Incumbent'}
+                                </div>
+                                ${isVacant ? `
+                                    <div class="text-emerald-900 font-bold text-xs flex items-center gap-1.5">
+                                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Available for Substantive / SU Cadre Absorption</span>
+                                    </div>
+                                ` : `
+                                    <div class="font-bold text-wbblue-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${p.incumbent_hrms}')">
+                                        ${p.incumbent_name} ${avdBadge}
+                                    </div>
+                                    <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
+                                        <span>HRMS: <strong>${p.incumbent_hrms || 'N/A'}</strong></span>
+                                        <span>•</span>
+                                        <span>Tenure: ${p.incumbent_tenure || '-'} ${tenureBadge}</span>
+                                        <span>•</span>
+                                        <span>DOR: ${p.incumbent_dor || '-'}</span>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="pt-1">
+                                ${isApexLocked ? `
+                                    <div class="h-10 px-3 rounded-xl bg-slate-100 text-slate-500 border border-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
+                                        <i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>
+                                        <span>Apex Cadre Post (Protected from Transfer)</span>
+                                    </div>
+                                ` : (!isVacant ? `
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button onclick="openOfficerDossier('${p.incumbent_hrms}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                            <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
+                                        </button>
+                                        <button onclick="openDualAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Allot
+                                        </button>
+                                        <button onclick="openAIAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
+                                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <div class="text-[11px] text-slate-400 italic text-center py-1">
+                                        Clear vacancy selectable in 50-Point Roster and Lateral Absorption tools
+                                    </div>
+                                `)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (window.lucide) window.lucide.createIcons();
         } catch (e) {
             console.error('Error loading cadre:', e);
             tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-rose-500">Failed to load cadre posts.</td></tr>`;
