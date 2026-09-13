@@ -980,6 +980,46 @@ class PostingEngine:
             except Exception:
                 history_list = []
 
+        # Parse self-reported promotional preferences and data
+        dd_prefs = {}
+        if officer.get("dd_preferences_json"):
+            try:
+                dd_prefs = json.loads(officer["dd_preferences_json"])
+            except Exception:
+                dd_prefs = {}
+
+        jd_prefs = {}
+        if officer.get("jd_preferences_json"):
+            try:
+                jd_prefs = json.loads(officer["jd_preferences_json"])
+            except Exception:
+                jd_prefs = {}
+
+        ad_prefs = {}
+        if officer.get("ad_preferences_json"):
+            try:
+                ad_prefs = json.loads(officer["ad_preferences_json"])
+            except Exception:
+                ad_prefs = {}
+
+        self_reported = {}
+        if officer.get("self_reported_data_json"):
+            try:
+                self_reported = json.loads(officer["self_reported_data_json"])
+            except Exception:
+                self_reported = {}
+
+        photo_raw = officer.get("photo_url") or ""
+        photo_display_url = ""
+        if photo_raw:
+            import re
+            m = re.search(r"[?&]id=([a-zA-Z0-9_-]+)", photo_raw) or re.search(r"/d/([a-zA-Z0-9_-]+)", photo_raw)
+            if m:
+                drive_id = m.group(1)
+                photo_display_url = f"https://lh3.googleusercontent.com/d/{drive_id}"
+            else:
+                photo_display_url = photo_raw
+
         dossier = {
             "officer_name": officer.get("officer_name") or officer.get("incumbent_name") or "Officer",
             "clean_name": officer.get("clean_name") or "",
@@ -1008,6 +1048,17 @@ class PostingEngine:
             "block": officer.get("present_block") or officer.get("block") or "—",
             "establishment": officer.get("establishment") or officer.get("office") or "—",
             "present_su": officer.get("present_su") or "",
+            "present_doj": officer.get("present_doj") or "",
+            "charge_type": officer.get("charge_type") or "",
+            "additional_charges": officer.get("additional_charges") or "",
+            "last_order_no": officer.get("last_order_no") or "",
+            "last_order_date": officer.get("last_order_date") or "",
+            "continue_in_present_post": officer.get("continue_in_present_post") or "",
+            "willing_to_relocate": officer.get("willing_to_relocate") or "",
+            "public_service_statement": officer.get("public_service_statement") or "",
+            "photo_url": photo_raw,
+            "photo_display_url": photo_display_url,
+            "languages": officer.get("languages") or "",
             "present_pay_level": officer.get("pay_level") or "Level 16 (Rs. 56,100 - Rs. 1,44,300)",
             "tenure_years": officer.get("tenure_years") or officer.get("incumbent_tenure") or "—",
             "tenure_norm_status": officer.get("tenure_over_flag") or "Within Norm",
@@ -1044,6 +1095,10 @@ class PostingEngine:
             "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
             "posting_history_list": history_list,
             "preferences_list": prefs_list,
+            "dd_preferences": dd_prefs,
+            "jd_preferences": jd_prefs,
+            "ad_preferences": ad_prefs,
+            "self_reported_data": self_reported,
             "association_remarks": officer.get("association_remarks") or "",
             "decision_note": officer.get("decision_note") or "",
             "needs_backfill": bool(officer.get("needs_backfill")),

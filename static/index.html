@@ -1198,22 +1198,34 @@
             </div>
 
             <!-- Sub-tabs within Dossier -->
-            <div class="flex items-center gap-1 border-b border-slate-200 px-4 pt-2 bg-slate-50 text-xs font-semibold overflow-x-auto">
-                <button id="dossierSubTabProfile" onclick="window.switchDossierSubTab('profile')" class="dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5">
+            <div class="flex items-center gap-1 border-b border-slate-200 px-4 pt-2 bg-slate-50 text-xs font-semibold overflow-x-auto scrollbar-thin">
+                <button id="dossierSubTabProfile" onclick="window.switchDossierSubTab('profile')" class="dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5 shrink-0 transition">
                     <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                    <span>Service & Personal Dossier</span>
+                    <span>Service & Identity</span>
                 </button>
-                <button id="dossierSubTabHistory" onclick="window.switchDossierSubTab('history')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
-                    <i data-lucide="history" class="w-3.5 h-3.5"></i>
-                    <span>Posting History Timeline</span>
+                <button id="dossierSubTabPreferences" onclick="window.switchDossierSubTab('preferences')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
+                    <i data-lucide="compass" class="w-3.5 h-3.5 text-amber-600"></i>
+                    <span>Preferences & Vision</span>
                 </button>
-                <button id="dossierSubTabFamily" onclick="window.switchDossierSubTab('family')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
-                    <i data-lucide="heart-handshake" class="w-3.5 h-3.5"></i>
-                    <span>Spouse & Family Matter</span>
+                <button id="dossierSubTabHistory" onclick="window.switchDossierSubTab('history')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
+                    <i data-lucide="history" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Posting History</span>
                 </button>
-                <button id="dossierSubTabGrid" onclick="window.switchDossierSubTab('grid')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                <button id="dossierSubTabFamily" onclick="window.switchDossierSubTab('family')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
+                    <i data-lucide="heart-handshake" class="w-3.5 h-3.5 text-purple-600"></i>
+                    <span>Family & Welfare</span>
+                </button>
+                <button id="dossierSubTabCompetencies" onclick="window.switchDossierSubTab('competencies')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
+                    <i data-lucide="award" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span>Health & Competencies</span>
+                </button>
+                <button id="dossierSubTabResponses" onclick="window.switchDossierSubTab('responses')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-teal-600"></i>
+                    <span>Self-Reported Form (114+ Qs)</span>
+                </button>
+                <button id="dossierSubTabGrid" onclick="window.switchDossierSubTab('grid')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
                     <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-600"></i>
-                    <span class="text-emerald-700 font-bold">District Post Visualizer & Allotment</span>
+                    <span class="text-emerald-700 font-bold">District Post Visualizer</span>
                 </button>
             </div>
 

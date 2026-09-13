@@ -1411,15 +1411,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.activeDossierOfficer = null;
 
     window.switchDossierSubTab = function(tabName) {
-        const tabs = ['profile', 'history', 'family', 'grid'];
+        const tabs = ['profile', 'preferences', 'history', 'family', 'competencies', 'responses', 'grid'];
         tabs.forEach(t => {
             const btn = document.getElementById(`dossierSubTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
             const sec = document.getElementById(`dossierSec${t.charAt(0).toUpperCase() + t.slice(1)}`);
             if (btn) {
                 if (t === tabName) {
-                    btn.className = "dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5 transition";
+                    btn.className = "dossier-tab-btn px-3 py-2 border-b-2 border-wbblue-700 text-wbblue-800 font-bold flex items-center gap-1.5 shrink-0 transition";
                 } else {
-                    btn.className = "dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition";
+                    btn.className = "dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition";
                 }
             }
             if (sec) {
@@ -1434,6 +1434,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabName === 'grid' && window.activeDossierOfficer) {
             window.renderVisualGrid('modalVisualGridContainer', true, window.activeDossierOfficer.hrms_id);
         }
+    };
+
+    window.filterSelfReported = function(query) {
+        const q = (query || '').toLowerCase().trim();
+        const items = document.querySelectorAll('.self-reported-item');
+        let visibleCount = 0;
+        items.forEach(el => {
+            const text = el.textContent.toLowerCase();
+            if (!q || text.includes(q)) {
+                el.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+        const badge = document.getElementById('selfReportedCountBadge');
+        if (badge) badge.innerText = `${visibleCount} of ${items.length} responses`;
     };
 
     window.openOfficerDossier = async function(hrmsId) {
@@ -1461,10 +1478,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const mo = d.master_final_order;
             const masterOrderHtml = mo ? `
                 <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 text-white shadow-md border border-emerald-500/50 space-y-2.5">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center gap-2">
                             <span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-[10px] tracking-wider uppercase shadow-sm">Verified Authoritative Proposed Order</span>
-                            <span class="text-xs text-emerald-200">Sl #${mo.sl_no} ${mo.roster_sl && mo.roster_sl !== '-' ? `(Roster Pt: ${mo.roster_sl})` : ''}</span>
+                            <span class="text-xs text-emerald-200 font-semibold">Sl #${mo.sl_no} ${mo.roster_sl && mo.roster_sl !== '-' ? `(Roster Pt: ${mo.roster_sl})` : ''}</span>
                         </div>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
                             ${mo.transfer_basis || 'Cadre Allotment'}
@@ -1491,6 +1508,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             ` : '';
 
+            // Photo avatar markup
+            let photoHtml = '';
+            if (d.photo_display_url) {
+                photoHtml = `
+                    <div class="relative group shrink-0">
+                        <img src="${d.photo_display_url}" 
+                             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-20 h-20 rounded-xl bg-wbblue-100 border-2 border-wbblue-300 text-wbblue-800 font-bold flex items-center justify-center text-xl shadow\\'>${(d.officer_name || 'Dr').replace(/^Dr\\.?\\s*/i, '').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div>';" 
+                             alt="${d.officer_name}" 
+                             class="w-20 h-20 rounded-xl object-cover border-2 border-wbblue-400 shadow-md group-hover:shadow-lg transition">
+                        ${d.photo_url ? `
+                            <a href="${d.photo_url}" target="_blank" class="absolute inset-0 bg-slate-900/60 text-white rounded-xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] font-bold transition gap-0.5">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                <span>Full Photo</span>
+                            </a>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                photoHtml = `
+                    <div class="w-20 h-20 rounded-xl bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white font-bold flex items-center justify-center text-xl shadow-md shrink-0">
+                        ${(d.officer_name || 'Dr').replace(/^Dr\\.?\\s*/i, '').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || 'DR'}
+                    </div>
+                `;
+            }
+
             // Contacts bar
             const mobileHtml = (d.mobile && d.mobile !== '—') ? `
                 <div class="flex items-center gap-2 flex-wrap">
@@ -1504,6 +1546,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </a>
                 </div>
             ` : `<div><strong class="text-slate-600">Mobile:</strong> <span class="text-slate-400 italic">Not recorded</span></div>`;
+
+            const altMobileHtml = (d.alt_mobile && d.alt_mobile !== '—' && d.alt_mobile !== '') ? `
+                <div class="flex items-center gap-1.5 text-slate-600">
+                    <strong class="text-slate-600">Alt Mobile:</strong>
+                    <span class="font-mono text-slate-800 font-semibold">${d.alt_mobile}</span>
+                    <a href="tel:${d.alt_mobile}" class="text-[10px] text-blue-700 hover:underline">Call</a>
+                </div>
+            ` : '';
 
             const emailHtml = (d.email && d.email !== '—') ? `
                 <div class="flex items-center gap-1.5 truncate">
@@ -1525,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `);
             }
-            if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard')) {
+            if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard') && !d.spouse_service_details.includes('No spouse')) {
                 welfareAlerts.push(`
                     <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
                         <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
@@ -1547,7 +1597,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `);
             }
 
-            // Preferences list
+            // Stated Field Preferences (1 to 8 + free text)
             const rawPrefs = d.preferences_list && d.preferences_list.length > 0 ? d.preferences_list : Object.entries(d.preferences || {});
             let prefsHtml = '';
             if (rawPrefs.length > 0) {
@@ -1555,7 +1605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isMatched = mo && (
                         (mo.transferred_substantive_post && mo.transferred_substantive_post.toLowerCase().includes(v.toLowerCase())) ||
                         (mo.service_utilized_at && mo.service_utilized_at.toLowerCase().includes(v.toLowerCase())) ||
-                        (v.toLowerCase().includes('kalyani') && (mo.transferred_substantive_post.toLowerCase().includes('kalyani') || (mo.service_utilized_at && mo.service_utilized_at.toLowerCase().includes('kalyani'))))
+                        (v.toLowerCase().includes('kalyani') && (mo.transferred_substantive_post && mo.transferred_substantive_post.toLowerCase().includes('kalyani') || (mo.service_utilized_at && mo.service_utilized_at.toLowerCase().includes('kalyani'))))
                     );
                     return `
                         <div class="p-2.5 rounded-lg border ${isMatched ? 'border-emerald-400 bg-emerald-50/60' : 'border-slate-200 bg-white'} flex items-start justify-between gap-2 shadow-xs">
@@ -1572,14 +1622,116 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }).join('');
             } else {
-                prefsHtml = `<div class="p-3 bg-slate-50 text-slate-400 italic rounded border border-slate-200">No preference recorded for this officer.</div>`;
+                prefsHtml = `<div class="p-3 bg-slate-50 text-slate-400 italic rounded border border-slate-200">No field preferences recorded for this officer.</div>`;
+            }
+
+            // DD Promotional Preferences
+            const dd = d.dd_preferences || {};
+            const ddChoices = dd.preferences || [];
+            let ddChoicesHtml = '';
+            if (ddChoices.length > 0) {
+                ddChoicesHtml = ddChoices.map(c => {
+                    const isMatched = mo && (
+                        (mo.transferred_substantive_post && mo.transferred_substantive_post.toLowerCase().includes(c.choice.toLowerCase())) ||
+                        (c.choice.toLowerCase().includes('kalyani') && mo.transferred_substantive_post && mo.transferred_substantive_post.toLowerCase().includes('kalyani'))
+                    );
+                    return `
+                        <div class="p-2.5 rounded-lg border ${isMatched ? 'border-emerald-400 bg-emerald-50/70 shadow-xs' : 'border-slate-200 bg-white'} flex items-start justify-between gap-2">
+                            <div class="text-xs">
+                                <span class="font-bold text-wbblue-800 mr-1.5">Choice #${c.rank}:</span>
+                                <span class="text-slate-800 font-medium">${c.choice}</span>
+                            </div>
+                            ${isMatched ? `
+                                <span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold shrink-0 uppercase tracking-wider shadow-xs">
+                                    DD Post Matched
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                ddChoicesHtml = `<div class="p-2.5 bg-slate-50 text-slate-400 italic rounded text-xs">No DD tier preferences specified.</div>`;
+            }
+
+            const ddFreeText = [dd.free_text_1, dd.free_text_2, dd.free_text].filter(Boolean).join('; ');
+            const publicVision = d.public_service_statement || dd.public_service_statement || '';
+            const relocationWill = d.willing_to_relocate || dd.willing_to_relocate || '';
+
+            // JD Preferences
+            const jd = d.jd_preferences || {};
+            const jdChoices = jd.preferences || [];
+            let jdChoicesHtml = '';
+            if (jdChoices.length > 0) {
+                jdChoicesHtml = jdChoices.map(c => `
+                    <div class="p-2.5 rounded-lg border border-slate-200 bg-white flex items-start gap-2 text-xs">
+                        <span class="font-bold text-teal-800 mr-1.5">Choice #${c.rank}:</span>
+                        <span class="text-slate-800">${c.choice}</span>
+                    </div>
+                `).join('');
+            }
+
+            // AD Preferences
+            const ad = d.ad_preferences || {};
+            const adChoices = ad.preferences || [];
+            let adChoicesHtml = '';
+            if (adChoices.length > 0) {
+                adChoicesHtml = adChoices.map(c => `
+                    <div class="p-2.5 rounded-lg border border-slate-200 bg-white flex items-start gap-2 text-xs">
+                        <span class="font-bold text-indigo-800 mr-1.5">Choice #${c.rank}:</span>
+                        <span class="text-slate-800">${c.choice}</span>
+                    </div>
+                `).join('');
             }
 
             // Posting history
-            const rawHistory = d.posting_history_list && d.posting_history_list.length > 0 ? d.posting_history_list : (d.posting_history || '').split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
+            const rawHistory = d.posting_history_list && d.posting_history_list.length > 0 ? d.posting_history_list : [];
             let historyTimelineHtml = '';
             if (rawHistory.length > 0) {
-                historyTimelineHtml = rawHistory.map((item, idx) => `
+                historyTimelineHtml = rawHistory.map((item, idx) => {
+                    if (typeof item === 'object' && item !== null) {
+                        const sl = item.posting_sl || idx + 1;
+                        const post = item.post || item.designation || 'Cadre Post';
+                        const est = item.establishment || item.office || '—';
+                        const dist = item.district || '';
+                        const fromDate = item.from || '';
+                        const toDate = item.to || '';
+                        const charge = item.charge_type || 'Main charge';
+                        return `
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-white border border-slate-200 shadow-xs hover:border-wbblue-300 transition">
+                                <div class="w-7 h-7 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                                    ${sl}
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex items-center justify-between flex-wrap gap-1">
+                                        <span class="font-bold text-slate-900 text-xs">${post}</span>
+                                        ${charge ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${charge.includes('SU') || charge.includes('deputation') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${charge}</span>` : ''}
+                                    </div>
+                                    <div class="text-xs text-slate-700">
+                                        <strong>Station / Office:</strong> ${est} ${dist ? `(${dist})` : ''}
+                                    </div>
+                                    <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                                        <i data-lucide="calendar" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Tenure: ${fromDate || 'Entry'} to ${toDate || 'Present'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 shadow-xs">
+                                <div class="w-6 h-6 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                                    ${idx + 1}
+                                </div>
+                                <div class="text-xs text-slate-800 font-medium leading-relaxed flex-1">
+                                    ${item}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            } else if (d.posting_history) {
+                const textItems = (d.posting_history || '').split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
+                historyTimelineHtml = textItems.map((item, idx) => `
                     <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 shadow-xs">
                         <div class="w-6 h-6 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                             ${idx + 1}
@@ -1593,8 +1745,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 historyTimelineHtml = `<div class="p-3 bg-slate-50 rounded border text-slate-600 text-center italic">Standard service tenure across departmental postings.</div>`;
             }
 
+            // 4-Stream Strengths Ranking
+            let streamHtml = '';
+            if (d.stream_ranking) {
+                const parts = d.stream_ranking.split(',').map(s => s.trim()).filter(Boolean);
+                streamHtml = parts.map(p => {
+                    const [label, rank] = p.split(':').map(s => s.trim());
+                    let colorClass = 'bg-slate-100 text-slate-800 border-slate-300';
+                    if (rank && rank.includes('1')) colorClass = 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold';
+                    else if (rank && rank.includes('2')) colorClass = 'bg-blue-50 text-blue-900 border-blue-300 font-semibold';
+                    else if (rank && rank.includes('3')) colorClass = 'bg-amber-50 text-amber-900 border-amber-300';
+                    return `
+                        <div class="p-2.5 rounded-lg border ${colorClass} flex items-center justify-between text-xs shadow-xs">
+                            <span class="font-medium">${label || p}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] bg-white/80 font-bold border border-current">${rank || ''}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Self reported questions (all 114+ fields)
+            const selfRepData = d.self_reported_data || {};
+            const selfRepEntries = Object.entries(selfRepData);
+            let selfRepHtml = '';
+            if (selfRepEntries.length > 0) {
+                selfRepHtml = `
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-100 rounded-lg border border-slate-200">
+                            <div>
+                                <div class="font-bold text-slate-800 text-xs">Self-Reported Survey & Preference Responses</div>
+                                <div class="text-[11px] text-slate-500">Verified master response dataset (204-column record for HRMS ${d.hrms_id})</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="selfReportedCountBadge" class="px-2.5 py-1 rounded bg-teal-100 text-teal-800 font-bold text-[11px] border border-teal-300 shrink-0">
+                                    ${selfRepEntries.length} responses
+                                </span>
+                                <input type="text" placeholder="Filter questions..." oninput="window.filterSelfReported(this.value)" class="text-xs px-2.5 py-1 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-teal-600 w-44">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[480px] overflow-y-auto p-1">
+                            ${selfRepEntries.map(([question, answer]) => `
+                                <div class="self-reported-item p-3 rounded-lg border border-slate-200 bg-white shadow-xs space-y-1 hover:border-teal-400 transition">
+                                    <div class="text-[11px] font-semibold text-wbblue-900 leading-snug">${question}</div>
+                                    <div class="text-xs text-slate-800 font-medium break-words leading-relaxed">${answer || '<span class="text-slate-400 italic">Nil / Not specified</span>'}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                selfRepHtml = `<div class="p-4 text-center text-slate-400 italic bg-slate-50 rounded-lg border border-slate-200">No self-reported questionnaire responses recorded for this officer.</div>`;
+            }
+
             container.innerHTML = `
-                <!-- TAB 1: SERVICE & PERSONAL PROFILE -->
+                <!-- TAB 1: SERVICE & IDENTITY PROFILE -->
                 <div id="dossierSecProfile" class="dossier-sec space-y-4">
                     ${masterOrderHtml}
 
@@ -1611,21 +1815,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     ` : ''}
 
-                    <!-- Identity & Contacts Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200">
-                        <div class="md:col-span-2">
-                            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Officer Name & Registration</div>
-                            <div class="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <span>${d.officer_name}</span>
-                                ${d.caste ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800">${d.caste}</span>` : ''}
+                    <!-- Identity & Contacts Grid with Photo -->
+                    <div class="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        ${photoHtml}
+                        <div class="flex-1 space-y-2">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div>
+                                    <div class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                        <span>${d.officer_name}</span>
+                                        ${d.caste ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800">${d.caste}</span>` : ''}
+                                        ${d.gender && d.gender !== '—' ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800">${d.gender}</span>` : ''}
+                                    </div>
+                                    <div class="text-[11px] font-mono text-wbblue-700 font-bold mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <span>HRMS ID: ${d.hrms_id}</span>
+                                        ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `<span>WBVC Reg: ${d.wbvc_reg_no}</span>` : ''}
+                                        ${d.employee_id && d.employee_id !== '—' ? `<span>Emp ID: ${d.employee_id}</span>` : ''}
+                                        ${d.gradation_sl && d.gradation_sl !== '—' ? `<span>Gradation Sl: ${d.gradation_sl}</span>` : ''}
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-wbblue-100 text-wbblue-800 border border-wbblue-200">
+                                    ${d.source_category || 'WBAH&VS Cadre'}
+                                </span>
                             </div>
-                            <div class="text-[11px] font-mono text-wbblue-700 font-bold mt-0.5">
-                                HRMS ID: ${d.hrms_id} ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `| WBVC Reg: ${d.wbvc_reg_no}` : ''}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[11px]">
+                                ${mobileHtml}
+                                ${emailHtml}
+                                ${altMobileHtml}
+                                ${d.languages ? `<div><strong class="text-slate-600">Languages:</strong> <span class="text-slate-800 font-medium">${d.languages}</span></div>` : ''}
                             </div>
-                        </div>
-                        <div class="space-y-1.5 text-[11px] border-t md:border-t-0 md:border-l border-slate-200 md:pl-3">
-                            ${mobileHtml}
-                            ${emailHtml}
                         </div>
                     </div>
 
@@ -1636,7 +1853,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="text-xs font-bold text-slate-900 font-mono">${d.dob}</div>
                         </div>
                         <div>
-                            <div class="text-[10px] text-blue-700 font-semibold">Date of Joining (DOJ)</div>
+                            <div class="text-[10px] text-blue-700 font-semibold">Seniority Entry (DOJ)</div>
                             <div class="text-xs font-bold text-slate-900 font-mono">${d.doj}</div>
                         </div>
                         <div>
@@ -1647,22 +1864,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <!-- Present Posting & Pay Details -->
-                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
+                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2.5">
                         <div class="font-bold text-slate-800 flex items-center justify-between">
-                            <span>Present Posting & Pay Details</span>
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="building-2" class="w-4 h-4 text-wbblue-700"></i>
+                                <span>Present Posting, Charge & Tenure Details</span>
+                            </span>
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.tenure_norm_status === 'Yes' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
                                 ${d.tenure_norm_status === 'Yes' ? 'Tenure Over (>4/5y)' : 'Within Tenure Norm'}
                             </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div><strong class="text-slate-600">Designation:</strong> ${d.current_designation}</div>
-                            <div><strong class="text-slate-600">Station/Office:</strong> ${d.establishment}</div>
-                            <div><strong class="text-slate-600">Block / District:</strong> ${d.block ? `${d.block}, ` : ''}${d.district}</div>
-                            <div><strong class="text-slate-600">Station Tenure:</strong> ${d.tenure_years} yrs</div>
-                            <div><strong class="text-slate-600">Office Code:</strong> <span class="font-mono">${d.office_code}</span></div>
-                            <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono">${d.ddo_code}</span></div>
-                            <div class="col-span-2"><strong class="text-slate-600">Present Scale:</strong> ${d.present_pay_level}</div>
-                            <div class="col-span-2"><strong class="text-slate-600">Cadre:</strong> ${d.cadre}</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div><strong class="text-slate-600">Designation:</strong> <span class="font-semibold text-slate-900">${d.current_designation}</span></div>
+                            <div><strong class="text-slate-600">Station/Office:</strong> <span class="text-slate-800">${d.establishment}</span></div>
+                            <div><strong class="text-slate-600">Block / District:</strong> <span class="text-slate-800">${d.block ? `${d.block}, ` : ''}${d.district}</span></div>
+                            <div><strong class="text-slate-600">Station Tenure:</strong> <span class="font-bold ${d.tenure_norm_status === 'Yes' ? 'text-red-700' : 'text-slate-800'}">${d.tenure_years} yrs</span></div>
+                            ${d.present_doj ? `<div><strong class="text-slate-600">Present Post DOJ:</strong> <span class="font-mono text-slate-800 font-semibold">${d.present_doj}</span></div>` : ''}
+                            ${d.charge_type ? `<div><strong class="text-slate-600">Charge Type:</strong> <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 font-medium text-[11px]">${d.charge_type}</span></div>` : ''}
+                            ${d.additional_charges ? `<div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Additional Charges:</strong> <span class="text-slate-800">${d.additional_charges}</span></div>` : ''}
+                            ${d.last_order_no ? `<div><strong class="text-slate-600">Last Order No:</strong> <span class="font-mono text-slate-800">${d.last_order_no}</span> ${d.last_order_date ? `dt. ${d.last_order_date}` : ''}</div>` : ''}
+                            ${d.continue_in_present_post ? `<div class="col-span-1 sm:col-span-2 p-2 rounded bg-amber-50 border border-amber-200 text-amber-900"><strong class="text-amber-950">Prayer to Continue in Present Post:</strong> ${d.continue_in_present_post}</div>` : ''}
+                            <div><strong class="text-slate-600">Office Code:</strong> <span class="font-mono text-slate-700">${d.office_code}</span></div>
+                            <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono text-slate-700">${d.ddo_code}</span></div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Present Scale:</strong> ${d.present_pay_level}</div>
                         </div>
                     </div>
 
@@ -1675,6 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
                                 ${d.ancestral_address}
+                                ${d.ancestral_district ? `<div class="text-slate-500 font-medium mt-0.5">District: ${d.ancestral_district}</div>` : ''}
                             </div>
                         </div>
                         <div>
@@ -1684,16 +1909,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
                                 ${d.current_address}
+                                ${d.current_district ? `<div class="text-slate-500 font-medium mt-0.5">District: ${d.current_district} ${d.current_pin ? `· PIN: ${d.current_pin}` : ''}</div>` : ''}
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Stated Preferences -->
-                    <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
-                        <div class="font-bold text-slate-800">Officer Stated Preferences (1 - 8)</div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                            ${prefsHtml}
-                        </div>
+                        ${d.temp_address ? `
+                            <div class="col-span-1 md:col-span-2 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200">
+                                <strong>Temporary / Rented Residence:</strong> ${d.temp_address}
+                            </div>
+                        ` : ''}
+                        ${d.post_retirement_district ? `
+                            <div class="col-span-1 md:col-span-2 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200 flex items-center gap-2">
+                                <i data-lucide="compass" class="w-3.5 h-3.5 text-wbblue-600 shrink-0"></i>
+                                <span><strong>Post-Retirement Intended Settlement District:</strong> ${d.post_retirement_district}</span>
+                            </div>
+                        ` : ''}
                     </div>
 
                     <!-- Current Simulated Allotment -->
@@ -1712,50 +1941,194 @@ document.addEventListener('DOMContentLoaded', () => {
                     ` : ''}
                 </div>
 
-                <!-- TAB 2: POSTING HISTORY TIMELINE -->
-                <div id="dossierSecHistory" class="dossier-sec hidden space-y-3">
-                    <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900">
-                        <strong>Complete Career Posting Record:</strong> Chronological record of postings, transfers, and station tenures from verified departmental files.
+                <!-- TAB 2: PREFERENCES & PUBLIC SERVICE VISION -->
+                <div id="dossierSecPreferences" class="dossier-sec hidden space-y-4">
+                    <!-- General Field Preferences -->
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                        <div class="font-bold text-slate-900 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="compass" class="w-4 h-4 text-wbblue-700"></i>
+                                <span>Submitted General Field Preferences (Choices 1 - 8)</span>
+                            </span>
+                            <span class="text-xs text-slate-500">Matching with Authoritative Master Order</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            ${prefsHtml}
+                        </div>
                     </div>
-                    <div class="space-y-2 max-h-[480px] overflow-y-auto p-1">
+
+                    <!-- Deputy Director (DD) Promotional Preferences -->
+                    <div class="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-2.5">
+                        <div class="font-bold text-wbblue-900 flex items-center gap-1.5">
+                            <i data-lucide="award" class="w-4 h-4 text-wbblue-700"></i>
+                            <span>Deputy Director (DD) Promotional Tier Preferences</span>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${ddChoicesHtml}
+                        </div>
+                        ${ddFreeText ? `
+                            <div class="p-2.5 rounded bg-white border border-blue-200 text-xs text-slate-800">
+                                <strong class="text-wbblue-900">DD Specific Preference / Free Text:</strong> ${ddFreeText}
+                            </div>
+                        ` : ''}
+                        ${relocationWill ? `
+                            <div class="p-2.5 rounded bg-white border border-blue-200 text-xs text-slate-800 flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-wbblue-600 shrink-0"></i>
+                                <div><strong class="text-wbblue-900">Willingness to Relocate:</strong> ${relocationWill}</div>
+                            </div>
+                        ` : ''}
+                        ${publicVision ? `
+                            <div class="p-3 rounded-lg bg-gradient-to-r from-blue-900 to-indigo-900 text-white space-y-1 shadow-sm">
+                                <div class="text-[10px] uppercase font-bold tracking-wider text-blue-200 flex items-center gap-1.5">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+                                    <span>Officer Public Service Vision & Mission Statement</span>
+                                </div>
+                                <div class="text-xs font-semibold leading-relaxed text-blue-50">
+                                    "${publicVision}"
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Joint Director & Additional Director Choices -->
+                    ${(jdChoices.length > 0 || adChoices.length > 0) ? `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${jdChoices.length > 0 ? `
+                                <div class="p-3.5 rounded-xl border border-teal-200 bg-teal-50/40 space-y-2">
+                                    <div class="font-bold text-teal-900 text-xs flex items-center gap-1.5">
+                                        <i data-lucide="layers" class="w-4 h-4 text-teal-700"></i>
+                                        <span>Joint Director (JD) Preferences</span>
+                                    </div>
+                                    <div class="space-y-1.5">${jdChoicesHtml}</div>
+                                </div>
+                            ` : ''}
+                            ${adChoices.length > 0 ? `
+                                <div class="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/40 space-y-2">
+                                    <div class="font-bold text-indigo-900 text-xs flex items-center gap-1.5">
+                                        <i data-lucide="shield" class="w-4 h-4 text-indigo-700"></i>
+                                        <span>Additional Director (AD) Preferences</span>
+                                    </div>
+                                    <div class="space-y-1.5">${adChoicesHtml}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- TAB 3: POSTING HISTORY TIMELINE -->
+                <div id="dossierSecHistory" class="dossier-sec hidden space-y-3">
+                    <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center justify-between">
+                        <div>
+                            <strong>Complete Career Posting Record:</strong> Chronological record of all 8 postings, transfers, and station tenures from verified departmental files.
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-blue-200 text-blue-950 font-bold text-[10px] shrink-0">
+                            ${rawHistory.length} Postings Recorded
+                        </span>
+                    </div>
+                    <div class="space-y-2.5 max-h-[500px] overflow-y-auto p-1">
                         ${historyTimelineHtml}
                     </div>
                 </div>
 
-                <!-- TAB 3: SPOUSE & FAMILY MATTER -->
+                <!-- TAB 4: FAMILY & WELFARE SAFEGUARDS -->
                 <div id="dossierSecFamily" class="dossier-sec hidden space-y-4">
-                    <div class="p-3.5 rounded-lg border border-amber-200 bg-amber-50/50 space-y-2">
+                    <!-- Spouse Matter -->
+                    <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-2.5">
                         <div class="font-bold text-amber-900 flex items-center gap-1.5">
                             <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
-                            <span>Spouse Service Matter & Co-location Safeguards (Memo 291)</span>
+                            <span>Spouse Public Service Profile & Co-Location Safeguards (Memo 291)</span>
                         </div>
-                        <div class="text-xs text-slate-800 bg-white p-2.5 rounded border border-amber-200 leading-relaxed">
-                            ${d.spouse_service_details}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-amber-200">
+                            <div><strong class="text-slate-600">Spouse Name:</strong> <span class="text-slate-900 font-semibold">${d.spouse_name || 'Not recorded'}</span></div>
+                            <div><strong class="text-slate-600">Department:</strong> <span class="text-slate-800">${d.spouse_dept || '—'}</span></div>
+                            <div><strong class="text-slate-600">Designation:</strong> <span class="text-slate-800">${d.spouse_desig || '—'}</span></div>
+                            <div><strong class="text-slate-600">Posting Station:</strong> <span class="text-slate-800">${d.spouse_block ? `${d.spouse_block}, ` : ''}${d.spouse_district || '—'}</span></div>
+                            <div><strong class="text-slate-600">Is WBAH&VS Member:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.spouse_is_wbahvs === 'Yes' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">${d.spouse_is_wbahvs || 'No'}</span></div>
                         </div>
-                    </div>
-
-                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
-                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
-                            <i data-lucide="shield" class="w-4 h-4 text-wbblue-700"></i>
-                            <span>Family Dependencies & Medical Conditions</span>
-                        </div>
-                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200 leading-relaxed">
-                            ${d.family_dependencies}
+                        <div class="text-xs text-amber-950 bg-amber-100/60 p-2.5 rounded border border-amber-300/60 leading-relaxed">
+                            <strong>Statutory Safeguard Note:</strong> ${d.spouse_service_details}
                         </div>
                     </div>
 
-                    <div class="p-3.5 rounded-lg border border-slate-200 bg-white space-y-2">
-                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
-                            <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700"></i>
-                            <span>Academic Qualifications & Specializations</span>
+                    <!-- Children & Dependants -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3.5 rounded-xl border border-purple-200 bg-purple-50/40 space-y-2">
+                            <div class="font-bold text-purple-900 flex items-center gap-1.5 text-xs">
+                                <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700"></i>
+                                <span>Children & Academic Board Exams</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-purple-200 text-xs space-y-1.5">
+                                <div><strong class="text-slate-600">Children Count:</strong> <span class="font-bold text-slate-800">${d.children_count || '0'}</span></div>
+                                ${d.children_board_exams ? `
+                                    <div class="p-2 rounded bg-purple-100 text-purple-950 font-medium">
+                                        <strong>Board Exam Year:</strong> ${d.children_board_exams}
+                                    </div>
+                                ` : '<div class="text-slate-400 italic">No 2026-27 board exams recorded.</div>'}
+                            </div>
                         </div>
-                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200 leading-relaxed">
-                            ${d.qualifications || d.academic_details}
+
+                        <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                            <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                                <i data-lucide="users" class="w-4 h-4 text-wbblue-700"></i>
+                                <span>Family Dependencies & Care</span>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs text-slate-800 leading-relaxed">
+                                ${d.family_dependencies || 'Standard family dependencies.'}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 4: DISTRICT POST VISUALIZER & QUICK ALLOTMENT COCKPIT -->
+                <!-- TAB 5: HEALTH & COMPETENCIES -->
+                <div id="dossierSecCompetencies" class="dossier-sec hidden space-y-4">
+                    <!-- Medical Grounds -->
+                    <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-2.5">
+                        <div class="font-bold text-rose-900 flex items-center gap-1.5">
+                            <i data-lucide="activity" class="w-4 h-4 text-rose-700"></i>
+                            <span>Medical Conditions & Special Treatment Requirements</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-rose-200">
+                            <div><strong class="text-slate-600">Officer Condition:</strong> <span class="text-slate-900 font-medium">${d.health_conditions || 'None reported'}</span></div>
+                            <div><strong class="text-slate-600">Spouse Condition:</strong> <span class="text-slate-800">${d.spouse_health || 'None reported'}</span></div>
+                            <div><strong class="text-slate-600">Care Needed:</strong> <span class="text-slate-800">${d.care_needed || '—'}</span></div>
+                            <div><strong class="text-slate-600">Facility Needed:</strong> <span class="text-slate-800">${d.facility_needed || '—'}</span></div>
+                            <div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">PwD Status:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.pwd_status && d.pwd_status !== 'Not applicable' ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-700'}">${d.pwd_status || 'Not applicable'}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Academic & Specializations -->
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                            <i data-lucide="graduation-cap" class="w-4 h-4 text-indigo-700"></i>
+                            <span>Academic Qualifications & Post-Graduate Specializations</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <div><strong class="text-slate-600">Degree:</strong> <span class="text-slate-900 font-bold">${d.qualifications || d.academic_details || 'B.V.Sc. & A.H.'}</span></div>
+                            <div><strong class="text-slate-600">MVSc / PhD Specialization:</strong> <span class="text-slate-900 font-semibold">${d.mvsc_specialization || '—'}</span></div>
+                            ${d.skills_certifications ? `<div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Skills / Certifications:</strong> <span class="text-slate-800">${d.skills_certifications}</span></div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- 4-Stream Strengths Ranking -->
+                    ${streamHtml ? `
+                        <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
+                            <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4 text-wbblue-700"></i>
+                                <span>Self-Evaluated Core Strengths Ranking (4 Departmental Streams)</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                                ${streamHtml}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- TAB 6: SELF-REPORTED FORM RESPONSES (114+ QUESTIONS) -->
+                <div id="dossierSecResponses" class="dossier-sec hidden space-y-3">
+                    ${selfRepHtml}
+                </div>
+
+                <!-- TAB 7: DISTRICT POST VISUALIZER & QUICK ALLOTMENT COCKPIT -->
                 <div id="dossierSecGrid" class="dossier-sec hidden space-y-3">
                     <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between gap-3 text-xs">
                         <div class="text-emerald-950 font-medium">
