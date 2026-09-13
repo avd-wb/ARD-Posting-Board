@@ -2369,10 +2369,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const elH = document.getElementById('countdownHours');
         const elM = document.getElementById('countdownMinutes');
         const elS = document.getElementById('countdownSeconds');
+
+        const elHBanner = document.getElementById('countdownHoursBanner');
+        const elMBanner = document.getElementById('countdownMinutesBanner');
+        const elSBanner = document.getElementById('countdownSecondsBanner');
+
+        const elHDrawer = document.getElementById('countdownHoursDrawer');
+        const elMDrawer = document.getElementById('countdownMinutesDrawer');
+        const elSDrawer = document.getElementById('countdownSecondsDrawer');
+
+        const elHMobile = document.getElementById('countdownHoursMobile');
+        const elMMobile = document.getElementById('countdownMinutesMobile');
+        const elSMobile = document.getElementById('countdownSecondsMobile');
+
         const elStatus = document.getElementById('countdownBadgeStatus');
         const card = document.getElementById('countdownCard');
-
-        if (!elH || !elM || !elS) return;
 
         // Baseline official start time: 15:45:00 on 2026-09-13 IST (+05:30)
         let startTime = new Date('2026-09-13T15:45:00+05:30').getTime();
@@ -2396,6 +2407,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        function setTimeDisplay(hStr, mStr, sStr) {
+            if (elH) elH.textContent = hStr;
+            if (elM) elM.textContent = mStr;
+            if (elS) elS.textContent = sStr;
+
+            if (elHBanner) elHBanner.textContent = hStr;
+            if (elMBanner) elMBanner.textContent = mStr;
+            if (elSBanner) elSBanner.textContent = sStr;
+
+            if (elHDrawer) elHDrawer.textContent = hStr;
+            if (elMDrawer) elMDrawer.textContent = mStr;
+            if (elSDrawer) elSDrawer.textContent = sStr;
+
+            if (elHMobile) elHMobile.textContent = hStr;
+            if (elMMobile) elMMobile.textContent = mStr;
+            if (elSMobile) elSMobile.textContent = sStr;
+        }
+
         function tick() {
             const now = Date.now();
             let remainingMs = targetTime - now;
@@ -2406,9 +2435,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tMinusM = Math.floor(tMinusSec / 60);
                 const tMinusS = tMinusSec % 60;
 
-                elH.textContent = '84';
-                elM.textContent = '00';
-                elS.textContent = '00';
+                setTimeDisplay('84', '00', '00');
 
                 if (elStatus) {
                     elStatus.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Starts 15:45 (T-${String(tMinusM).padStart(2, '0')}:${String(tMinusS).padStart(2, '0')})</span>`;
@@ -2428,9 +2455,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const minutes = Math.floor((totalSec % 3600) / 60);
                 const seconds = totalSec % 60;
 
-                elH.textContent = String(hours).padStart(2, '0');
-                elM.textContent = String(minutes).padStart(2, '0');
-                elS.textContent = String(seconds).padStart(2, '0');
+                const hStr = String(hours).padStart(2, '0');
+                const mStr = String(minutes).padStart(2, '0');
+                const sStr = String(seconds).padStart(2, '0');
+
+                setTimeDisplay(hStr, mStr, sStr);
 
                 if (elStatus) {
                     elStatus.innerHTML = `<span class="inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active 84h Sync Lock</span>`;

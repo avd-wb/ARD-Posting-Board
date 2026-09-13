@@ -223,9 +223,10 @@
                         <i data-lucide="shield-check" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
                     </div>
                     <div class="leading-tight">
-                        <div class="text-[10px] sm:text-[11px] font-black tracking-wider uppercase text-emerald-300 flex items-center gap-1.5">
+                        <div class="text-[10px] sm:text-[11px] font-black tracking-wider uppercase text-emerald-300 flex items-center gap-1.5 flex-wrap">
                             <span>DARAH, ARD Dept.</span>
                             <span class="text-[8px] bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 px-1 py-0.2 rounded font-mono uppercase">Official</span>
+                            <span class="text-[8px] bg-amber-950/90 text-amber-300 border border-amber-500/70 px-1 py-0.2 rounded font-mono uppercase font-bold">Beta Version</span>
                         </div>
                         <h1 class="text-sm sm:text-base md:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
                             <span>Posting Decision Board</span>
@@ -235,7 +236,7 @@
 
                 <!-- Center: Departmental Organogram & Administrative Structure (Prominently Placed in Center) -->
                 <div class="flex-1 flex items-center justify-center px-1 sm:px-4">
-                    <button id="btnHeaderOrganogram" data-tab="tab-organogram" class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-xl bg-slate-700/90 hover:bg-slate-650 text-white font-bold text-xs sm:text-sm border border-amber-400/60 hover:border-amber-300 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Departmental Organogram & Administrative Structure">
+                    <button id="btnHeaderOrganogram" data-tab="tab-organogram" class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 rounded-xl bg-slate-700/90 hover:bg-slate-655 text-white font-bold text-xs sm:text-sm border border-amber-400/60 hover:border-amber-300 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Departmental Organogram & Administrative Structure">
                         <i data-lucide="network" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300 group-hover:scale-110 transition shrink-0"></i>
                         <span class="tracking-wide hidden sm:inline">Departmental Organogram & Administrative Structure</span>
                         <span class="tracking-wide sm:hidden text-[11px]">Organogram</span>
@@ -252,12 +253,13 @@
                         <kbd class="text-[9px] font-mono font-semibold text-slate-400 bg-slate-800 border border-slate-600 px-1.5 py-0.2 rounded">⌘K</kbd>
                     </div>
 
-                    <!-- 84h Sync Countdown Clock Pill -->
-                    <div id="countdownCard" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-[11px] text-slate-200 cursor-pointer hover:border-slate-500 transition shadow-xs" title="84-Hour Processing Window starting from 15:45 IST">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                        <span id="countdownHours" class="font-bold">84</span>h:
-                        <span id="countdownMinutes" class="font-bold">00</span>m:
-                        <span id="countdownSeconds" class="font-bold">00</span>s
+                    <!-- Complete Data Sync Estimated Time to Sync Pill -->
+                    <div id="countdownCard" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-amber-500/30 font-mono text-[11px] text-slate-200 cursor-pointer hover:border-amber-400 transition shadow-xs" title="Complete Data Sync — Estimated Time to Sync">
+                        <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                        <span class="text-[10px] text-slate-400 font-sans hidden xl:inline">Estimated Sync:</span>
+                        <span id="countdownHours" class="font-bold text-amber-300">84</span>h:
+                        <span id="countdownMinutes" class="font-bold text-amber-300">00</span>m:
+                        <span id="countdownSeconds" class="font-bold text-amber-300">00</span>s
                     </div>
 
                     <!-- Hidden mobile counter to maintain JS binding -->
@@ -377,6 +379,40 @@
                         <span>Policy 219</span>
                         <span class="text-xs">⚖</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: System Status & Complete Data Sync Estimated Time to Sync Banner -->
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border-t border-slate-700/80 text-slate-200 py-1.5 px-3 sm:px-5 shadow-inner">
+            <div class="w-full max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+                <!-- Left: Status Badges -->
+                <div class="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-extrabold uppercase tracking-wide">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                        <span>Beta Version</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold uppercase tracking-wide">
+                        <i data-lucide="wrench" class="w-3.5 h-3.5 text-rose-400"></i>
+                        <span>Under Development</span>
+                    </span>
+                    <span class="hidden lg:inline text-slate-600 text-xs">|</span>
+                    <span class="hidden lg:inline text-slate-400 text-[11px]">Provisional administrative postings & cadre balance</span>
+                </div>
+
+                <!-- Right: Complete Data Sync Estimated Time with Live Timer -->
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center sm:justify-end text-xs">
+                    <div class="flex items-center gap-1.5 text-slate-300">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-amber-400 animate-spin" style="animation-duration: 8s;"></i>
+                        <span class="font-bold text-slate-100 text-[11px] sm:text-xs">Complete Data Sync</span>
+                        <span class="text-slate-400 text-[11px] sm:text-xs">Estimated Time to Sync:</span>
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-950 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs shadow-xs">
+                        <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                        <span id="countdownHoursBanner" class="font-bold">84</span>h :
+                        <span id="countdownMinutesBanner" class="font-bold">00</span>m :
+                        <span id="countdownSecondsBanner" class="font-bold">00</span>s
+                    </div>
                 </div>
             </div>
         </div>
@@ -1958,6 +1994,32 @@
 
             <!-- Drawer Body -->
             <div class="overflow-y-auto p-4 space-y-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+                <!-- Mobile Status & Estimated Sync Banner -->
+                <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white border border-slate-800 shadow-md space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                            <span>Beta Version</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold uppercase">
+                            <i data-lucide="wrench" class="w-3 h-3 text-rose-400"></i>
+                            <span>Under Development</span>
+                        </span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-[11px] font-medium text-slate-300 flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3 text-amber-400 animate-spin" style="animation-duration: 8s;"></i>
+                            <span>Complete Data Sync · Estimated Time:</span>
+                        </div>
+                        <div class="flex items-center justify-center gap-1.5 py-1 px-3 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs shadow-inner">
+                            <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span id="countdownHoursDrawer">84</span>h :
+                            <span id="countdownMinutesDrawer">00</span>m :
+                            <span id="countdownSecondsDrawer">00</span>s
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section 1: Core Posting & Promotions -->
                 <div>
                     <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Core Operational Modules</h4>
