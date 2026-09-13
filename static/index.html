@@ -1439,8 +1439,8 @@
                     <span>Self-Reported Form (114+ Qs)</span>
                 </button>
                 <button id="dossierSubTabGrid" onclick="window.switchDossierSubTab('grid')" class="dossier-tab-btn px-3 py-2 text-slate-500 hover:text-slate-800 flex items-center gap-1.5 shrink-0 transition">
-                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-emerald-600"></i>
-                    <span class="text-emerald-700 font-bold">District Post Visualizer</span>
+                    <i data-lucide="crosshair" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span class="text-emerald-700 font-bold">District Postings / Interactive Allocation Cockpit</span>
                 </button>
             </div>
 
@@ -1452,6 +1452,85 @@
                 <div class="text-[11px] text-slate-500" id="dossierFooterMeta">WBSR Rule 75(a) & Memo 291 Compliant</div>
                 <button id="btnCloseDossierFooter" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== COCKPIT QUICK ALLOTMENT CONFIRMATION MODAL ==================== -->
+    <div id="cockpitAllotModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-300 animate-in fade-in zoom-in duration-200 flex flex-col">
+            <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i data-lucide="crosshair" class="w-5 h-5 text-emerald-400"></i>
+                        <span>Confirm Post Allocation</span>
+                    </h3>
+                    <p class="text-xs text-emerald-200 mt-0.5">Interactive Allocation Cockpit</p>
+                </div>
+                <button id="btnCloseCockpitAllotModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Target Officer Summary -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Candidate Officer</div>
+                    <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5" id="cockpitOfficerName">
+                        Dr. Name Here
+                    </div>
+                    <div class="text-slate-600 text-xs flex items-center gap-2">
+                        <span>HRMS: <strong id="cockpitOfficerHrms" class="font-mono">1234567890</strong></span>
+                    </div>
+                </div>
+
+                <!-- Selected Post Summary -->
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Selected Target Post</span>
+                        <span id="cockpitTargetStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Pure Vacant</span>
+                    </div>
+                    <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                        <span id="cockpitTargetPostId" class="px-2 py-0.5 rounded bg-emerald-700 text-white font-mono text-xs">P-000</span>
+                        <span id="cockpitTargetPostName">Post Designation</span>
+                    </div>
+                    <div class="text-slate-600 text-xs" id="cockpitTargetLocation">
+                        Establishment, Block, District
+                    </div>
+                </div>
+
+                <!-- Action Choice Instructions -->
+                <div class="space-y-2 pt-1">
+                    <div class="text-slate-700 font-semibold">Choose allotment mode to execute:</div>
+                    
+                    <button id="btnCockpitSubstantive" class="w-full p-3 rounded-lg border-2 border-emerald-500 bg-emerald-50/50 hover:bg-emerald-100/70 text-left transition flex items-center justify-between group">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                                <i data-lucide="award" class="w-4 h-4 text-emerald-700"></i>
+                                <span>Substantive Main Post (Pay Level 19)</span>
+                            </div>
+                            <div class="text-[11px] text-emerald-800">Primary substantive cadre posting with lien and scale.</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-emerald-700 group-hover:translate-x-1 transition"></i>
+                    </button>
+
+                    <button id="btnCockpitSU" class="w-full p-3 rounded-lg border-2 border-teal-500 bg-teal-50/50 hover:bg-teal-100/70 text-left transition flex items-center justify-between group">
+                        <div class="space-y-0.5">
+                            <div class="font-bold text-teal-950 text-xs flex items-center gap-1.5">
+                                <i data-lucide="repeat" class="w-4 h-4 text-teal-700"></i>
+                                <span>Service Utilization (SU) Post</span>
+                            </div>
+                            <div class="text-[11px] text-teal-800">Operational attachment while maintaining substantive lien.</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-teal-700 group-hover:translate-x-1 transition"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+                <button id="btnCancelCockpitAllot" class="px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 rounded-lg border border-slate-300 hover:bg-slate-100 transition">
+                    Cancel (No Change)
                 </button>
             </div>
         </div>

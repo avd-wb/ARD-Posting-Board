@@ -2238,6 +2238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `<span>WBVC Reg: ${d.wbvc_reg_no}</span>` : ''}
                                         ${d.employee_id && d.employee_id !== '—' ? `<span>Emp ID: ${d.employee_id}</span>` : ''}
                                         ${d.gradation_sl && d.gradation_sl !== '—' ? `<span>Gradation Sl: ${d.gradation_sl}</span>` : ''}
+                                        ${d.caste ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">Category: ${d.caste}</span>` : ''}
                                     </div>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-wbblue-100 text-wbblue-800 border border-wbblue-200">
@@ -2535,15 +2536,96 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${selfRepHtml}
                 </div>
 
-                <!-- TAB 7: DISTRICT POST VISUALIZER & QUICK ALLOTMENT COCKPIT -->
-                <div id="dossierSecGrid" class="dossier-sec hidden space-y-3">
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between gap-3 text-xs">
-                        <div class="text-emerald-950 font-medium">
-                            <strong>Interactive Allocation Cockpit:</strong> Click any post button below to allot directly to <strong>${d.officer_name}</strong> as Substantive Main or Service Utilization (SU).
+                <!-- TAB 7: DISTRICT POSTINGS / INTERACTIVE ALLOCATION COCKPIT -->
+                <div id="dossierSecGrid" class="dossier-sec hidden space-y-3.5">
+                    <!-- Instruction Alert Banner -->
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="text-emerald-950">
+                            <span class="font-bold flex items-center gap-1.5 text-emerald-900"><i data-lucide="crosshair" class="w-4 h-4 text-emerald-700"></i> Interactive Allocation Cockpit</span>
+                            <div class="text-slate-700 mt-0.5">Click any post card below to allot directly to <strong>${d.officer_name}</strong> (HRMS: ${d.hrms_id}) as <em>Substantive Main</em> or <em>Service Utilization (SU)</em>.</div>
+                        </div>
+                        <div class="shrink-0 flex items-center gap-1.5">
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold border border-emerald-300">Live Allotment Mode</span>
                         </div>
                     </div>
 
-                    <div id="modalVisualGridContainer" class="space-y-4 max-h-[500px] overflow-y-auto p-1">
+                    <!-- Prominent Colour Code Legend Bar -->
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 shadow-sm">
+                        <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="palette" class="w-3.5 h-3.5 text-wbblue-700"></i>
+                                <span>Official Post Colour Codes & Status Guide</span>
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-normal">Click any card to allot; click filter pills below to isolate posts</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+                            <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col justify-between cursor-pointer hover:border-emerald-400 hover:shadow transition" onclick="window.setModalCockpitStatusFilter('VACANT_PURE')">
+                                <div class="flex items-center gap-1.5 font-bold text-emerald-800 text-[11px]">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                                    <span>Pure Vacancy</span>
+                                </div>
+                                <div class="text-[10px] text-emerald-700 mt-1 leading-tight">Clear Sanctioned Cadre Vacancy. Available for immediate allotment.</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-purple-50 border border-purple-200 flex flex-col justify-between cursor-pointer hover:border-purple-400 hover:shadow transition" onclick="window.setModalCockpitStatusFilter('DD')">
+                                <div class="flex items-center gap-1.5 font-bold text-purple-800 text-[11px]">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                                    <span>DD Promotional Post</span>
+                                </div>
+                                <div class="text-[10px] text-purple-700 mt-1 leading-tight">Pay Level 19 DD post for 50-Point Roster Candidates.</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-amber-50 border border-amber-200 flex flex-col justify-between cursor-pointer hover:border-amber-400 hover:shadow transition" onclick="window.setModalCockpitStatusFilter('VACANT_ON_PAPER')">
+                                <div class="flex items-center gap-1.5 font-bold text-amber-800 text-[11px]">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                    <span>Vacant on Paper</span>
+                                </div>
+                                <div class="text-[10px] text-amber-700 mt-1 leading-tight">Substantively occupied, but incumbent is on SU elsewhere.</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-slate-100 border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-slate-400 hover:shadow transition" onclick="window.setModalCockpitStatusFilter('FILLED_NORMAL')">
+                                <div class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                                    <span>Occupied Post</span>
+                                </div>
+                                <div class="text-[10px] text-slate-600 mt-1 leading-tight">Regular serving cadre officer currently in position.</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-rose-50 border border-rose-200 flex flex-col justify-between cursor-pointer hover:border-rose-400 hover:shadow transition" onclick="window.setModalCockpitStatusFilter('ATTENTION_REQUIRED')">
+                                <div class="flex items-center gap-1.5 font-bold text-rose-800 text-[11px]">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                                    <span>Action Required</span>
+                                </div>
+                                <div class="text-[10px] text-rose-700 mt-1 leading-tight">Cascading replacement / conflict / tenure priority post.</div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-slate-100 border border-slate-300 flex flex-col justify-between opacity-75">
+                                <div class="flex items-center gap-1.5 font-bold text-slate-600 text-[11px] line-through">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                                    <span>Obliterated (1808)</span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 mt-1 leading-tight">Abolished under Notification 1808. Reserved for rehabilitation.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search & Quick Filters Toolbar -->
+                    <div class="p-3 bg-white border border-slate-200 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2.5 shadow-sm">
+                        <div class="flex-1 flex items-center gap-2">
+                            <div class="relative flex-1">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="modalCockpitSearch" oninput="window.filterModalCockpitGrid()" placeholder="Quick search post ID, designation, block, office, or incumbent..." class="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <select id="modalCockpitDistrictFilter" onchange="window.filterModalCockpitGrid()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-emerald-500 font-medium">
+                                <option value="ALL">All Districts & Complexes</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                            <button onclick="window.setModalCockpitStatusFilter('ALL')" id="modalFilterBtn-ALL" class="modal-cockpit-filter-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-white shadow-sm transition">All (<span id="modalCockpitCountAll">0</span>)</button>
+                            <button onclick="window.setModalCockpitStatusFilter('VACANT_PURE')" id="modalFilterBtn-VACANT_PURE" class="modal-cockpit-filter-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition">🟢 Vacancies (<span id="modalCockpitCountPure">0</span>)</button>
+                            <button onclick="window.setModalCockpitStatusFilter('DD')" id="modalFilterBtn-DD" class="modal-cockpit-filter-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300 transition">🟣 DD Posts (<span id="modalCockpitCountDD">0</span>)</button>
+                            <button onclick="window.setModalCockpitStatusFilter('VACANT_ON_PAPER')" id="modalFilterBtn-VACANT_ON_PAPER" class="modal-cockpit-filter-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 transition">🟡 On Paper (<span id="modalCockpitCountPaper">0</span>)</button>
+                            <button onclick="window.setModalCockpitStatusFilter('FILLED_NORMAL')" id="modalFilterBtn-FILLED_NORMAL" class="modal-cockpit-filter-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition">🔘 Occupied (<span id="modalCockpitCountOccupied">0</span>)</button>
+                        </div>
+                    </div>
+
+                    <!-- Post Visualizer Grid Container -->
+                    <div id="modalVisualGridContainer" class="space-y-4 max-h-[550px] overflow-y-auto p-1 pr-2">
                         <div class="py-8 text-center text-slate-400">Loading district posts grid...</div>
                     </div>
                 </div>
@@ -2553,6 +2635,120 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Failed to load dossier:', err);
             container.innerHTML = `<div class="py-12 text-center text-rose-500 font-medium">Failed to load officer dossier: ${err.message}</div>`;
+        }
+    };
+
+    // --- SLEEK TOAST NOTIFICATION UTILITY ---
+    window.showToast = function(message, type = 'info') {
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none max-w-sm';
+            document.body.appendChild(toastContainer);
+        }
+        const toast = document.createElement('div');
+        toast.className = `p-3.5 rounded-lg shadow-xl text-xs font-semibold text-white pointer-events-auto transition transform duration-300 ease-out flex items-center gap-2.5 translate-y-2 opacity-0 ${
+            type === 'success' ? 'bg-emerald-600' :
+            type === 'error' ? 'bg-rose-600' :
+            type === 'warning' ? 'bg-amber-600' : 'bg-slate-800'
+        }`;
+        const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+        toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        lucide.createIcons();
+        setTimeout(() => {
+            toast.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 350);
+        }, 4000);
+    };
+
+    // --- COCKPIT FILTER STATE & CONTROLS ---
+    window.currentModalCockpitStatusFilter = 'ALL';
+
+    window.setModalCockpitStatusFilter = function(status) {
+        window.currentModalCockpitStatusFilter = status;
+        document.querySelectorAll('.modal-cockpit-filter-btn').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-slate-900', 'shadow-md');
+        });
+        const activeBtn = document.getElementById(`modalFilterBtn-${status}`);
+        if (activeBtn) {
+            activeBtn.classList.add('ring-2', 'ring-slate-900', 'shadow-md');
+        }
+        window.filterModalCockpitGrid();
+    };
+
+    window.filterModalCockpitGrid = function() {
+        const searchVal = (document.getElementById('modalCockpitSearch')?.value || '').toLowerCase().trim();
+        const distVal = document.getElementById('modalCockpitDistrictFilter')?.value || 'ALL';
+        const statusVal = window.currentModalCockpitStatusFilter || 'ALL';
+
+        const distCards = document.querySelectorAll('#modalVisualGridContainer .district-grid-card');
+        let totalVisiblePosts = 0;
+
+        distCards.forEach(distCard => {
+            const dName = distCard.getAttribute('data-district');
+            const matchesDistrict = (distVal === 'ALL' || distVal === dName);
+            
+            let visibleInDist = 0;
+            const postCards = distCard.querySelectorAll('.post-cockpit-card');
+            postCards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status-code');
+                const cardType = card.getAttribute('data-post-type');
+                const searchText = (card.getAttribute('data-search-text') || '').toLowerCase();
+
+                let matchesSearch = !searchVal || searchText.includes(searchVal);
+                let matchesStatus = true;
+                if (statusVal === 'VACANT_PURE') {
+                    matchesStatus = (cardStatus === 'VACANT_PURE');
+                } else if (statusVal === 'DD') {
+                    matchesStatus = (cardType === 'DD');
+                } else if (statusVal === 'VACANT_ON_PAPER') {
+                    matchesStatus = (cardStatus === 'VACANT_ON_PAPER');
+                } else if (statusVal === 'FILLED_NORMAL') {
+                    matchesStatus = (cardStatus === 'FILLED_NORMAL');
+                } else if (statusVal === 'ATTENTION_REQUIRED') {
+                    matchesStatus = (cardStatus === 'ATTENTION_REQUIRED');
+                }
+
+                if (matchesDistrict && matchesSearch && matchesStatus) {
+                    card.classList.remove('hidden');
+                    visibleInDist++;
+                    totalVisiblePosts++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Hide or show the whole district group if it has matching posts
+            if (matchesDistrict && visibleInDist > 0) {
+                distCard.classList.remove('hidden');
+                const counter = distCard.querySelector('.district-matching-counter');
+                if (counter) counter.innerText = `${visibleInDist} visible`;
+            } else {
+                distCard.classList.add('hidden');
+            }
+        });
+
+        // Handle empty search results
+        let emptyMsg = document.getElementById('modalCockpitEmptyMsg');
+        const container = document.getElementById('modalVisualGridContainer');
+        if (totalVisiblePosts === 0 && container) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.id = 'modalCockpitEmptyMsg';
+                emptyMsg.className = 'py-12 text-center text-slate-500 font-medium bg-slate-50 rounded-lg border border-dashed border-slate-300';
+                emptyMsg.innerHTML = '<i data-lucide="inbox" class="w-8 h-8 text-slate-400 mx-auto mb-2"></i><div>No matching posts found for the selected filters.</div><div class="text-xs text-slate-400 mt-1">Try clearing your search query or choosing "All".</div>';
+                container.appendChild(emptyMsg);
+                lucide.createIcons();
+            } else {
+                emptyMsg.classList.remove('hidden');
+            }
+        } else if (emptyMsg) {
+            emptyMsg.classList.add('hidden');
         }
     };
 
@@ -2566,7 +2762,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('Failed to load visual grid data');
             const data = await res.json();
 
-            // Update main legend counts if available
+            // Update main screen legend counts if on main screen
             const elPure = document.getElementById('legendCountPure');
             const elPaper = document.getElementById('legendCountPaper');
             const elAttention = document.getElementById('legendCountAttention');
@@ -2580,8 +2776,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 elFilled.innerText = data.summary.filled;
             }
 
-            // Populate district filter options if main filter exists
-            const distFilter = document.getElementById('visualGridDistrictFilter');
+            // Calculate status totals across entire grid for cockpit filters
+            let totalCount = 0, pureCount = 0, ddCount = 0, paperCount = 0, filledCount = 0;
+            data.grid.forEach(dg => {
+                (dg.dd_posts || []).forEach(p => {
+                    totalCount++;
+                    ddCount++;
+                    if (p.status_code === 'VACANT_PURE') pureCount++;
+                });
+                (dg.cadre_posts || []).forEach(p => {
+                    totalCount++;
+                    if (p.status_code === 'VACANT_PURE') pureCount++;
+                    else if (p.status_code === 'VACANT_ON_PAPER') paperCount++;
+                    else if (p.status_code === 'FILLED_NORMAL') filledCount++;
+                });
+            });
+
+            // Update modal cockpit filter count badges if in modal
+            const mCountAll = document.getElementById('modalCockpitCountAll');
+            const mCountPure = document.getElementById('modalCockpitCountPure');
+            const mCountDD = document.getElementById('modalCockpitCountDD');
+            const mCountPaper = document.getElementById('modalCockpitCountPaper');
+            const mCountOccupied = document.getElementById('modalCockpitCountOccupied');
+            if (mCountAll) mCountAll.innerText = totalCount;
+            if (mCountPure) mCountPure.innerText = pureCount;
+            if (mCountDD) mCountDD.innerText = ddCount;
+            if (mCountPaper) mCountPaper.innerText = paperCount;
+            if (mCountOccupied) mCountOccupied.innerText = filledCount;
+
+            // Populate district filter dropdown
+            const distFilter = isModal 
+                ? document.getElementById('modalCockpitDistrictFilter') 
+                : document.getElementById('visualGridDistrictFilter');
             if (distFilter && distFilter.options.length <= 1) {
                 data.districts.forEach(d => {
                     const opt = document.createElement('option');
@@ -2589,19 +2815,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     opt.textContent = d;
                     distFilter.appendChild(opt);
                 });
-                distFilter.onchange = () => {
-                    const selected = distFilter.value;
-                    document.querySelectorAll('.district-grid-card').forEach(card => {
-                        if (selected === 'ALL' || card.getAttribute('data-district') === selected) {
-                            card.classList.remove('hidden');
-                        } else {
-                            card.classList.add('hidden');
-                        }
-                    });
-                };
+                if (!isModal) {
+                    distFilter.onchange = () => {
+                        const selected = distFilter.value;
+                        document.querySelectorAll('.district-grid-card').forEach(card => {
+                            if (selected === 'ALL' || card.getAttribute('data-district') === selected) {
+                                card.classList.remove('hidden');
+                            } else {
+                                card.classList.add('hidden');
+                            }
+                        });
+                    };
+                }
             }
 
-            // Render district sections with post buttons
+            // Render district sections with responsive user-friendly post cards
             let html = '';
             data.grid.forEach(distGroup => {
                 const dName = distGroup.district;
@@ -2609,67 +2837,169 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cadrePosts = distGroup.cadre_posts || [];
                 const totalInDist = ddPosts.length + cadrePosts.length;
 
-                const renderButton = (p) => {
-                    let btnColorClass = "bg-slate-500 text-white hover:bg-slate-600";
+                const renderPostCard = (p) => {
+                    let cardBg = "bg-white hover:bg-slate-50";
+                    let cardBorder = "border-slate-200 hover:border-slate-400";
+                    let idBadgeClass = "bg-slate-700 text-white";
+                    let statusBadgeClass = "bg-slate-100 text-slate-700 border border-slate-200";
+                    let statusDotClass = "bg-slate-400";
+                    let shortStatusText = "Occupied";
+                    let borderTopClass = "border-slate-100";
+                    let footerTextColor = "text-slate-600";
+                    let footerText = `Incumbent: ${p.incumbent_name || 'Serving Officer'}`;
+                    let actionTextColor = "text-slate-700";
+
+                    if (p.type === 'DD') {
+                        cardBg = "bg-purple-50/60 hover:bg-purple-100/80";
+                        cardBorder = "border-purple-300 hover:border-purple-500";
+                        idBadgeClass = "bg-purple-700 text-white";
+                        statusBadgeClass = "bg-purple-100 text-purple-800 border border-purple-300";
+                        statusDotClass = "bg-purple-600";
+                        shortStatusText = "DD Level 19 Post";
+                        borderTopClass = "border-purple-200/70";
+                        footerTextColor = "text-purple-700 font-medium";
+                        footerText = "50-Point Roster Promotional Post";
+                        actionTextColor = "text-purple-800";
+                    }
+
                     if (p.status_code === 'VACANT_PURE') {
-                        btnColorClass = "bg-emerald-500 text-white hover:bg-emerald-600 font-bold";
+                        cardBg = "bg-emerald-50/70 hover:bg-emerald-100/90";
+                        cardBorder = "border-emerald-300 hover:border-emerald-500";
+                        idBadgeClass = "bg-emerald-700 text-white";
+                        statusBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-300";
+                        statusDotClass = "bg-emerald-600";
+                        shortStatusText = "Pure Vacancy";
+                        borderTopClass = "border-emerald-200/80";
+                        footerTextColor = "text-emerald-700 font-medium";
+                        footerText = "Clear Vacancy • Available Immediately";
+                        actionTextColor = "text-emerald-800";
                     } else if (p.status_code === 'VACANT_ON_PAPER') {
-                        btnColorClass = "bg-amber-500 text-white hover:bg-amber-600 font-medium";
+                        cardBg = "bg-amber-50/70 hover:bg-amber-100/90";
+                        cardBorder = "border-amber-300 hover:border-amber-500";
+                        idBadgeClass = "bg-amber-600 text-white";
+                        statusBadgeClass = "bg-amber-100 text-amber-800 border border-amber-300";
+                        statusDotClass = "bg-amber-500";
+                        shortStatusText = "Vacant on Paper";
+                        borderTopClass = "border-amber-200/80";
+                        footerTextColor = "text-amber-700 font-medium";
+                        footerText = `Incumbent ${p.incumbent_name || ''} on SU elsewhere`;
+                        actionTextColor = "text-amber-800";
                     } else if (p.status_code === 'ATTENTION_REQUIRED') {
-                        btnColorClass = "bg-rose-500 text-white hover:bg-rose-600 font-bold animate-pulse";
+                        cardBg = "bg-rose-50/70 hover:bg-rose-100/90";
+                        cardBorder = "border-rose-300 hover:border-rose-500";
+                        idBadgeClass = "bg-rose-600 text-white animate-pulse";
+                        statusBadgeClass = "bg-rose-100 text-rose-800 border border-rose-300";
+                        statusDotClass = "bg-rose-600";
+                        shortStatusText = "Action Required";
+                        borderTopClass = "border-rose-200/80";
+                        footerTextColor = "text-rose-700 font-medium";
+                        footerText = "Cascading Replacement Priority";
+                        actionTextColor = "text-rose-800";
                     } else if (p.status_code === 'BOARD_SELECTED') {
-                        btnColorClass = "bg-purple-600 text-white hover:bg-purple-700 font-medium";
+                        cardBg = "bg-purple-50/70 hover:bg-purple-100/90";
+                        cardBorder = "border-purple-300 hover:border-purple-500";
+                        idBadgeClass = "bg-purple-600 text-white";
+                        statusBadgeClass = "bg-purple-100 text-purple-800 border border-purple-300";
+                        statusDotClass = "bg-purple-600";
+                        shortStatusText = "Board Selected";
+                        borderTopClass = "border-purple-200/80";
+                        footerTextColor = "text-purple-700 font-medium";
+                        footerText = `Selected: ${p.allotted_to || 'Assigned'}`;
+                        actionTextColor = "text-purple-800";
                     } else if (p.status_code === 'OBLITERATED') {
-                        btnColorClass = "bg-slate-300 text-slate-700 line-through border border-slate-400 opacity-60";
+                        cardBg = "bg-slate-100/60 opacity-60";
+                        cardBorder = "border-slate-300 line-through";
+                        idBadgeClass = "bg-slate-400 text-white";
+                        statusBadgeClass = "bg-slate-200 text-slate-600";
+                        statusDotClass = "bg-slate-400";
+                        shortStatusText = "Obliterated";
+                        borderTopClass = "border-slate-200";
+                        footerTextColor = "text-slate-500";
+                        footerText = "Abolished under Notification 1808";
+                        actionTextColor = "text-slate-400";
                     }
 
                     const clickHandler = isModal && targetHrmsId
-                        ? `onclick="window.promptPostAllotment('${p.id}', ${p.raw_id}, '${p.type}', '${p.post_name.replace(/'/g, "\\'")}', '${targetHrmsId}')"`
-                        : `onclick="showToast('${p.id}: ${p.post_name} - ${p.status_label}', 'info')"`;
+                        ? `onclick="window.promptPostAllotment('${p.id}', ${p.raw_id}, '${p.type}', '${p.post_name.replace(/'/g, "\\'")}', '${targetHrmsId}', '${(p.establishment || '').replace(/'/g, "\\'")}', '${(p.district || '').replace(/'/g, "\\'")}', '${shortStatusText}')"`
+                        : `onclick="window.showToast('${p.id}: ${p.post_name} — ${p.status_label}', 'info')"`;
 
                     return `
-                        <button ${clickHandler} 
-                                class="px-2 py-1 text-[10px] rounded border border-black/10 shadow-sm transition truncate max-w-[175px] text-left flex items-center justify-between gap-1 ${btnColorClass}"
-                                title="${p.id} | ${p.designation} (${p.establishment}${p.block ? `, ${p.block}` : ''}) | ${p.status_label}">
-                            <span class="truncate">${p.id}: ${p.designation}</span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-white shrink-0"></span>
-                        </button>
+                        <div ${clickHandler} 
+                             class="post-cockpit-card p-3 rounded-lg border text-left cursor-pointer transition shadow-sm hover:shadow-md flex flex-col justify-between gap-2.5 ${cardBg} ${cardBorder}"
+                             data-post-id="${p.id}"
+                             data-post-type="${p.type}"
+                             data-status-code="${p.status_code}"
+                             data-district="${dName}"
+                             data-search-text="${p.id} ${p.designation} ${p.establishment} ${p.block || ''} ${p.incumbent_name || ''} ${p.status_label}">
+                            
+                            <div class="flex items-center justify-between gap-1.5">
+                                <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold ${idBadgeClass}">${p.id}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusBadgeClass} flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full ${statusDotClass}"></span>
+                                    <span>${shortStatusText}</span>
+                                </span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="font-bold text-slate-900 text-xs leading-snug">${p.designation}</div>
+                                <div class="text-[11px] text-slate-600 flex items-center gap-1">
+                                    <i data-lucide="building" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                                    <span class="truncate" title="${p.establishment}">${p.establishment}</span>
+                                </div>
+                                ${p.block && p.block !== 'District HQ' ? `
+                                    <div class="text-[10px] text-slate-500">
+                                        Block: <strong class="text-slate-700">${p.block}</strong>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <div class="pt-2 border-t ${borderTopClass} flex items-center justify-between text-[10px]">
+                                <span class="truncate ${footerTextColor}">
+                                    ${footerText}
+                                </span>
+                                <span class="shrink-0 font-bold ${actionTextColor} flex items-center gap-0.5">
+                                    <span>Allot</span> &rarr;
+                                </span>
+                            </div>
+                        </div>
                     `;
                 };
 
                 html += `
-                    <div class="district-grid-card bg-white rounded-lg border border-slate-200 p-3.5 shadow-sm space-y-2.5" data-district="${dName}">
-                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <div class="district-grid-card bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3" data-district="${dName}">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
                             <div class="font-bold text-slate-800 text-xs flex items-center gap-2">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-wbblue-700"></i>
-                                <span>${dName}</span>
-                                <span class="px-2 py-0.2 rounded-full bg-slate-100 text-slate-600 font-normal text-[10px]">${totalInDist} posts</span>
+                                <i data-lucide="map-pin" class="w-4 h-4 text-wbblue-700"></i>
+                                <span class="text-sm text-slate-900">${dName}</span>
+                                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-normal text-[11px]">${totalInDist} posts</span>
+                                <span class="district-matching-counter text-[11px] font-semibold text-emerald-700 ml-1"></span>
                             </div>
-                            <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-                                <span>DD: ${ddPosts.length}</span> | <span>Cadre: ${cadrePosts.length}</span>
+                            <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+                                <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 font-semibold border border-purple-200">DD: ${ddPosts.length}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 font-semibold border border-slate-200">Cadre: ${cadrePosts.length}</span>
                             </div>
                         </div>
 
                         ${ddPosts.length > 0 ? `
-                            <div>
-                                <div class="text-[10px] font-bold text-wbblue-800 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                    <i data-lucide="award" class="w-3 h-3 text-wbblue-700"></i>
+                            <div class="space-y-1.5">
+                                <div class="text-[11px] font-bold text-wbblue-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="award" class="w-3.5 h-3.5 text-purple-700"></i>
                                     <span>Deputy Director Posts (Pay Level 19)</span>
                                 </div>
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${ddPosts.map(renderButton).join('')}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                    ${ddPosts.map(renderPostCard).join('')}
                                 </div>
                             </div>
                         ` : ''}
 
                         ${cadrePosts.length > 0 ? `
-                            <div>
-                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                    <i data-lucide="building-2" class="w-3 h-3 text-slate-500"></i>
+                            <div class="space-y-1.5 ${ddPosts.length > 0 ? 'pt-2 border-t border-slate-100' : ''}">
+                                <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-500"></i>
                                     <span>Cadre Posts (AD / BLDO / VO)</span>
                                 </div>
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${cadrePosts.map(renderButton).join('')}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                    ${cadrePosts.map(renderPostCard).join('')}
                                 </div>
                             </div>
                         ` : ''}
@@ -2679,55 +3009,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
             container.innerHTML = html;
             lucide.createIcons();
+
+            // Run initial filter state
+            if (isModal) {
+                window.filterModalCockpitGrid();
+            }
         } catch (err) {
             console.error('Failed to render visual grid:', err);
             container.innerHTML = `<div class="py-8 text-center text-rose-500 font-medium">Failed to load posts grid: ${err.message}</div>`;
         }
     };
 
-    // --- QUICK ALLOTMENT PROMPT FROM VISUAL GRID ---
-    window.promptPostAllotment = async function(postId, rawId, postType, postName, targetHrmsId) {
+    // --- SAFE QUICK ALLOTMENT MODAL FROM VISUAL GRID ---
+    window.promptPostAllotment = async function(postId, rawId, postType, postName, targetHrmsId, establishment, district, statusLabel) {
         const off = window.activeDossierOfficer;
         if (!off) return;
 
-        const choice = confirm(
-            `ALLOT POST TO: ${off.officer_name} (HRMS: ${targetHrmsId})\n\n` +
-            `Target Post: [${postId}] ${postName}\n\n` +
-            `Click OK to allot as SUBSTANTIVE MAIN POST (Pay Level 19)\n` +
-            `Click CANCEL to allot as SERVICE UTILIZATION (SU) POST`
-        );
-
-        const isSubstantive = choice;
-        const subId = isSubstantive ? rawId : (off.latest_allotment ? off.latest_allotment.substantive_post_id : 1);
-        const suId = !isSubstantive ? rawId : null;
-
-        try {
-            const res = await fetch('/api/simulation/allot', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: 'CURRENT_SESSION',
-                    officer_hrms: targetHrmsId,
-                    substantive_post_id: subId,
-                    su_post_id: suId,
-                    reason: isSubstantive ? "Substantive Main Allotment via District Visual Grid" : "Service Utilization Allotment via District Visual Grid",
-                    officer_type: "roster"
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                showToast(`Successfully allotted [${postId}] to ${off.officer_name}!`, 'success');
-                // Reload dossier and roster table
-                window.openOfficerDossier(targetHrmsId);
-                loadRoster();
-                loadSimulationHistory();
-            } else {
-                showToast(data.error || 'Allotment failed', 'error');
-            }
-        } catch (e) {
-            console.error(e);
-            showToast('Network error during allotment', 'error');
+        const modal = document.getElementById('cockpitAllotModal');
+        if (!modal) {
+            // Fallback to confirm if modal container not in DOM
+            const isSub = confirm(`Allot [${postId}] ${postName} to ${off.officer_name}?\n\nClick OK for SUBSTANTIVE MAIN, or Cancel to abort.`);
+            if (!isSub) return;
+            return;
         }
+
+        // Populate modal data
+        document.getElementById('cockpitOfficerName').innerText = off.officer_name;
+        document.getElementById('cockpitOfficerHrms').innerText = targetHrmsId;
+        document.getElementById('cockpitTargetPostId').innerText = postId;
+        document.getElementById('cockpitTargetPostName').innerText = postName;
+        document.getElementById('cockpitTargetLocation').innerText = `${establishment ? establishment + ', ' : ''}${district || ''}`;
+        
+        const statusBadge = document.getElementById('cockpitTargetStatusBadge');
+        if (statusBadge) {
+            statusBadge.innerText = statusLabel || 'Cadre Post';
+        }
+
+        modal.classList.remove('hidden');
+
+        const executeAllotment = async (isSubstantive) => {
+            modal.classList.add('hidden');
+            const subId = isSubstantive ? rawId : (off.latest_allotment ? off.latest_allotment.substantive_post_id : 1);
+            const suId = !isSubstantive ? rawId : null;
+
+            try {
+                const res = await fetch('/api/simulation/allot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: 'CURRENT_SESSION',
+                        officer_hrms: targetHrmsId,
+                        substantive_post_id: subId,
+                        su_post_id: suId,
+                        reason: isSubstantive ? "Substantive Main Allotment via Allocation Cockpit" : "Service Utilization Allotment via Allocation Cockpit",
+                        officer_type: "roster"
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.showToast(`Successfully allotted [${postId}] to ${off.officer_name}!`, 'success');
+                    window.openOfficerDossier(targetHrmsId);
+                    if (typeof loadRoster === 'function') loadRoster();
+                    if (typeof loadSimulationHistory === 'function') loadSimulationHistory();
+                } else {
+                    window.showToast(data.error || 'Allotment failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                window.showToast('Network error during allotment', 'error');
+            }
+        };
+
+        // Bind button actions
+        document.getElementById('btnCockpitSubstantive').onclick = () => executeAllotment(true);
+        document.getElementById('btnCockpitSU').onclick = () => executeAllotment(false);
+        document.getElementById('btnCancelCockpitAllot').onclick = () => modal.classList.add('hidden');
+        document.getElementById('btnCloseCockpitAllotModal').onclick = () => modal.classList.add('hidden');
     };
 
     document.getElementById('btnCloseDossierModal')?.addEventListener('click', () => {
