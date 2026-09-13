@@ -104,69 +104,7 @@ def build_order():
         s.left_margin = Inches(0.6)
         s.right_margin = Inches(0.6)
 
-    # 1. State Emblem
-    if os.path.exists(EMBLEM_PATH):
-        p_emb = doc.add_paragraph()
-        p_emb.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_emb.paragraph_format.space_after = Pt(2)
-        r_emb = p_emb.add_run()
-        r_emb.add_picture(EMBLEM_PATH, width=Inches(0.65))
 
-    # 2. Masthead
-    p_hdr = doc.add_paragraph()
-    p_hdr.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_hdr.paragraph_format.space_after = Pt(6)
-    p_hdr.paragraph_format.line_spacing = 1.15
-
-    r = p_hdr.add_run("Government of West Bengal\n")
-    r.bold = True
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(12)
-
-    r = p_hdr.add_run("Animal Resources Development Department\n")
-    r.bold = True
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(11)
-
-    r = p_hdr.add_run("AR&AH Branch, Prani Sampad Bhawan, LB-2, Sector-III, Salt Lake, Kolkata - 700 106")
-    r.bold = False
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(10)
-
-    # 3. Notification Dispatch No. & Date
-    p_disp = doc.add_paragraph()
-    p_disp.paragraph_format.space_before = Pt(4)
-    p_disp.paragraph_format.space_after = Pt(8)
-    r1 = p_disp.add_run("No. 1890 - AR&AH/AD/O/ 3A- 16/2026")
-    r1.bold = True
-    r1.font.name = "Times New Roman"
-    r1.font.size = Pt(10)
-
-    r2 = p_disp.add_run("\t\t\t\t\tDate: 12.09.2026")
-    r2.bold = True
-    r2.font.name = "Times New Roman"
-    r2.font.size = Pt(10)
-
-    # 4. Title & Preamble
-    p_not = doc.add_paragraph()
-    p_not.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_not.paragraph_format.space_after = Pt(6)
-    r_not = p_not.add_run("NOTIFICATION")
-    r_not.bold = True
-    r_not.font.name = "Times New Roman"
-    r_not.font.size = Pt(12)
-
-    p_pre = doc.add_paragraph()
-    p_pre.paragraph_format.line_spacing = 1.15
-    p_pre.paragraph_format.space_after = Pt(10)
-    p_pre.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    r_pre = p_pre.add_run(
-        "The Governor is pleased to order the promotion, placement, and transfer of the following officers "
-        "of the West Bengal Animal Husbandry & Veterinary Service in the interest of public service, with immediate effect "
-        "and until further orders, as detailed below:"
-    )
-    r_pre.font.name = "Times New Roman"
-    r_pre.font.size = Pt(10)
 
     col_widths = [Inches(0.55), Inches(2.6), Inches(2.2), Inches(1.72)]
     headers = [

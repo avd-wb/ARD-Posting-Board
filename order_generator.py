@@ -355,7 +355,7 @@ class OrderGenerator:
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Government Notification — ARD Department</title>
+    <title>Cadre Posting Schedule — ARD Department</title>
     <style>
         body {{
             font-family: 'Times New Roman', Times, serif;
@@ -472,24 +472,7 @@ class OrderGenerator:
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()" class="btn">Print Gazette Notification</button>
-    </div>
-
-    <div class="header">
-        <h2>Government of West Bengal</h2>
-        <h3>Animal Resources Development Department</h3>
-        <p>AR & AH Branch, Prani Sampad Bhawan, LB - 2, Sector - III, Salt Lake, Kolkata - 700 106</p>
-    </div>
-
-    <div class="memo-bar">
-        <div>No. 1890 - AR&AH/AD/O/ 3A- 16/2026</div>
-        <div>Date: 12.09.2026</div>
-    </div>
-
-    <div class="title-notification">NOTIFICATION</div>
-
-    <div class="preamble">
-        The Governor is pleased to order the promotion, placement, and transfer of the following officers of the West Bengal Animal Husbandry & Veterinary Service in the interest of public service, with immediate effect and until further orders, as detailed below:
+        <button onclick="window.print()" class="btn">Print Posting Schedule</button>
     </div>
 
     <div style="margin-bottom: 14px; padding: 6px 14px; font-size: 8.5pt; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: inline-flex; gap: 20px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;">
