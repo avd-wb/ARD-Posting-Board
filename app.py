@@ -259,9 +259,21 @@ def get_roster_candidates(
            e.attention_reason, 
            COALESCE(e.needs_backfill, 0) as needs_backfill, 
            e.decision_note,
-           e.mobile, e.email, e.current_address
+           e.mobile, e.alt_mobile, e.email, e.whatsapp,
+           e.dob, e.dor, e.doj, e.wbvc_reg_no,
+           e.home_district, e.current_address, e.current_district,
+           e.spouse_service_details, e.spouse_is_wbahvs,
+           e.children_board_exams, e.health_conditions,
+           e.qualifications, e.mvsc_specialization,
+           m.sl_no as master_sl,
+           m.transferred_substantive_post as master_sub,
+           m.service_utilized_at as master_su,
+           m.transfer_basis as master_basis,
+           m.administrative_remarks as master_rem,
+           m.comments_directive as master_comments
     FROM roster_50_point_candidates r
     LEFT JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
+    LEFT JOIN master_final_order_schedule m ON (m.roster_sl = CAST(r.sl_no AS TEXT))
     WHERE 1=1
     """
     params = []
@@ -276,8 +288,8 @@ def get_roster_candidates(
 
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (r.officer_name LIKE ? OR r.hrms_id LIKE ? OR r.present_posting LIKE ? OR r.present_block LIKE ? OR r.present_district LIKE ?)"
-        params.extend([s, s, s, s, s])
+        query += " AND (r.officer_name LIKE ? OR r.hrms_id LIKE ? OR r.present_posting LIKE ? OR r.present_block LIKE ? OR r.present_district LIKE ? OR e.mobile LIKE ? OR e.email LIKE ?)"
+        params.extend([s, s, s, s, s, s, s])
 
     query += " ORDER BY r.sl_no"
     cur.execute(query, params)
@@ -468,6 +480,41 @@ def get_officer_dossier_endpoint(hrms_id: str):
     if not dossier:
         raise HTTPException(status_code=404, detail=f"Officer HRMS {hrms_id} not found.")
     return dossier
+
+@app.get("/api/master-orders")
+def get_master_orders_endpoint(
+    search: Optional[str] = None,
+    transfer_basis: Optional[str] = None,
+    district: Optional[str] = None
+):
+    """Returns authoritative Promotion & Transfer Master Schedule (328 records) enriched with PII."""
+    conn = get_db()
+    cur = conn.cursor()
+    query = """
+    SELECT m.*,
+           e.mobile, e.alt_mobile, e.email, e.whatsapp, e.dob, e.dor, e.wbvc_reg_no,
+           e.children_board_exams, e.spouse_service_details, e.health_conditions,
+           e.current_address
+    FROM master_final_order_schedule m
+    LEFT JOIN officer_extended_dossier e ON (m.hrms_id = e.hrms_id AND m.hrms_id != '')
+    WHERE 1=1
+    """
+    params = []
+    if search:
+        s = f"%{search.strip()}%"
+        query += " AND (m.officer_name LIKE ? OR m.present_post_full LIKE ? OR m.transferred_substantive_post LIKE ? OR m.service_utilized_at LIKE ? OR m.hrms_id LIKE ? OR e.mobile LIKE ?)"
+        params.extend([s, s, s, s, s, s])
+    if transfer_basis and transfer_basis != "ALL":
+        query += " AND m.transfer_basis LIKE ?"
+        params.append(f"%{transfer_basis}%")
+    if district and district != "ALL":
+        query += " AND (m.present_district LIKE ? OR m.transferred_substantive_post LIKE ? OR m.service_utilized_at LIKE ?)"
+        params.extend([f"%{district}%", f"%{district}%", f"%{district}%"])
+    query += " ORDER BY m.sl_no ASC"
+    cur.execute(query, params)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return {"count": len(rows), "data": rows}
 
 @app.get("/api/simulation/recommend-allotment")
 def recommend_allotment_endpoint(officer_hrms: str = Query(...), session_id: str = "CURRENT_SESSION"):
@@ -751,6 +798,19 @@ def download_11_column_master_sheet():
         file_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=os.path.basename(file_path)
+    )
+
+@app.get("/api/download/authoritative-master-ag")
+def download_authoritative_master_ag():
+    import glob
+    files = sorted(glob.glob(os.path.join(BASE_DIR, "Promotion_242_Final_List_*AG.xlsx")), reverse=True)
+    if not files:
+        raise HTTPException(status_code=404, detail="Authoritative master Excel not found.")
+    target_file = files[0]
+    return FileResponse(
+        target_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=os.path.basename(target_file)
     )
 
 # --- SERVE FRONTEND ---

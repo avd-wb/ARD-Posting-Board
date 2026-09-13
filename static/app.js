@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initOverview();
     initFilters();
     loadRoster();
+    loadMasterOrders();
     loadObliterated();
     loadCadre();
     loadOrders();
@@ -76,7 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     activeContent.classList.remove('hidden');
                 }
 
-                if (targetTab === 'tab-cascade') {
+                if (targetTab === 'tab-master-orders') {
+                    loadMasterOrders();
+                } else if (targetTab === 'tab-cascade') {
                     loadSimulationHistory();
                     loadCascadingBackfills();
                 } else if (targetTab === 'tab-displaced') {
@@ -126,11 +129,19 @@ document.addEventListener('DOMContentLoaded', () => {
             state.designations = await desigRes.json();
 
             const distSelect = document.getElementById('cadreDistrictFilter');
+            const moDistSelect = document.getElementById('masterOrdersDistrictFilter');
             state.districts.forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d;
                 opt.innerText = d;
                 distSelect.appendChild(opt);
+
+                if (moDistSelect) {
+                    const opt2 = document.createElement('option');
+                    opt2.value = d;
+                    opt2.innerText = d;
+                    moDistSelect.appendChild(opt2);
+                }
             });
 
             const desigSelect = document.getElementById('cadreDesigFilter');
@@ -166,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = json.data.map(c => {
-                const isAllotted = c.allotment_status === 'Allotted';
+                const isAllotted = c.allotment_status === 'Allotted' || Boolean(c.master_sub);
                 const statusBadge = isAllotted
                     ? `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">Allotted</span>`
                     : `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">Pending</span>`;
@@ -179,12 +190,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<div class="truncate max-w-xs text-[11px]"><span class="font-semibold text-slate-700">1:</span> ${c.pref_1}</div>`
                     : `<span class="text-slate-400 italic">No preference submitted</span>`;
 
-                const dorBadge = c.service_ends
-                    ? `<span class="font-mono text-slate-700 font-medium">${c.service_ends}</span>`
-                    : `<span class="text-slate-400">-</span>`;
+                const dorBadge = (c.dor && c.dor !== '—')
+                    ? `<span class="font-mono text-slate-800 font-bold">${c.dor}</span>`
+                    : (c.service_ends ? `<span class="font-mono text-slate-700 font-medium">${c.service_ends}</span>` : `<span class="text-slate-400">-</span>`);
 
                 let allotmentDisplay = `<span class="text-amber-700 font-medium">Pending DD Allotment</span>`;
-                if (isAllotted) {
+                if (c.master_sub) {
+                    allotmentDisplay = `
+                        <div class="space-y-1">
+                            <div class="text-slate-900 font-bold text-[11px] leading-tight flex items-start gap-1">
+                                <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                <span>${c.master_sub}</span>
+                            </div>
+                            ${c.master_su && c.master_su !== 'Nil' ? `
+                                <div class="text-teal-900 font-semibold text-[10px] leading-tight flex items-start gap-1">
+                                    <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                    <span>${c.master_su}</span>
+                                </div>
+                            ` : ''}
+                            ${c.master_basis ? `
+                                <div class="text-[9px] text-slate-500 font-mono">${c.master_basis}</div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else if (isAllotted) {
                     allotmentDisplay = `
                         <div class="space-y-0.5">
                             <div class="text-emerald-800 font-bold text-[11px] flex items-center gap-1">
@@ -199,6 +228,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             ` : ''}
                         </div>
                     `;
+                }
+
+                const contactBar = (c.mobile && c.mobile !== '—') ? `
+                    <div class="flex items-center gap-2 mt-1 text-[10px]">
+                        <a href="tel:${c.mobile}" class="text-blue-600 hover:text-blue-800 flex items-center gap-0.5 font-mono font-medium" title="Call">
+                            <i data-lucide="phone" class="w-2.5 h-2.5"></i> ${c.mobile}
+                        </a>
+                        <a href="https://wa.me/91${c.mobile}" target="_blank" class="text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5 font-semibold" title="WhatsApp">
+                            <i data-lucide="message-circle" class="w-2.5 h-2.5"></i> WA
+                        </a>
+                    </div>
+                ` : '';
+
+                const welfareBadges = [];
+                if (c.children_board_exams && c.children_board_exams !== '—') {
+                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold" title="Children Board Exam ${c.children_board_exams}">Exam: ${c.children_board_exams}</span>`);
+                }
+                if (c.spouse_is_wbahvs) {
+                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-bold" title="Spouse in WBAHVS / Public Service">Spouse WBAHVS</span>`);
+                }
+                if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
+                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold" title="Medical Grounds">Medical</span>`);
                 }
 
                 return `
@@ -216,6 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${dualBadge}
                             </div>
                             <div class="text-[11px] font-mono text-slate-500">HRMS: ${c.hrms_id || 'N/A'}</div>
+                            ${contactBar}
+                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1 mt-1">${welfareBadges.join('')}</div>` : ''}
                             ${c.attention_flag || c.is_dual_obliterated ? `
                                 <div class="mt-1">
                                     <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold animate-pulse">
@@ -244,12 +297,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="py-2.5 px-4">${allotmentDisplay}</td>
                         <td class="py-2.5 px-3 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1.5">
+                                <button onclick="openOfficerDossier('${c.hrms_id}')" class="px-2 py-1 text-xs font-semibold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition" title="View Dossier">
+                                    Dossier
+                                </button>
                                 <button onclick="openDualAllotModal('${c.hrms_id}', 'roster')" class="px-2 py-1 text-xs font-semibold rounded bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 transition" title="Manual Post Allotment">
                                     ${isAllotted ? 'Modify' : 'Allot'}
                                 </button>
                                 <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Automated AI Statutory Allotment">
                                     <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                    <span>AI Allot</span>
+                                    <span>AI</span>
                                 </button>
                             </div>
                         </td>
@@ -266,6 +322,117 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rosterCategoryFilter').addEventListener('change', loadRoster);
     document.getElementById('rosterStatusFilter').addEventListener('change', loadRoster);
     document.getElementById('rosterSearchInput').addEventListener('input', debounce(loadRoster, 300));
+
+    // --- TAB: LOAD AUTHORITATIVE MASTER PROMOTION & TRANSFER ORDERS (328) ---
+    async function loadMasterOrders() {
+        const tbody = document.getElementById('masterOrdersTableBody');
+        if (!tbody) return;
+
+        const search = document.getElementById('masterOrdersSearchInput')?.value || '';
+        const basis = document.getElementById('masterOrdersBasisFilter')?.value || 'ALL';
+        const district = document.getElementById('masterOrdersDistrictFilter')?.value || 'ALL';
+
+        let url = `/api/master-orders?`;
+        if (search) url += `search=${encodeURIComponent(search)}&`;
+        if (basis && basis !== 'ALL') url += `transfer_basis=${encodeURIComponent(basis)}&`;
+        if (district && district !== 'ALL') url += `district=${encodeURIComponent(district)}&`;
+
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            const countEl = document.getElementById('masterOrdersShowingCount');
+            if (countEl) countEl.innerText = `Showing ${json.count} orders`;
+
+            if (json.data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400">No orders match current filter criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = json.data.map(o => {
+                const isRoster = o.roster_sl && o.roster_sl !== '-';
+                const is1112 = o.transfer_basis && o.transfer_basis.includes('1112');
+                const isDisplaced = o.transfer_basis && (o.transfer_basis.includes('Displacement') || o.transfer_basis.includes('Chain'));
+
+                let basisBadge = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[10px] font-bold">Transfer</span>`;
+                if (isRoster) {
+                    basisBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold">Promotion to DD</span>`;
+                } else if (is1112) {
+                    basisBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">1112 TPV Intact</span>`;
+                } else if (isDisplaced) {
+                    basisBadge = `<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold">Displacement</span>`;
+                }
+
+                const phoneContact = (o.mobile && o.mobile !== '—') ? `
+                    <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                        <a href="tel:${o.mobile}" class="text-blue-600 hover:text-blue-800 flex items-center gap-0.5 font-mono" title="Call">
+                            <i data-lucide="phone" class="w-2.5 h-2.5"></i> ${o.mobile}
+                        </a>
+                        <a href="https://wa.me/91${o.mobile}" target="_blank" class="text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5 font-semibold" title="WhatsApp">
+                            <i data-lucide="message-circle" class="w-2.5 h-2.5"></i> WA
+                        </a>
+                    </div>
+                ` : '';
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition ${is1112 ? 'bg-amber-50/20' : ''}">
+                        <td class="py-2.5 px-3 text-center font-semibold text-slate-600">${o.sl_no}</td>
+                        <td class="py-2.5 px-2 text-center font-mono font-bold ${isRoster ? 'text-wbblue-800' : 'text-slate-400'}">${o.roster_sl || '-'}</td>
+                        <td class="py-2.5 px-4">
+                            <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="${o.hrms_id ? `openOfficerDossier('${o.hrms_id}')` : ''}" title="Click to view officer dossier">
+                                ${o.officer_name}
+                            </div>
+                            <div class="text-[11px] font-mono text-slate-500">HRMS: ${o.hrms_id || 'N/A'}</div>
+                            ${phoneContact}
+                        </td>
+                        <td class="py-2.5 px-5">
+                            <div class="text-slate-800 font-medium">${o.present_post_full || o.present_designation || '-'}</div>
+                            ${o.present_su && o.present_su !== 'Nil' ? `
+                                <div class="text-[10px] text-teal-700 font-medium">Present SU: ${o.present_su}</div>
+                            ` : ''}
+                        </td>
+                        <td class="py-2.5 px-5">
+                            <div class="text-slate-900 font-bold text-xs leading-snug">${o.transferred_substantive_post || '-'}</div>
+                        </td>
+                        <td class="py-2.5 px-4">
+                            ${o.service_utilized_at && o.service_utilized_at !== 'Nil' ? `
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal-50 border border-teal-300 text-teal-900 font-semibold text-[11px]">
+                                    <i data-lucide="arrow-right-circle" class="w-3 h-3 text-teal-600 shrink-0"></i>
+                                    <span>${o.service_utilized_at}</span>
+                                </span>
+                            ` : `<span class="text-slate-400 italic">Nil</span>`}
+                        </td>
+                        <td class="py-2.5 px-3">
+                            ${basisBadge}
+                        </td>
+                        <td class="py-2.5 px-4">
+                            <div class="text-slate-700 text-xs">${o.administrative_remarks || '-'}</div>
+                            ${o.comments_directive ? `
+                                <div class="text-[10px] text-slate-500 font-mono mt-0.5 italic">Directive: ${o.comments_directive}</div>
+                            ` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                            ${o.hrms_id ? `
+                                <button onclick="openOfficerDossier('${o.hrms_id}')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 transition shadow-sm" title="View Full Dossier">
+                                    Dossier
+                                </button>
+                            ` : `<span class="text-slate-400 text-xs">-</span>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        } catch (e) {
+            console.error('Error loading master orders:', e);
+            tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-rose-500">Failed to load master orders: ${e.message}</td></tr>`;
+        }
+    }
+
+    const moSearch = document.getElementById('masterOrdersSearchInput');
+    const moBasis = document.getElementById('masterOrdersBasisFilter');
+    const moDist = document.getElementById('masterOrdersDistrictFilter');
+    if (moSearch) moSearch.addEventListener('input', debounce(loadMasterOrders, 300));
+    if (moBasis) moBasis.addEventListener('change', loadMasterOrders);
+    if (moDist) moDist.addEventListener('change', loadMasterOrders);
 
     // --- TAB 2: LOAD OBLITERATED POSTS ---
     async function loadObliterated() {
@@ -1291,28 +1458,148 @@ document.addEventListener('DOMContentLoaded', () => {
                 openAIAllotModal(d.hrms_id, 'roster');
             };
 
-            const prefEntries = Object.entries(d.preferences || {});
-            const prefsHtml = prefEntries.length > 0 
-                ? prefEntries.map(([k, v]) => `<div class="text-[11px]"><strong class="text-slate-700">${k.replace('_', ' ')}:</strong> ${v}</div>`).join('')
-                : (d.preferences_summary ? `<div class="text-[11px] text-slate-700">${d.preferences_summary}</div>` : `<span class="italic text-slate-400">No preference recorded</span>`);
-
-            // Parse posting history into timeline items
-            const historyRaw = d.posting_history || "Standard service tenure across departmental postings.";
-            const historyItems = historyRaw.split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
-            const historyTimelineHtml = historyItems.length > 0
-                ? historyItems.map(item => `
-                    <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                        <div class="mt-0.5 w-6 h-6 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-[10px] shrink-0">
-                            <i data-lucide="map-pin" class="w-3 h-3 text-wbblue-700"></i>
+            const mo = d.master_final_order;
+            const masterOrderHtml = mo ? `
+                <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 text-white shadow-md border border-emerald-500/50 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-[10px] tracking-wider uppercase shadow-sm">Verified Authoritative Proposed Order</span>
+                            <span class="text-xs text-emerald-200">Sl #${mo.sl_no} ${mo.roster_sl && mo.roster_sl !== '-' ? `(Roster Pt: ${mo.roster_sl})` : ''}</span>
                         </div>
-                        <div class="text-xs text-slate-800 font-medium leading-relaxed">${item}</div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+                            ${mo.transfer_basis || 'Cadre Allotment'}
+                        </span>
                     </div>
-                `).join('')
-                : `<div class="p-3 bg-slate-50 rounded border text-slate-600">${historyRaw}</div>`;
+                    <div class="space-y-1.5 pt-1">
+                        <div class="text-xs flex items-start gap-2">
+                            <span class="text-amber-300 font-bold shrink-0 text-[11px] uppercase tracking-wide">Transferred Substantive Post:</span>
+                            <span class="font-semibold text-white leading-relaxed">${mo.transferred_substantive_post || '-'}</span>
+                        </div>
+                        ${mo.service_utilized_at && mo.service_utilized_at !== 'Nil' ? `
+                            <div class="text-xs flex items-start gap-2">
+                                <span class="text-teal-300 font-bold shrink-0 text-[11px] uppercase tracking-wide">Service Utilized At (SU):</span>
+                                <span class="font-semibold text-teal-100 leading-relaxed">${mo.service_utilized_at}</span>
+                            </div>
+                        ` : ''}
+                        ${mo.administrative_remarks ? `
+                            <div class="text-[11px] text-slate-300 flex items-start gap-2 pt-1 border-t border-white/10">
+                                <span class="text-slate-400 font-medium shrink-0">Remarks / Directives:</span>
+                                <span>${mo.administrative_remarks} ${mo.comments_directive ? `(${mo.comments_directive})` : ''}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : '';
+
+            // Contacts bar
+            const mobileHtml = (d.mobile && d.mobile !== '—') ? `
+                <div class="flex items-center gap-2 flex-wrap">
+                    <strong class="text-slate-600">Mobile:</strong>
+                    <span class="font-mono text-slate-900 font-bold">${d.mobile}</span>
+                    <a href="tel:${d.mobile}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-800 hover:bg-blue-200 text-[10px] font-bold transition shadow-xs">
+                        <i data-lucide="phone" class="w-3 h-3"></i> Call
+                    </a>
+                    <a href="https://wa.me/91${d.mobile}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 text-[10px] font-bold transition shadow-xs">
+                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
+                    </a>
+                </div>
+            ` : `<div><strong class="text-slate-600">Mobile:</strong> <span class="text-slate-400 italic">Not recorded</span></div>`;
+
+            const emailHtml = (d.email && d.email !== '—') ? `
+                <div class="flex items-center gap-1.5 truncate">
+                    <strong class="text-slate-600">Email:</strong>
+                    <a href="mailto:${d.email}" class="text-wbblue-700 hover:underline truncate">${d.email}</a>
+                </div>
+            ` : `<div><strong class="text-slate-600">Email:</strong> <span class="text-slate-400 italic">Not recorded</span></div>`;
+
+            // Welfare banners
+            const welfareAlerts = [];
+            if (d.children_board_exams && d.children_board_exams !== '—') {
+                welfareAlerts.push(`
+                    <div class="p-3 rounded-lg bg-purple-50 border border-purple-200 text-purple-900 flex items-start gap-2.5">
+                        <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-purple-950">Children Board Exam Year:</span> ${d.children_board_exams}
+                            <div class="text-[10px] text-purple-700 font-medium mt-0.5">Transfer Policy 2009 statutory accommodation priority for board exam candidates.</div>
+                        </div>
+                    </div>
+                `);
+            }
+            if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard')) {
+                welfareAlerts.push(`
+                    <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
+                        <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-amber-950">Spouse in Public Service:</span> ${d.spouse_service_details}
+                            <div class="text-[10px] text-amber-700 font-medium mt-0.5">Memo 291 Clause 7 Co-location safeguard applies for working spouses.</div>
+                        </div>
+                    </div>
+                `);
+            }
+            if (d.health_conditions && d.health_conditions !== '—' && !d.health_conditions.includes('Standard')) {
+                welfareAlerts.push(`
+                    <div class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-2.5">
+                        <i data-lucide="activity" class="w-4 h-4 text-rose-700 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-rose-950">Medical / Health Ground:</span> ${d.health_conditions} ${d.health_details ? `(${d.health_details})` : ''}
+                        </div>
+                    </div>
+                `);
+            }
+
+            // Preferences list
+            const rawPrefs = d.preferences_list && d.preferences_list.length > 0 ? d.preferences_list : Object.entries(d.preferences || {});
+            let prefsHtml = '';
+            if (rawPrefs.length > 0) {
+                prefsHtml = rawPrefs.map(([k, v]) => {
+                    const isMatched = mo && (
+                        (mo.transferred_substantive_post && mo.transferred_substantive_post.toLowerCase().includes(v.toLowerCase())) ||
+                        (mo.service_utilized_at && mo.service_utilized_at.toLowerCase().includes(v.toLowerCase())) ||
+                        (v.toLowerCase().includes('kalyani') && (mo.transferred_substantive_post.toLowerCase().includes('kalyani') || (mo.service_utilized_at && mo.service_utilized_at.toLowerCase().includes('kalyani'))))
+                    );
+                    return `
+                        <div class="p-2.5 rounded-lg border ${isMatched ? 'border-emerald-400 bg-emerald-50/60' : 'border-slate-200 bg-white'} flex items-start justify-between gap-2 shadow-xs">
+                            <div class="text-[11px] leading-relaxed">
+                                <strong class="text-slate-700 uppercase text-[10px] tracking-wider">${k.replace(/_/g, ' ')}:</strong>
+                                <span class="text-slate-900 ml-1 font-medium">${v}</span>
+                            </div>
+                            ${isMatched ? `
+                                <span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold shrink-0 uppercase tracking-wider shadow-xs">
+                                    Choice Matched
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                prefsHtml = `<div class="p-3 bg-slate-50 text-slate-400 italic rounded border border-slate-200">No preference recorded for this officer.</div>`;
+            }
+
+            // Posting history
+            const rawHistory = d.posting_history_list && d.posting_history_list.length > 0 ? d.posting_history_list : (d.posting_history || '').split(/(?=\d+\))/).map(s => s.trim()).filter(Boolean);
+            let historyTimelineHtml = '';
+            if (rawHistory.length > 0) {
+                historyTimelineHtml = rawHistory.map((item, idx) => `
+                    <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 shadow-xs">
+                        <div class="w-6 h-6 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                            ${idx + 1}
+                        </div>
+                        <div class="text-xs text-slate-800 font-medium leading-relaxed flex-1">
+                            ${item}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                historyTimelineHtml = `<div class="p-3 bg-slate-50 rounded border text-slate-600 text-center italic">Standard service tenure across departmental postings.</div>`;
+            }
 
             container.innerHTML = `
                 <!-- TAB 1: SERVICE & PERSONAL PROFILE -->
                 <div id="dossierSecProfile" class="dossier-sec space-y-4">
+                    ${masterOrderHtml}
+
+                    ${welfareAlerts.length > 0 ? `<div class="space-y-2">${welfareAlerts.join('')}</div>` : ''}
+
                     ${d.attention_flag ? `
                         <div class="p-3.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 flex items-start gap-3 shadow-sm animate-pulse">
                             <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5"></i>
@@ -1336,10 +1623,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 HRMS ID: ${d.hrms_id} ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `| WBVC Reg: ${d.wbvc_reg_no}` : ''}
                             </div>
                         </div>
-                        <div class="space-y-0.5 text-[11px] border-t md:border-t-0 md:border-l border-slate-200 md:pl-3">
-                            <div><strong class="text-slate-600">Mobile:</strong> <span class="font-mono text-slate-800">${d.mobile}</span></div>
-                            <div><strong class="text-slate-600">Email:</strong> <span class="text-slate-800">${d.email}</span></div>
-                            <div><strong class="text-slate-600">WhatsApp:</strong> <span class="font-mono text-slate-800">${d.whatsapp}</span></div>
+                        <div class="space-y-1.5 text-[11px] border-t md:border-t-0 md:border-l border-slate-200 md:pl-3">
+                            ${mobileHtml}
+                            ${emailHtml}
                         </div>
                     </div>
 
@@ -1404,8 +1690,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <!-- Stated Preferences -->
                     <div class="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5">
-                        <div class="font-bold text-slate-800">Officer Stated Preferences (1 - 10)</div>
-                        <div class="grid grid-cols-2 gap-1 bg-white p-2 rounded border border-slate-200 max-h-32 overflow-y-auto">
+                        <div class="font-bold text-slate-800">Officer Stated Preferences (1 - 8)</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                             ${prefsHtml}
                         </div>
                     </div>
@@ -1423,19 +1709,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="text-[10px] text-slate-500 font-mono mt-0.5">Recorded: ${d.latest_allotment.timestamp} | Reason: ${d.latest_allotment.reason}</div>
                             </div>
                         </div>
-                    ` : `
-                        <div class="p-2.5 rounded bg-slate-100 text-slate-600 text-center italic text-xs">
-                            No posting decision simulated yet. Officer is awaiting placement.
-                        </div>
-                    `}
+                    ` : ''}
                 </div>
 
                 <!-- TAB 2: POSTING HISTORY TIMELINE -->
                 <div id="dossierSecHistory" class="dossier-sec hidden space-y-3">
                     <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900">
-                        <strong>Complete Career Posting Record:</strong> Historical postings, transfers, and tenures recorded across state establishments.
+                        <strong>Complete Career Posting Record:</strong> Chronological record of postings, transfers, and station tenures from verified departmental files.
                     </div>
-                    <div class="space-y-2 max-h-[450px] overflow-y-auto p-1">
+                    <div class="space-y-2 max-h-[480px] overflow-y-auto p-1">
                         ${historyTimelineHtml}
                     </div>
                 </div>
@@ -1447,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
                             <span>Spouse Service Matter & Co-location Safeguards (Memo 291)</span>
                         </div>
-                        <div class="text-xs text-slate-800 bg-white p-2.5 rounded border border-amber-200">
+                        <div class="text-xs text-slate-800 bg-white p-2.5 rounded border border-amber-200 leading-relaxed">
                             ${d.spouse_service_details}
                         </div>
                     </div>
@@ -1457,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i data-lucide="shield" class="w-4 h-4 text-wbblue-700"></i>
                             <span>Family Dependencies & Medical Conditions</span>
                         </div>
-                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200">
+                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200 leading-relaxed">
                             ${d.family_dependencies}
                         </div>
                     </div>
@@ -1467,8 +1749,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700"></i>
                             <span>Academic Qualifications & Specializations</span>
                         </div>
-                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200">
-                            ${d.academic_details}
+                        <div class="text-xs text-slate-800 bg-slate-50 p-2.5 rounded border border-slate-200 leading-relaxed">
+                            ${d.qualifications || d.academic_details}
                         </div>
                     </div>
                 </div>

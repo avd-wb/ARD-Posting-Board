@@ -13,6 +13,7 @@ Enforces:
 """
 
 import os
+import json
 import sqlite3
 import datetime
 from typing import Dict, List, Optional, Tuple, Any
@@ -954,18 +955,43 @@ class PostingEngine:
         if ext_row:
             officer.update(dict(ext_row))
 
+        # Authoritative master final order schedule lookup
+        cur.execute("SELECT * FROM master_final_order_schedule WHERE hrms_id = ? OR clean_name = ?", (hrms_id, officer.get("clean_name", "")))
+        mf_row = cur.fetchone()
+        master_final_order = dict(mf_row) if mf_row else None
+
         conn.close()
 
         if not officer:
             return None
 
+        # Parse structured preferences & history JSON
+        prefs_list = []
+        if officer.get("preferences_json"):
+            try:
+                prefs_list = json.loads(officer["preferences_json"])
+            except Exception:
+                prefs_list = []
+
+        history_list = []
+        if officer.get("posting_history_json"):
+            try:
+                history_list = json.loads(officer["posting_history_json"])
+            except Exception:
+                history_list = []
+
         dossier = {
             "officer_name": officer.get("officer_name") or officer.get("incumbent_name") or "Officer",
+            "clean_name": officer.get("clean_name") or "",
             "hrms_id": str(hrms_id),
             "mobile": officer.get("mobile") or "—",
-            "whatsapp": officer.get("whatsapp") or "—",
+            "alt_mobile": officer.get("alt_mobile") or "",
+            "whatsapp": officer.get("whatsapp") or officer.get("mobile") or "—",
             "email": officer.get("email") or "—",
+            "gender": officer.get("gender") or "—",
             "wbvc_reg_no": officer.get("wbvc_reg_no") or "—",
+            "employee_id": officer.get("employee_id") or "—",
+            "gradation_sl": officer.get("gradation_sl") or "—",
             "office_code": officer.get("office_code") or "—",
             "ddo_code": officer.get("ddo_code") or "—",
             "cadre": officer.get("cadre") or "West Bengal Animal Husbandry and Veterinary Service",
@@ -975,20 +1001,50 @@ class PostingEngine:
             "caste": officer.get("caste") or "General",
             "roster_point": officer.get("roster_point") or "—",
             "point_reserved_for": officer.get("point_reserved_for") or "—",
-            "current_designation": officer.get("present_designation") or officer.get("designation") or "Veterinary Officer",
+            "current_designation": officer.get("substantive_post") or officer.get("present_designation") or officer.get("designation") or "Veterinary Officer",
             "current_posting": officer.get("present_posting") or officer.get("detailed_presentation") or "—",
+            "present_establishment": officer.get("present_establishment") or officer.get("establishment") or officer.get("office") or "—",
             "district": officer.get("present_district") or officer.get("district") or "—",
             "block": officer.get("present_block") or officer.get("block") or "—",
             "establishment": officer.get("establishment") or officer.get("office") or "—",
+            "present_su": officer.get("present_su") or "",
             "present_pay_level": officer.get("pay_level") or "Level 16 (Rs. 56,100 - Rs. 1,44,300)",
             "tenure_years": officer.get("tenure_years") or officer.get("incumbent_tenure") or "—",
             "tenure_norm_status": officer.get("tenure_over_flag") or "Within Norm",
-            "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
+            "home_district": officer.get("home_district") or "—",
             "ancestral_address": officer.get("ancestral_address") or "Departmental Record",
+            "ancestral_district": officer.get("ancestral_district") or "",
             "current_address": officer.get("current_address") or "Departmental Record",
+            "current_district": officer.get("current_district") or "",
+            "current_pin": officer.get("current_pin") or "",
+            "temp_address": officer.get("temp_address") or "",
+            "post_retirement_district": officer.get("post_retirement_district") or "",
+            "marital_status": officer.get("marital_status") or "—",
+            "spouse_name": officer.get("spouse_name") or "",
+            "spouse_dept": officer.get("spouse_dept") or "",
+            "spouse_desig": officer.get("spouse_desig") or "",
+            "spouse_district": officer.get("spouse_district") or "",
+            "spouse_block": officer.get("spouse_block") or "",
+            "spouse_is_wbahvs": officer.get("spouse_is_wbahvs") or "No",
             "spouse_service_details": officer.get("spouse_service_details") or "No spouse co-location claim recorded.",
+            "children_count": officer.get("children_count") or "0",
+            "children_board_exams": officer.get("children_board_exams") or "",
             "family_dependencies": officer.get("family_dependencies") or officer.get("family_details") or "Standard family dependencies.",
+            "health_conditions": officer.get("health_conditions") or "",
+            "health_details": officer.get("health_details") or "",
+            "care_needed": officer.get("care_needed") or "",
+            "facility_needed": officer.get("facility_needed") or "",
+            "pwd_status": officer.get("pwd_status") or "Not applicable",
+            "spouse_health": officer.get("spouse_health") or "",
             "academic_details": officer.get("academic_details") or officer.get("qualification") or "B.V.Sc. & A.H.",
+            "qualifications": officer.get("qualifications") or "B.V.Sc. & A.H.",
+            "mvsc_specialization": officer.get("mvsc_specialization") or "",
+            "skills_certifications": officer.get("skills_certifications") or "",
+            "stream_ranking": officer.get("stream_ranking") or "",
+            "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
+            "posting_history_list": history_list,
+            "preferences_list": prefs_list,
+            "association_remarks": officer.get("association_remarks") or "",
             "decision_note": officer.get("decision_note") or "",
             "needs_backfill": bool(officer.get("needs_backfill")),
             "attention_flag": bool(officer.get("attention_flag")),
@@ -998,7 +1054,8 @@ class PostingEngine:
             },
             "source_category": officer.get("source_category", "Departmental Officer"),
             "allotment_status": officer.get("allotment_status") or ("Allotted" if officer.get("current_simulation_assignment") else "Pending Decision"),
-            "latest_allotment": officer.get("current_simulation_assignment")
+            "latest_allotment": officer.get("current_simulation_assignment"),
+            "master_final_order": master_final_order
         }
 
         if not dossier["preferences"] and officer.get("all_preferences"):
