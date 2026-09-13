@@ -147,7 +147,11 @@ def get_overview():
     cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE is_vacant != 'Yes' AND (UPPER(rehabilitation_status) = 'REHABILITATED' OR (substantive_post_name IS NOT NULL AND substantive_post_name != ''))")
     obliterated_rehabilitated = cur.fetchone()[0]
 
-    # Available DD posts (242 available, 2 vigilance holds out of 244)
+    # Available DD posts (242 allotted out of 244 total, 2 surplus remaining)
+    cur.execute("SELECT count(*) FROM available_dd_posts")
+    total_dd_posts = cur.fetchone()[0]
+    cur.execute("SELECT count(*) FROM available_dd_posts WHERE UPPER(allotment_status) = 'ALLOTTED'")
+    allotted_dd = cur.fetchone()[0]
     cur.execute("SELECT count(*) FROM available_dd_posts WHERE is_blocked_vigilance = 0 AND UPPER(allotment_status) = 'AVAILABLE'")
     vacant_dd = cur.fetchone()[0]
 
@@ -171,6 +175,8 @@ def get_overview():
         "obliterated_posts": obliterated_posts,
         "obliterated_officers": obliterated_officers,
         "obliterated_rehabilitated": obliterated_rehabilitated,
+        "total_dd_posts": total_dd_posts,
+        "allotted_dd": allotted_dd,
         "vacant_dd": vacant_dd,
         "vacant_ad": vacant_ad,
         "roster_candidates": roster_candidates,

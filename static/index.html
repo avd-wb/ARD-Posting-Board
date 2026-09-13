@@ -173,6 +173,41 @@
                 max-width: 100% !important;
             }
         }
+        /* Smooth Mobile Micro-Interactions & Animations */
+        @keyframes mobileFadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .tab-content:not(.hidden) {
+            animation: mobileFadeSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mobile-card-interactive {
+            transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-card-interactive:active {
+            transform: scale(0.985);
+        }
+        .btn-touch {
+            transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, opacity 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-touch:active {
+            transform: scale(0.95);
+            opacity: 0.92;
+        }
+        @media (max-width: 767px) {
+            .mobile-scroll-fade {
+                -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+                mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            }
+        }
     </style>
 </head>
 <body class="bg-[#f5f5f7] text-[#1d1d1f] antialiased min-h-screen flex flex-col font-sans">
@@ -355,7 +390,7 @@
                 <span class="text-[10px] text-slate-400 flex items-center gap-0.5">Swipe stats <i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></span>
             </div>
 
-            <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar" id="kpiStatusCardsGrid">
+            <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar mobile-scroll-fade smooth-momentum-scroll" id="kpiStatusCardsGrid">
                 <!-- 1. Total Posts -->
                 <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50 hover:bg-wbblue-50 border border-slate-200 hover:border-wbblue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view all 1,794 Department Cadre Posts in Memo 1809">
                     <div class="text-[10px] sm:text-[11px] text-slate-500 group-hover:text-wbblue-700 font-medium flex items-center justify-center gap-1">
@@ -382,15 +417,15 @@
                     </div>
                 </div>
 
-                <!-- 3. Available DD Posts -->
-                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/80 hover:bg-blue-100/70 border border-blue-200 hover:border-blue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Available Deputy Director Posts (Promotion Targets)">
+                <!-- 3. Available DD Posts (Option B) -->
+                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/80 hover:bg-blue-100/70 border border-blue-200 hover:border-blue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Click to view Deputy Director Promotions (242 / 244 Allotted)">
                     <div class="text-[10px] sm:text-[11px] text-blue-700 font-medium flex items-center justify-center gap-1">
-                        <span>Available DD Posts</span>
+                        <span>DD Promotions</span>
                         <i data-lucide="award" class="w-3 h-3 text-blue-600"></i>
                     </div>
-                    <div class="text-sm sm:text-base font-bold text-blue-700" id="kpiVacantDD">242</div>
-                    <div class="text-[9px] sm:text-[10px] text-blue-600 flex items-center justify-center gap-0.5">
-                        <span>Promotion Target</span>
+                    <div class="text-sm sm:text-base font-bold text-blue-700" id="kpiVacantDD">242 / 244</div>
+                    <div class="text-[9px] sm:text-[10px] text-blue-600 flex items-center justify-center gap-0.5" id="kpiVacantDDSub">
+                        <span>Promotions Allotted (2 Left)</span>
                         <i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>
                     </div>
                 </div>
@@ -506,7 +541,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="rosterMobileCards" class="md:hidden divide-y divide-slate-200 bg-white">
+                <div id="rosterMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via loadRoster() in app.js -->
                     <div class="py-12 text-center text-slate-400 text-xs">Loading candidates...</div>
                 </div>
@@ -584,7 +619,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="masterOrdersMobileCards" class="md:hidden divide-y divide-slate-200 bg-white">
+                <div id="masterOrdersMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via loadMasterOrders() in app.js -->
                     <div class="py-12 text-center text-slate-400 text-xs">Loading orders...</div>
                 </div>
@@ -643,7 +678,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="oblitMobileCards" class="md:hidden divide-y divide-slate-200 bg-white">
+                <div id="oblitMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via loadObliterated() in app.js -->
                     <div class="py-12 text-center text-slate-400 text-xs">Loading abolished posts...</div>
                 </div>
@@ -736,7 +771,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="cadreMobileCards" class="md:hidden divide-y divide-slate-200 bg-white">
+                <div id="cadreMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via loadCadre() in app.js -->
                     <div class="py-12 text-center text-slate-400 text-xs">Loading cadre posts...</div>
                 </div>
@@ -896,7 +931,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="ordersMobileCards" class="md:hidden divide-y divide-slate-100 bg-white">
+                <div id="ordersMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via app.js -->
                 </div>
 
@@ -940,7 +975,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="displacedMobileCards" class="md:hidden divide-y divide-slate-100 bg-white">
+                <div id="displacedMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via app.js -->
                 </div>
 
@@ -1067,7 +1102,7 @@
                 </div>
 
                 <!-- Mobile Cards Feed (<md Screens) -->
-                <div id="masterDirectoryMobileCards" class="md:hidden divide-y divide-slate-100 bg-white">
+                <div id="masterDirectoryMobileCards" class="md:hidden space-y-3 p-3 bg-slate-100/70 rounded-2xl">
                     <!-- Populated dynamically via app.js -->
                 </div>
 

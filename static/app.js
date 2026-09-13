@@ -238,9 +238,18 @@ document.addEventListener('DOMContentLoaded', () => {
             state.overview = data;
 
             document.getElementById('kpiTotalPosts').innerText = Number(data.total_posts).toLocaleString();
-            document.getElementById('badgeCadreTotal').innerText = Number(data.total_posts).toLocaleString();
+            if (document.getElementById('badgeCadreTotal')) {
+                document.getElementById('badgeCadreTotal').innerText = Number(data.total_posts).toLocaleString();
+            }
             document.getElementById('kpiTotalVacancies').innerText = Number(data.total_vacancies).toLocaleString();
-            document.getElementById('kpiVacantDD').innerText = Number(data.vacant_dd).toLocaleString();
+            const allottedDD = data.allotted_dd != null ? data.allotted_dd : 242;
+            const totalDD = data.total_dd_posts != null ? data.total_dd_posts : 244;
+            const vacantDD = data.vacant_dd != null ? data.vacant_dd : 2;
+            document.getElementById('kpiVacantDD').innerText = `${allottedDD} / ${totalDD}`;
+            const kpiVacantDDSub = document.getElementById('kpiVacantDDSub');
+            if (kpiVacantDDSub) {
+                kpiVacantDDSub.innerHTML = `<span>Promotions Allotted (${vacantDD} Left)</span><i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>`;
+            }
             document.getElementById('kpiVacantAD').innerText = Number(data.vacant_ad).toLocaleString();
             document.getElementById('kpiRoster').innerText = data.roster_candidates;
             document.getElementById('kpiRosterSub').innerText = `Pending: ${data.roster_candidates - data.roster_allotted}`;
@@ -291,6 +300,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('Error initializing dropdown filters:', e);
         }
+    }
+
+    // --- MONOGRAM AVATAR HELPER ---
+    function getMonogram(name) {
+        if (!name) return 'WB';
+        const clean = name.replace(/^Dr\.\s*/i, '').replace(/\s*\([^)]*\)/g, '').replace(/[^a-zA-Z\s]/g, '').trim();
+        const parts = clean.split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return 'WB';
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
     // --- TAB 1: LOAD 50-POINT ROSTER ---
@@ -443,9 +462,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button onclick="openDualAllotModal('${c.hrms_id}', 'roster')" class="px-2 py-1 text-xs font-semibold rounded bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 transition" title="Manual Post Allotment">
                                     ${isAllotted ? 'Modify' : 'Allot'}
                                 </button>
-                                <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Automated AI Statutory Allotment">
-                                    <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                    <span>AI</span>
+                                <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Quick Statutory Allotment">
+                                    <i data-lucide="zap" class="w-3 h-3"></i>
+                                    <span>Quick</span>
                                 </button>
                             </div>
                         </td>
@@ -458,23 +477,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 cardsEl.innerHTML = json.data.map(c => {
                     const isAllotted = c.allotment_status === 'Allotted' || Boolean(c.master_sub);
                     const statusBadge = isAllotted
-                        ? `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Allotted</span>`
-                        : `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Pending</span>`;
+                        ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-300/60 shadow-2xs"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Allotted</span>`
+                        : `<span class="px-2.5 py-1 rounded-full bg-amber-100/90 text-amber-800 text-[10px] font-bold inline-flex items-center gap-1 border border-amber-300/60 shadow-2xs"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Pending</span>`;
 
                     const dualBadge = c.is_dual_obliterated === 1
-                        ? `<span class="px-1.5 py-0.2 ml-1 text-[9px] font-semibold bg-rose-100 text-rose-700 border border-rose-200 rounded">Memo 1808</span>`
+                        ? `<span class="px-1.5 py-0.5 ml-1 text-[9px] font-semibold bg-rose-100 text-rose-700 border border-rose-200 rounded-md">Memo 1808</span>`
                         : '';
 
                     const dorBadge = (c.dor && c.dor !== '—')
                         ? `<span class="font-mono text-slate-800 font-bold">${c.dor}</span>`
                         : (c.service_ends ? `<span class="font-mono text-slate-700 font-medium">${c.service_ends}</span>` : `<span class="text-slate-400">-</span>`);
 
+                    const initials = getMonogram(c.officer_name);
+
                     const contactBar = (c.mobile && c.mobile !== '—') ? `
-                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                            <a href="tel:${c.mobile}" class="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
-                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Call (${c.mobile})
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <a href="tel:${c.mobile}" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target btn-touch">
+                                <i data-lucide="phone" class="w-3.5 h-3.5 text-blue-600"></i> Call (${c.mobile})
                             </a>
-                            <a href="https://wa.me/91${c.mobile}" target="_blank" class="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                            <a href="https://wa.me/91${c.mobile}" target="_blank" class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 shadow-xs shadow-emerald-600/20 transition active:scale-95 touch-target btn-touch">
                                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
                             </a>
                         </div>
@@ -482,92 +503,111 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const welfareBadges = [];
                     if (c.children_board_exams && c.children_board_exams !== '—') {
-                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">Exam: ${c.children_board_exams}</span>`);
+                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200">Exam: ${c.children_board_exams}</span>`);
                     }
                     if (c.spouse_is_wbahvs) {
-                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Spouse WBAHVS</span>`);
+                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200">Spouse WBAHVS</span>`);
                     }
                     if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
-                        welfareBadges.push(`<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold">Medical Grounds</span>`);
+                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">Medical Grounds</span>`);
                     }
 
                     return `
-                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60">
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive">
                             <!-- Card Header -->
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-1">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-wbblue-900 text-white font-mono text-[10px] font-bold">Sl ${c.sl_no}</span>
-                                        <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[10px] font-bold">Point ${c.roster_point}</span>
-                                        <span class="px-1.5 py-0.5 rounded-md ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 font-bold'} text-[10px]">${c.point_reserved_for} Quota</span>
-                                        <span class="text-[10px] text-slate-500 font-semibold uppercase">(${c.caste})</span>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${initials}
                                     </div>
-                                    <div class="font-bold text-sm text-wbblue-950 cursor-pointer pt-0.5 hover:underline" onclick="openOfficerDossier('${c.hrms_id}')">
-                                        ${c.officer_name} ${dualBadge}
-                                    </div>
-                                    <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
-                                        <span>HRMS: <strong>${c.hrms_id || 'N/A'}</strong></span>
-                                        <span>•</span>
-                                        <span>DOR: ${dorBadge}</span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            <span class="px-1.5 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">Sl ${c.sl_no}</span>
+                                            <span class="px-1.5 py-0.5 rounded-md bg-wbblue-100 text-wbblue-900 font-mono text-[9px] font-bold">Pt ${c.roster_point}</span>
+                                            <span class="px-1.5 py-0.5 rounded-md ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 font-bold'} text-[9px]">${c.point_reserved_for} Quota</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700 pt-0.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view dossier">
+                                            ${c.officer_name} ${dualBadge}
+                                        </div>
+                                        <div class="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                            <span>HRMS: <strong>${c.hrms_id || 'N/A'}</strong></span>
+                                            <span>•</span>
+                                            <span>DOR: ${dorBadge}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="shrink-0">${statusBadge}</div>
                             </div>
 
                             <!-- Welfare Badges if any -->
-                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1">${welfareBadges.join('')}</div>` : ''}
+                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1.5">${welfareBadges.join('')}</div>` : ''}
 
-                            <!-- Present Posting Card -->
-                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-0.5">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Present Posting</div>
-                                <div class="font-semibold text-slate-800 leading-snug">${c.present_posting || '-'}</div>
-                                <div class="text-[11px] text-slate-500 font-medium">
-                                    ${c.present_block ? `<span class="text-slate-700 font-semibold">${c.present_block} Block</span>, ` : ''}${c.present_district || 'District N/A'}
+                            <!-- Timeline Flow: Present Posting -> Allotted Substantive Post -->
+                            <div class="space-y-1.5">
+                                <!-- Origin -->
+                                <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Present Station</span>
+                                    </div>
+                                    <div class="font-semibold text-slate-800 leading-snug mt-0.5">${c.present_posting || '-'}</div>
+                                    <div class="text-[11px] text-slate-500 font-medium">
+                                        ${c.present_block ? `<span class="text-slate-700 font-semibold">${c.present_block} Block</span>, ` : ''}${c.present_district || 'District N/A'}
+                                    </div>
+                                </div>
+
+                                <!-- Flow indicator -->
+                                <div class="flex items-center justify-center -my-0.5 text-slate-300">
+                                    <i data-lucide="arrow-down" class="w-3 h-3 text-wbblue-500"></i>
+                                </div>
+
+                                <!-- Destination / Allotment Result -->
+                                <div class="p-3 rounded-xl bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-emerald-50/60 border border-blue-200/80 text-xs space-y-1.5">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-wbblue-900 flex items-center gap-1">
+                                        <i data-lucide="award" class="w-3 h-3 text-wbblue-600"></i>
+                                        <span>Promotion Allotment Status</span>
+                                    </div>
+                                    ${c.master_sub ? `
+                                        <div class="space-y-1">
+                                            <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1">
+                                                <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                                <span>${c.master_sub}</span>
+                                            </div>
+                                            ${c.master_su && c.master_su !== 'Nil' ? `
+                                                <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1">
+                                                    <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                                    <span>${c.master_su}</span>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    ` : (isAllotted ? `
+                                        <div class="text-emerald-800 font-bold text-xs flex items-center gap-1">
+                                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                            <span>${c.substantive_post_name || 'DD Post'}</span>
+                                        </div>
+                                    ` : `<span class="text-amber-700 font-semibold text-xs">Pending Deputy Director Allotment</span>`)}
                                 </div>
                             </div>
 
-                            <!-- Allotment Result Card -->
-                            <div class="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50/70 to-teal-50/50 border border-emerald-200/80 text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Promotion Allotment Status</div>
-                                ${c.master_sub ? `
-                                    <div class="space-y-1">
-                                        <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1">
-                                            <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
-                                            <span>${c.master_sub}</span>
-                                        </div>
-                                        ${c.master_su && c.master_su !== 'Nil' ? `
-                                            <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1">
-                                                <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
-                                                <span>${c.master_su}</span>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                ` : (isAllotted ? `
-                                    <div class="text-emerald-800 font-bold text-xs flex items-center gap-1">
-                                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                        <span>${c.substantive_post_name || 'DD Post'}</span>
-                                    </div>
-                                ` : `<span class="text-amber-700 font-semibold text-xs">Pending Deputy Director Allotment</span>`)}
-                            </div>
-
                             ${(c.pref_1 && c.pref_1 !== '—') ? `
-                                <div class="text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60 truncate">
+                                <div class="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/60 truncate">
                                     <strong class="text-slate-700">Pref 1:</strong> ${c.pref_1}
                                 </div>
                             ` : ''}
 
+                            <!-- Ergonomic Contact Buttons -->
                             ${contactBar}
 
                             <!-- 44px Touch Action Buttons -->
-                            <div class="grid grid-cols-3 gap-2 pt-1">
-                                <button onclick="openOfficerDossier('${c.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                            <div class="grid grid-cols-3 gap-2 pt-0.5">
+                                <button onclick="openOfficerDossier('${c.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                     <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
                                 </button>
-                                <button onclick="openDualAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-wbblue-50 hover:bg-wbblue-100 text-wbblue-800 border border-wbblue-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                <button onclick="openDualAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-wbblue-50 hover:bg-wbblue-100 text-wbblue-800 border border-wbblue-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                     <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${isAllotted ? 'Modify' : 'Allot'}
                                 </button>
-                                <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
-                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                <button onclick="openAIAllotModal('${c.hrms_id}', 'roster')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-xs transition active:scale-95 touch-target btn-touch" title="Quick Statutory Allotment">
+                                    <i data-lucide="zap" class="w-3.5 h-3.5"></i> Quick Allot
                                 </button>
                             </div>
                         </div>
@@ -702,71 +742,98 @@ document.addEventListener('DOMContentLoaded', () => {
                         basisBadge = `<span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold">Displacement</span>`;
                     }
 
+                    const initials = getMonogram(o.officer_name);
+
                     const phoneContact = (o.mobile && o.mobile !== '—') ? `
-                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                            <a href="tel:${o.mobile}" class="h-9 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
-                                <i data-lucide="phone" class="w-3.5 h-3.5"></i> Call (${o.mobile})
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <a href="tel:${o.mobile}" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target btn-touch">
+                                <i data-lucide="phone" class="w-3.5 h-3.5 text-blue-600"></i> Call (${o.mobile})
                             </a>
-                            <a href="https://wa.me/91${o.mobile}" target="_blank" class="h-9 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                            <a href="https://wa.me/91${o.mobile}" target="_blank" class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 shadow-xs shadow-emerald-600/20 transition active:scale-95 touch-target btn-touch">
                                 <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
                             </a>
                         </div>
                     ` : '';
 
                     return `
-                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60 ${is1112 ? 'border-l-4 border-amber-400 pl-3' : ''}">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-0.5">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-emerald-800 text-white font-mono text-[10px] font-bold">Order #${o.sl_no}</span>
-                                        ${isRoster ? `<span class="px-1.5 py-0.5 rounded-md bg-wbblue-100 text-wbblue-900 font-mono text-[10px] font-bold">Roster Pt ${o.roster_sl}</span>` : ''}
-                                        ${basisBadge}
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive ${is1112 ? 'border-l-4 border-amber-400 pl-3.5' : ''}">
+                            <!-- Header: Monogram Avatar & Order Metadata -->
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${initials}
                                     </div>
-                                    <div class="font-bold text-sm text-wbblue-950 cursor-pointer pt-0.5 hover:underline" onclick="${o.hrms_id ? `openOfficerDossier('${o.hrms_id}')` : ''}">
-                                        ${o.officer_name}
-                                    </div>
-                                    <div class="text-[11px] font-mono text-slate-500">
-                                        HRMS: <strong>${o.hrms_id || 'N/A'}</strong>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            <span class="px-1.5 py-0.5 rounded-md bg-emerald-900 text-white font-mono text-[9px] font-bold">Order #${o.sl_no}</span>
+                                            ${isRoster ? `<span class="px-1.5 py-0.5 rounded-md bg-wbblue-100 text-wbblue-900 font-mono text-[9px] font-bold">Roster Pt ${o.roster_sl}</span>` : ''}
+                                            ${basisBadge}
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700 pt-0.5" onclick="${o.hrms_id ? `openOfficerDossier('${o.hrms_id}')` : ''}" title="Click to view dossier">
+                                            ${o.officer_name}
+                                        </div>
+                                        <div class="text-[11px] font-mono text-slate-500 mt-0.5">
+                                            HRMS: <strong>${o.hrms_id || 'N/A'}</strong>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Pre-transfer Posting -->
-                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-0.5">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pre-Transfer / Present Post</div>
-                                <div class="font-semibold text-slate-800 leading-snug">${o.present_post_full || o.present_designation || '-'}</div>
-                                ${o.present_su && o.present_su !== 'Nil' ? `
-                                    <div class="text-[11px] text-teal-700 font-medium">Present SU: ${o.present_su}</div>
-                                ` : ''}
-                            </div>
-
-                            <!-- Authoritative Transferred Post -->
-                            <div class="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50/80 to-teal-50/60 border border-emerald-200 text-xs space-y-1.5">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">Transferred Post (Authoritative)</div>
-                                <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1.5">
-                                    <span class="px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
-                                    <span>${o.transferred_substantive_post || '-'}</span>
-                                </div>
-                                ${o.service_utilized_at && o.service_utilized_at !== 'Nil' ? `
-                                    <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1.5">
-                                        <span class="px-1.5 py-0.2 rounded bg-teal-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
-                                        <span>${o.service_utilized_at}</span>
+                            <!-- Timeline Flow: Pre-transfer Station -> Transferred Post -->
+                            <div class="space-y-1.5">
+                                <!-- Origin -->
+                                <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Pre-Transfer / Present Post</span>
                                     </div>
-                                ` : ''}
+                                    <div class="font-semibold text-slate-800 leading-snug mt-0.5">${o.present_post_full || o.present_designation || '-'}</div>
+                                    ${o.present_su && o.present_su !== 'Nil' ? `
+                                        <div class="text-[11px] text-teal-700 font-medium mt-0.5">Present SU: ${o.present_su}</div>
+                                    ` : ''}
+                                </div>
+
+                                <!-- Flow indicator -->
+                                <div class="flex items-center justify-center -my-0.5 text-slate-300">
+                                    <i data-lucide="arrow-down" class="w-3 h-3 text-wbblue-500"></i>
+                                </div>
+
+                                <!-- Destination / Authoritative Transferred Post -->
+                                <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-blue-50/60 border border-emerald-200/80 text-xs space-y-1.5">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
+                                        <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
+                                        <span>Transferred Post (Authoritative)</span>
+                                    </div>
+                                    <div class="text-slate-900 font-bold text-xs leading-snug flex items-start gap-1.5">
+                                        <span class="px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
+                                        <span>${o.transferred_substantive_post || '-'}</span>
+                                    </div>
+                                    ${o.service_utilized_at && o.service_utilized_at !== 'Nil' ? `
+                                        <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1.5">
+                                            <span class="px-1.5 py-0.2 rounded bg-teal-600 text-white text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
+                                            <span>${o.service_utilized_at}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
                             </div>
 
                             ${o.administrative_remarks && o.administrative_remarks !== '-' ? `
-                                <div class="text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60">
-                                    <strong class="text-slate-700">Remarks:</strong> ${o.administrative_remarks}
+                                <div class="p-2.5 rounded-xl bg-amber-50/70 border-l-4 border-amber-500 text-xs text-amber-950 font-medium space-y-0.5">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                                        <i data-lucide="shield-check" class="w-3 h-3 text-amber-600"></i>
+                                        <span>Administrative Directive</span>
+                                    </div>
+                                    <div class="text-slate-800">${o.administrative_remarks}</div>
                                 </div>
                             ` : ''}
 
+                            <!-- Ergonomic Contact Buttons -->
                             ${phoneContact}
 
                             <!-- Actions -->
-                            <div class="pt-1">
+                            <div class="pt-0.5">
                                 ${o.hrms_id ? `
-                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="w-full h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1.5 transition active:scale-95 touch-target">
+                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="w-full h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1.5 transition active:scale-95 touch-target btn-touch">
                                         <i data-lucide="user" class="w-4 h-4 text-slate-600"></i>
                                         <span>View Complete Personnel Dossier</span>
                                     </button>
@@ -870,9 +937,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button onclick="openDualAllotModal('${o.hrms_id}', 'obliterated')" class="px-2 py-1 text-xs font-semibold rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition">
                                         ${isRehab ? 'Modify' : 'Rehab'}
                                     </button>
-                                    <button onclick="openAIAllotModal('${o.hrms_id}', 'obliterated')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Automated AI Statutory Rehabilitation">
-                                        <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                        <span>AI Allot</span>
+                                    <button onclick="openAIAllotModal('${o.hrms_id}', 'obliterated')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Quick Statutory Rehabilitation">
+                                        <i data-lucide="zap" class="w-3 h-3"></i>
+                                        <span>Quick</span>
                                     </button>
                                 </div>
                             `}
@@ -887,10 +954,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isRehab = o.rehabilitation_status === 'Rehabilitated';
                     const isVacant = o.is_vacant === 'Yes';
                     const statusBadge = isVacant
-                        ? `<span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">Abolished Vacancy</span>`
+                        ? `<span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">Abolished Vacancy</span>`
                         : isRehab
-                        ? `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Rehabilitated</span>`
-                        : `<span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Pending Rehab</span>`;
+                        ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1 border border-emerald-300/60 shadow-2xs"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Rehabilitated</span>`
+                        : `<span class="px-2.5 py-1 rounded-full bg-rose-100/90 text-rose-800 text-[10px] font-bold inline-flex items-center gap-1 border border-rose-300/60 shadow-2xs"><i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Pending Rehab</span>`;
 
                     const trackDisplay = o.is_on_roster === 1
                         ? `<div class="font-bold text-amber-800 text-xs flex items-center gap-1">
@@ -901,25 +968,36 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `<span class="text-slate-400 italic text-xs">No incumbent to rehabilitate</span>`
                         : `<div class="font-semibold text-blue-800 text-xs">Lateral Absorption into Active AD Post</div>`;
 
+                    const initials = getMonogram(o.officer_name);
+
                     return `
-                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-0.5">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-rose-800 text-white font-mono text-[10px] font-bold">Oblit #${o.oblit_sl}</span>
-                                        <span class="text-[11px] font-medium text-slate-500">${o.district} • ${o.block || 'HQ'}</span>
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive">
+                            <!-- Header: Post & Abolition Badge -->
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-rose-700 to-amber-700 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${initials}
                                     </div>
-                                    <div class="font-bold text-sm text-slate-900 pt-0.5">
-                                        ${o.post_name}
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 rounded-md bg-rose-900 text-white font-mono text-[9px] font-bold">Oblit #${o.oblit_sl}</span>
+                                            <span class="text-[11px] font-medium text-slate-500">${o.district} • ${o.block || 'HQ'}</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 pt-0.5 leading-snug">
+                                            ${o.post_name}
+                                        </div>
+                                        <div class="text-[11px] text-slate-500">${o.establishment}</div>
                                     </div>
-                                    <div class="text-[11px] text-slate-500">${o.establishment}</div>
                                 </div>
-                                <div>${statusBadge}</div>
+                                <div class="shrink-0">${statusBadge}</div>
                             </div>
 
                             <!-- Incumbent Details -->
-                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Serving Incumbent</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                    <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>
+                                    <span>Serving Incumbent</span>
+                                </div>
                                 ${isVacant ? `<div class="text-slate-500 italic">Clear Abolished Vacancy (Vacant Post)</div>` : `
                                     <div class="font-bold text-slate-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${o.hrms_id}')">
                                         ${o.officer_name}
@@ -932,17 +1010,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                 `}
                             </div>
 
-                            <!-- Rehabilitation Status -->
-                            <div class="p-2.5 rounded-xl bg-rose-50/50 border border-rose-100 text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-900">Rehabilitation Strategy & Allocation</div>
+                            <!-- Rehabilitation Strategy & Allocation -->
+                            <div class="p-3 rounded-xl bg-gradient-to-r from-rose-50/60 via-amber-50/40 to-emerald-50/50 border border-rose-200/80 text-xs space-y-1.5">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-900 flex items-center gap-1">
+                                    <i data-lucide="shield-alert" class="w-3 h-3 text-rose-600"></i>
+                                    <span>Rehabilitation Strategy & Allocation</span>
+                                </div>
                                 <div class="pt-0.5">${trackDisplay}</div>
                                 ${isRehab ? `
-                                    <div class="pt-1 text-slate-900 font-bold text-xs leading-snug flex items-start gap-1">
+                                    <div class="pt-1 text-slate-900 font-bold text-xs leading-snug flex items-start gap-1.5">
                                         <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">Substantive</span>
                                         <span>${o.substantive_post_name || 'Cadre Post'}</span>
                                     </div>
                                     ${o.su_post_name ? `
-                                        <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1">
+                                        <div class="text-teal-900 font-semibold text-[11px] leading-snug flex items-start gap-1.5">
                                             <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-900 border border-teal-300 text-[9px] font-bold uppercase shrink-0 mt-0.5">SU</span>
                                             <span>${o.su_post_name}</span>
                                         </div>
@@ -952,15 +1033,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             <!-- Actions -->
                             ${!isVacant ? `
-                                <div class="grid grid-cols-3 gap-2 pt-1">
-                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                <div class="grid grid-cols-3 gap-2 pt-0.5">
+                                    <button onclick="openOfficerDossier('${o.hrms_id}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                         <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
                                     </button>
-                                    <button onclick="openDualAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                    <button onclick="openDualAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> ${isRehab ? 'Modify' : 'Rehab'}
                                     </button>
-                                    <button onclick="openAIAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
-                                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                    <button onclick="openAIAllotModal('${o.hrms_id}', 'obliterated')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-xs transition active:scale-95 touch-target btn-touch" title="Quick Statutory Rehabilitation">
+                                        <i data-lucide="zap" class="w-3.5 h-3.5"></i> Quick Allot
                                     </button>
                                 </div>
                             ` : ''}
@@ -1063,9 +1144,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button onclick="openDualAllotModal('${p.incumbent_hrms}', 'displaced')" class="px-2 py-1 text-[11px] font-medium rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
                                         Allot
                                     </button>
-                                    <button onclick="openAIAllotModal('${p.incumbent_hrms}', 'displaced')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Automated AI Placement">
-                                        <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                        <span>AI Allot</span>
+                                    <button onclick="openAIAllotModal('${p.incumbent_hrms}', 'displaced')" class="px-2 py-1 text-xs font-bold rounded bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-sm transition flex items-center gap-1" title="Quick Placement">
+                                        <i data-lucide="zap" class="w-3 h-3"></i>
+                                        <span>Quick</span>
                                     </button>
                                 </div>
                                 `
@@ -1083,43 +1164,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isAVD = p.avd_member === 'Yes';
 
                     let occBadge = isVacant
-                        ? `<span class="badge-vacant px-2.5 py-0.5 rounded-full text-[10px] font-bold">Clear Vacancy</span>`
-                        : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+                        ? `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Clear Vacancy</span>`
+                        : `<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
 
                     let tenureBadge = isTenureOver
-                        ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">Over-Tenure</span>`
+                        ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">Over-Tenure</span>`
                         : '';
 
                     let avdBadge = isAVD
-                        ? `<span class="badge-avd px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">AVD</span>`
+                        ? `<span class="badge-avd px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">AVD</span>`
                         : '';
 
                     const isApexLocked = !isVacant && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
+                    const initials = isVacant ? 'VAC' : getMonogram(p.incumbent_name);
 
                     return `
-                        <div class="p-4 bg-white space-y-3 transition hover:bg-slate-50/60 ${isVacant ? 'border-l-4 border-emerald-400 pl-3' : ''}">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-0.5">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white font-mono text-[10px] font-bold">Post #${p.id}</span>
-                                        <span class="text-[11px] font-medium text-slate-500">${p.district || '-'} • ${p.block || 'HQ'}</span>
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive ${isVacant ? 'border-l-4 border-emerald-400 pl-3.5' : ''}">
+                            <!-- Header: Designation & Post Info -->
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-10 h-10 rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : 'bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white'} font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${isVacant ? '<i data-lucide="check" class="w-4 h-4"></i>' : initials}
                                     </div>
-                                    <div class="font-bold text-sm text-slate-900 pt-0.5">
-                                        ${p.designation}
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 rounded-md bg-slate-800 text-white font-mono text-[9px] font-bold">Post #${p.id}</span>
+                                            <span class="text-[11px] font-medium text-slate-500">${p.district || '-'} • ${p.block || 'HQ'}</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 pt-0.5 leading-snug">
+                                            ${p.designation}
+                                        </div>
+                                        <div class="text-[11px] text-slate-500">${p.establishment}</div>
                                     </div>
-                                    <div class="text-[11px] text-slate-500">${p.establishment}</div>
                                 </div>
-                                <div>${occBadge}</div>
+                                <div class="shrink-0">${occBadge}</div>
                             </div>
 
                             <!-- Incumbent or Vacancy Box -->
-                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-slate-50 border border-slate-200/80'} text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : 'text-slate-400'}">
-                                    ${isVacant ? 'Vacancy Information' : 'Serving Incumbent'}
+                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-slate-50/90 border border-slate-200/80'} text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : 'text-slate-400'} flex items-center gap-1">
+                                    <i data-lucide="${isVacant ? 'check-circle' : 'user'}" class="w-3 h-3 ${isVacant ? 'text-emerald-600' : 'text-slate-400'}"></i>
+                                    <span>${isVacant ? 'Vacancy Information' : 'Serving Incumbent'}</span>
                                 </div>
                                 ${isVacant ? `
                                     <div class="text-emerald-900 font-bold text-xs flex items-center gap-1.5">
-                                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
                                         <span>Available for Substantive / SU Cadre Absorption</span>
                                     </div>
                                 ` : `
@@ -1137,22 +1225,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="pt-1">
+                            <div class="pt-0.5">
                                 ${isApexLocked ? `
                                     <div class="h-10 px-3 rounded-xl bg-slate-100 text-slate-500 border border-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
                                         <i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>
-                                        <span>Apex Cadre Post (Protected from Transfer)</span>
+                                        <span>Apex Cadre Post (Statutorily Protected)</span>
                                     </div>
                                 ` : (!isVacant ? `
                                     <div class="grid grid-cols-3 gap-2">
-                                        <button onclick="openOfficerDossier('${p.incumbent_hrms}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                        <button onclick="openOfficerDossier('${p.incumbent_hrms}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                             <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
                                         </button>
-                                        <button onclick="openDualAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target">
+                                        <button onclick="openDualAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                             <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Allot
                                         </button>
-                                        <button onclick="openAIAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-sm transition active:scale-95 touch-target">
-                                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> AI Allot
+                                        <button onclick="openAIAllotModal('${p.incumbent_hrms}', 'displaced')" class="h-10 text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-white flex items-center justify-center gap-1 shadow-xs transition active:scale-95 touch-target btn-touch" title="Quick Statutory Placement">
+                                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> Quick Allot
                                         </button>
                                     </div>
                                 ` : `
@@ -1246,26 +1334,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardsEl) {
                 cardsEl.innerHTML = json.data.map(o => {
                     return `
-                        <div class="p-3.5 bg-white space-y-2.5 transition hover:bg-slate-50">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-1">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-wbblue-900 text-white font-mono text-[10px] font-bold">${o.order_date || 'Date N/A'}</span>
-                                        <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-800 border border-slate-200">${o.category}</span>
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] mobile-card-interactive p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                        <i data-lucide="file-text" class="w-5 h-5"></i>
                                     </div>
-                                    <div class="font-bold text-xs text-slate-900 leading-snug">${o.title}</div>
-                                    <div class="font-mono text-[11px] text-wbblue-800 font-semibold">${o.order_number || '—'}</div>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                            <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">${o.order_date || 'Date N/A'}</span>
+                                            <span class="px-2 py-0.5 text-[9px] font-bold rounded-md bg-wbblue-50 text-wbblue-900 border border-wbblue-200">${o.category}</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 leading-snug break-words">${o.title}</div>
+                                        <div class="font-mono text-xs text-wbblue-800 font-bold mt-0.5">${o.order_number || '—'}</div>
+                                    </div>
                                 </div>
-                                ${o.web_source_portal ? `
-                                    <a href="${o.web_source_portal}" target="_blank" class="shrink-0 p-2 rounded-lg bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 text-xs font-bold inline-flex items-center gap-1 touch-target">
-                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                                        <span>Open</span>
-                                    </a>
-                                ` : ''}
                             </div>
+
+                            ${o.subdirectory ? `
+                                <div class="text-[11px] text-slate-500 font-medium px-1">
+                                    <span class="text-slate-400">Wing / Directorate:</span> ${o.subdirectory}
+                                </div>
+                            ` : ''}
+
                             ${o.key_officers ? `
-                                <div class="text-[11px] text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-200/60">
-                                    <span class="font-semibold text-slate-700">Key Officers:</span> ${o.key_officers}
+                                <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs space-y-1">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                        <i data-lucide="users" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Key Officers / Beneficiaries</span>
+                                    </div>
+                                    <div class="text-xs text-slate-700 font-medium leading-relaxed">${o.key_officers}</div>
+                                </div>
+                            ` : ''}
+
+                            ${o.web_source_portal ? `
+                                <div class="pt-1 border-t border-slate-100">
+                                    <a href="${o.web_source_portal}" target="_blank" class="w-full py-2.5 px-3 rounded-xl bg-wbblue-50 hover:bg-wbblue-100 text-wbblue-800 border border-wbblue-200 text-xs font-bold flex items-center justify-center gap-1.5 btn-touch touch-target">
+                                        <i data-lucide="external-link" class="w-3.5 h-3.5 text-wbblue-600"></i>
+                                        <span>View Official Gazette Order</span>
+                                    </a>
                                 </div>
                             ` : ''}
                         </div>
@@ -2307,31 +2414,63 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cardsEl) {
                 cardsEl.innerHTML = pool.map((o, idx) => {
                     const isReallocated = o.rehabilitation_status === 'Reallocated';
+                    const initials = getMonogram(o.officer_name);
                     return `
-                        <div class="p-3.5 bg-white space-y-2.5 transition hover:bg-purple-50/20">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-1">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-purple-900 text-white font-mono text-[10px] font-bold">#${idx + 1}</span>
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isReallocated ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'}">${o.rehabilitation_status}</span>
-                                        <span class="text-[10px] font-mono text-slate-500">${o.pay_level || 'Level 16'}</span>
+                        <div class="rounded-2xl bg-white border border-purple-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] mobile-card-interactive p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-700 to-indigo-900 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${initials}
                                     </div>
-                                    <div class="font-bold text-sm text-slate-900 cursor-pointer hover:underline" onclick="openOfficerDossier('${o.officer_hrms}')">${o.officer_name}</div>
-                                    <div class="text-[11px] font-mono text-slate-500">HRMS: ${o.officer_hrms} • Tenure: ${o.tenure || '0.0'} yrs</div>
-                                </div>
-                                <div class="shrink-0">
-                                    <button onclick="openDualAllotModal('${o.officer_hrms}', 'displaced')" class="h-9 px-3 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow transition active:scale-95 touch-target flex items-center gap-1">
-                                        <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
-                                        <span>${isReallocated ? 'Re-Allot' : 'Allot'}</span>
-                                    </button>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                            <span class="px-2 py-0.5 rounded-md bg-purple-900 text-white font-mono text-[9px] font-bold">#${idx + 1}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isReallocated ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'}">${o.rehabilitation_status}</span>
+                                            <span class="text-[10px] font-mono text-slate-500 font-bold">${o.pay_level || 'Level 16'}</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-purple-700" onclick="openOfficerDossier('${o.officer_hrms}')">
+                                            ${o.officer_name}
+                                        </div>
+                                        <div class="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                            <span>HRMS: <strong>${o.officer_hrms}</strong></span>
+                                            <span>•</span>
+                                            <span>Tenure: ${o.tenure || '0.0'} yrs</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="text-xs bg-slate-50 rounded-lg p-2.5 border border-slate-200/80 space-y-1">
-                                <div><span class="font-semibold text-slate-700">Displaced From:</span> <span class="font-medium text-slate-900">${o.from_post_name || 'Station'}</span> (${o.block ? `${o.block}, ` : ''}${o.district})</div>
-                                <div class="text-purple-900 pt-1 border-t border-slate-200/60">
-                                    <span class="font-semibold">Displaced by:</span> ${o.displaced_by_name} (${o.displaced_by_hrms})
-                                    <div class="text-[10px] text-purple-700 italic mt-0.5">${o.displaced_by_reason}</div>
+
+                            <div class="space-y-1.5">
+                                <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i>
+                                        <span>Displaced From Post</span>
+                                    </div>
+                                    <div class="font-semibold text-slate-800 leading-snug mt-0.5">${o.from_post_name || 'Station'}</div>
+                                    <div class="text-[11px] text-slate-500 font-medium">
+                                        ${o.block ? `<span class="text-slate-700 font-semibold">${o.block} Block</span>, ` : ''}${o.district}
+                                    </div>
                                 </div>
+
+                                <div class="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200/80 text-xs space-y-1">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1">
+                                        <i data-lucide="shuffle" class="w-3 h-3 text-purple-600"></i>
+                                        <span>Displaced By</span>
+                                    </div>
+                                    <div class="font-bold text-purple-950">${o.displaced_by_name} <span class="font-mono text-[11px] font-normal text-purple-700">(${o.displaced_by_hrms})</span></div>
+                                    <div class="text-[11px] text-purple-800 italic leading-snug">${o.displaced_by_reason}</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+                                <button onclick="openOfficerDossier('${o.officer_hrms}')" class="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 btn-touch touch-target">
+                                    <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                                    <span>Dossier</span>
+                                </button>
+                                <button onclick="openDualAllotModal('${o.officer_hrms}', 'displaced')" class="flex-1 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 btn-touch touch-target">
+                                    <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+                                    <span>${isReallocated ? 'Re-Allot' : 'Allot Post'}</span>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -4127,6 +4266,7 @@ ${r.statutory_justification}
             if (cardsEl) {
                 cardsEl.innerHTML = data.employees.map((emp, idx) => {
                     const globalIdx = (masterDirState.page - 1) * masterDirState.pageSize + idx + 1;
+                    const initials = getMonogram(emp.officer_name);
                     let badges = '';
                     if (emp.is_hq_deployed) {
                         badges += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300 text-[10px] font-bold">🏛️ HQ Deployed</span> `;
@@ -4139,30 +4279,44 @@ ${r.statutory_justification}
                     }
 
                     return `
-                        <div class="p-3.5 bg-white space-y-2 transition hover:bg-slate-50">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="space-y-0.5">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white font-mono text-[10px] font-bold">#${globalIdx}</span>
-                                        <span class="font-mono text-[11px] font-bold text-slate-600">HRMS: ${emp.hrms_id || '—'}</span>
+                        <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] mobile-card-interactive p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                        ${initials}
                                     </div>
-                                    <div class="font-bold text-sm text-wbblue-950 cursor-pointer hover:underline pt-0.5" onclick="openOfficerDossier('${emp.hrms_id}')">
-                                        ${emp.officer_name}
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                            <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">#${globalIdx}</span>
+                                            <span class="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">HRMS: ${emp.hrms_id || '—'}</span>
+                                        </div>
+                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700" onclick="openOfficerDossier('${emp.hrms_id}')" title="Click to view dossier">
+                                            ${emp.officer_name}
+                                        </div>
                                     </div>
-                                    ${badges ? `<div class="flex flex-wrap gap-1 mt-1">${badges}</div>` : ''}
                                 </div>
-                                <button onclick="openOfficerDossier('${emp.hrms_id}')" class="shrink-0 h-8 px-2.5 text-xs font-semibold rounded-lg bg-wbblue-50 text-wbblue-700 hover:bg-wbblue-100 border border-wbblue-200 transition touch-target flex items-center gap-1">
-                                    <i data-lucide="user" class="w-3.5 h-3.5"></i>
-                                    <span>Dossier</span>
-                                </button>
                             </div>
-                            <div class="text-xs bg-slate-50 rounded-lg p-2.5 border border-slate-200/80 space-y-1">
-                                <div class="font-semibold text-slate-800">${emp.designation || 'Officer'}</div>
-                                <div class="text-[11px] text-slate-600">${emp.establishment || emp.present_posting || '—'}</div>
-                                <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
-                                    <span class="px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 font-semibold">${emp.district || 'District N/A'}</span>
-                                    <span class="font-mono text-slate-600">DOR: <strong>${emp.dor || '—'}</strong></span>
+
+                            ${badges ? `<div class="flex flex-wrap gap-1">${badges}</div>` : ''}
+
+                            <div class="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                    <i data-lucide="briefcase" class="w-3 h-3 text-slate-400"></i>
+                                    <span>Designation & Posting</span>
                                 </div>
+                                <div class="font-bold text-slate-900 leading-snug">${emp.designation || 'Officer'}</div>
+                                <div class="text-[11px] text-slate-600 font-medium leading-snug">${emp.establishment || emp.present_posting || '—'}</div>
+                                <div class="flex items-center justify-between text-[11px] pt-1.5 mt-1 border-t border-slate-200/70">
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700 font-bold text-[10px]">${emp.district || 'District N/A'}</span>
+                                    <span class="font-mono text-slate-600 text-[11px]">DOR: <strong>${emp.dor || '—'}</strong></span>
+                                </div>
+                            </div>
+
+                            <div class="pt-1 border-t border-slate-100">
+                                <button onclick="openOfficerDossier('${emp.hrms_id}')" class="w-full py-2 px-3 rounded-xl bg-wbblue-50 hover:bg-wbblue-100 text-wbblue-800 border border-wbblue-200 text-xs font-bold flex items-center justify-center gap-1.5 btn-touch touch-target">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 text-wbblue-600"></i>
+                                    <span>View Personnel Dossier</span>
+                                </button>
                             </div>
                         </div>
                     `;
