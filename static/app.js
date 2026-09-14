@@ -32,82 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
         suPosts: []
     };
 
-    // --- VISITOR & ACCESS INTELLIGENCE TELEMETRY ENGINE ---
-    function getOrCreateVisitorSession() {
-        let id = localStorage.getItem('ard_visitor_session_id');
-        if (!id) {
-            id = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('ard_visitor_session_id', id);
-        }
-        return id;
-    }
-
-    const telemetryState = {
-        sessionId: getOrCreateVisitorSession(),
-        activeSeconds: 0,
-        lastReportedSeconds: 0,
-        currentPage: '50-Point Roster',
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-        clientGeo: null
-    };
-
-    function sendTelemetryPing(eventType = 'heartbeat', pageTitle = null) {
-        if (pageTitle) telemetryState.currentPage = pageTitle;
-        const delta = Math.max(0, telemetryState.activeSeconds - telemetryState.lastReportedSeconds);
-        telemetryState.lastReportedSeconds = telemetryState.activeSeconds;
-
-        const payload = {
-            session_id: telemetryState.sessionId,
-            event_type: eventType,
-            page: telemetryState.currentPage,
-            time_spent_delta: delta,
-            screen_resolution: telemetryState.screenResolution,
-            client_geo: telemetryState.clientGeo,
-            user_agent: navigator.userAgent
-        };
-
-        try {
-            if (navigator.sendBeacon && (eventType === 'unload' || eventType === 'hide')) {
-                const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-                navigator.sendBeacon('/api/analytics/track', blob);
-            } else {
-                fetch('/api/analytics/track', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    keepalive: true
-                }).catch(() => {});
-            }
-        } catch (e) {
-            // Non-blocking telemetry
-        }
-    }
-    window.sendTelemetryPing = sendTelemetryPing;
-
-    function initVisitorTelemetry() {
-        sendTelemetryPing('pageview', '50-Point Roster');
-
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                telemetryState.activeSeconds++;
-            }
-        }, 1000);
-
-        setInterval(() => {
-            if (telemetryState.activeSeconds > telemetryState.lastReportedSeconds) {
-                sendTelemetryPing('heartbeat');
-            }
-        }, 20000);
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                sendTelemetryPing('hide');
-            }
-        });
-        window.addEventListener('pagehide', () => sendTelemetryPing('unload'));
-        window.addEventListener('beforeunload', () => sendTelemetryPing('unload'));
-    }
-
     // --- INITIALIZATION ---
     initTabs();
     initOverview();
@@ -124,8 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpotlightSearch();
     initPolicyGuideModal();
     initLivePolicyEvaluator();
-    initVisitorTelemetry();
-    initVisitorAnalyticsUI();
 
     // Debounce helper
     function debounce(func, wait) {
@@ -272,24 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 8. Telemetry tracking for tab navigation
-        if (window.sendTelemetryPing) {
-            const tabNameMap = {
-                'tab-roster': '50-Point Roster',
-                'tab-master-orders': 'Master Schedule',
-                'tab-gradation': 'Gradation List',
-                'tab-obliterated': 'Obliterated Posts',
-                'tab-cadre': 'Cadre & Vacancies',
-                'tab-map': 'Cadre GIS Map',
-                'tab-displaced': 'Displaced Officers',
-                'tab-cascade': 'Cascade Simulation',
-                'tab-orders': 'Official Orders',
-                'tab-visual-grid': 'Visual Cadre Grid',
-                'tab-master-directory': 'Master Directory',
-                'tab-organogram': 'Department Organogram'
-            };
-            window.sendTelemetryPing('tab_switch', tabNameMap[targetTab] || targetTab);
-        }
+
 
         if (window.lucide) window.lucide.createIcons();
     }
@@ -365,23 +270,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('badgeCadreTotal').innerText = Number(data.total_posts).toLocaleString();
             }
             document.getElementById('kpiTotalVacancies').innerText = Number(data.total_vacancies).toLocaleString();
-            const allottedDD = data.allotted_dd != null ? data.allotted_dd : 242;
             const totalDD = data.total_dd_posts != null ? data.total_dd_posts : 244;
-            const vacantDD = data.vacant_dd != null ? data.vacant_dd : 2;
-            document.getElementById('kpiVacantDD').innerText = `${allottedDD} / ${totalDD}`;
+            document.getElementById('kpiVacantDD').innerText = `${totalDD} Posts`;
             const kpiVacantDDSub = document.getElementById('kpiVacantDDSub');
             if (kpiVacantDDSub) {
-                kpiVacantDDSub.innerHTML = `<span>Promotions Allotted (${vacantDD} Left)</span><i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>`;
+                kpiVacantDDSub.innerHTML = `<span>Under verification</span><i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>`;
             }
             document.getElementById('kpiVacantAD').innerText = Number(data.vacant_ad).toLocaleString();
             document.getElementById('kpiRoster').innerText = data.roster_candidates;
-            document.getElementById('kpiRosterSub').innerText = `Pending: ${data.roster_candidates - data.roster_allotted}`;
+            document.getElementById('kpiRosterSub').innerText = `Under verification`;
             document.getElementById('kpiObliterated').innerText = data.obliterated_posts;
-            document.getElementById('kpiOblitSub').innerText = `${data.obliterated_officers} Serving (${data.obliterated_officers - data.obliterated_rehabilitated} Pending)`;
+            document.getElementById('kpiOblitSub').innerText = `DERIVED Layer`;
             document.getElementById('kpiOverTenure').innerText = data.over_tenure_count;
 
-            document.getElementById('badgeRosterCount').innerText = `${data.roster_allotted}/${data.roster_candidates}`;
-            document.getElementById('badgeOblitCount').innerText = `${data.obliterated_rehabilitated}/${data.obliterated_officers}`;
+            if (document.getElementById('badgeRosterCount')) {
+                document.getElementById('badgeRosterCount').innerText = `${data.roster_candidates}`;
+            }
+            if (document.getElementById('badgeOblitCount')) {
+                document.getElementById('badgeOblitCount').innerText = `${data.obliterated_posts}`;
+            }
         } catch (e) {
             console.error('Error loading overview stats:', e);
         }
@@ -512,31 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
-                const contactBar = (c.mobile && c.mobile !== '—') ? `
-                    <div class="flex items-center gap-2 mt-1 text-[10px]">
-                        <a href="tel:${c.mobile}" class="text-blue-600 hover:text-blue-800 flex items-center gap-0.5 font-mono font-medium" title="Call">
-                            <i data-lucide="phone" class="w-2.5 h-2.5"></i> ${c.mobile}
-                        </a>
-                        <a href="https://wa.me/91${c.mobile}" target="_blank" class="text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5 font-semibold" title="WhatsApp">
-                            <i data-lucide="message-circle" class="w-2.5 h-2.5"></i> WA
-                        </a>
-                    </div>
-                ` : '';
-
-                const welfareBadges = [];
-                if (c.children_board_exams && c.children_board_exams !== '—') {
-                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold" title="Children Board Exam ${c.children_board_exams}">Exam: ${c.children_board_exams}</span>`);
-                }
-                if (c.spouse_is_wbahvs === 'Yes' || c.is_spouse_cadre_matched === 1) {
-                    const isSame = c.cross_spouse_same_district === 1;
-                    const spBadgeText = isSame ? 'Spouse Cadre (Same Dist)' : 'Spouse Cadre (Split)';
-                    const spBadgeColor = isSame ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-amber-100 text-amber-800 border-amber-300';
-                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded ${spBadgeColor} text-[9px] font-bold border" title="Spouse in Cadre: ${c.cross_spouse_name || 'Cadre Member'} (${isSame ? 'Co-located' : 'Separate Districts'})">${spBadgeText}</span>`);
-                }
-                if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
-                    welfareBadges.push(`<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold" title="Medical Grounds">Medical</span>`);
-                }
-
                 const isRet = c.is_retired === 1;
                 const genderBadge = c.gender === 'Female'
                     ? `<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 border border-purple-200 text-[9px] font-bold shrink-0" title="Female Officer">F</span>`
@@ -565,8 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${isRet ? `<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 text-[9px] font-bold">Retired</span>` : ''}
                             </div>
                             <div class="text-[11px] font-mono text-slate-500">HRMS: ${c.hrms_id || 'N/A'}</div>
-                            ${contactBar}
-                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1 mt-1">${welfareBadges.join('')}</div>` : ''}
                             ${c.attention_flag || c.is_dual_obliterated ? `
                                 <div class="mt-1">
                                     <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold animate-pulse">
@@ -583,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             ` : '')}
                         </td>
-                        <td class="py-2.5 px-2 text-slate-700 font-medium">${c.caste}</td>
+                        <td class="py-2.5 px-2 text-slate-700 font-medium">${c.point_reserved_for || '—'}</td>
                         <td class="py-2.5 px-4">
                             <div class="text-slate-800 font-medium">${c.present_posting || '-'}</div>
                             <div class="text-[11px] text-slate-500 font-medium">
@@ -629,31 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const initials = getMonogram(c.officer_name);
 
-                    const contactBar = (c.mobile && c.mobile !== '—') ? `
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <a href="tel:${c.mobile}" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target btn-touch">
-                                <i data-lucide="phone" class="w-3.5 h-3.5 text-blue-600"></i> Call (${c.mobile})
-                            </a>
-                            <a href="https://wa.me/91${c.mobile}" target="_blank" class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 shadow-xs shadow-emerald-600/20 transition active:scale-95 touch-target btn-touch">
-                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
-                            </a>
-                        </div>
-                    ` : '';
-
-                    const welfareBadges = [];
-                    if (c.children_board_exams && c.children_board_exams !== '—') {
-                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200">Exam: ${c.children_board_exams}</span>`);
-                    }
-                    if (c.spouse_is_wbahvs === 'Yes' || c.is_spouse_cadre_matched === 1) {
-                        const isSame = c.cross_spouse_same_district === 1;
-                        const spBadgeText = isSame ? 'Spouse Cadre (Same Dist)' : 'Spouse Cadre (Split)';
-                        const spBadgeColor = isSame ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200';
-                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg ${spBadgeColor} text-[10px] font-bold border">${spBadgeText}</span>`);
-                    }
-                    if (c.health_conditions && c.health_conditions !== '—' && !c.health_conditions.includes('Standard')) {
-                        welfareBadges.push(`<span class="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200">Medical Grounds</span>`);
-                    }
-
                     return `
                         <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive">
                             <!-- Card Header -->
@@ -686,9 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div class="shrink-0">${statusBadge}</div>
                             </div>
-
-                            <!-- Welfare Badges if any -->
-                            ${welfareBadges.length > 0 ? `<div class="flex flex-wrap gap-1.5">${welfareBadges.join('')}</div>` : ''}
 
                             <!-- Timeline Flow: Present Posting -> Allotted Substantive Post -->
                             <div class="space-y-1.5">
@@ -742,9 +594,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <strong class="text-slate-700">Pref 1:</strong> ${c.pref_1}
                                 </div>
                             ` : ''}
-
-                            <!-- Ergonomic Contact Buttons -->
-                            ${contactBar}
 
                             <!-- 44px Touch Action Buttons -->
                             <div class="grid grid-cols-3 gap-2 pt-0.5">
@@ -815,17 +664,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     basisBadge = `<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-bold">Displacement</span>`;
                 }
 
-                const phoneContact = (o.mobile && o.mobile !== '—') ? `
-                    <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
-                        <a href="tel:${o.mobile}" class="text-blue-600 hover:text-blue-800 flex items-center gap-0.5 font-mono" title="Call">
-                            <i data-lucide="phone" class="w-2.5 h-2.5"></i> ${o.mobile}
-                        </a>
-                        <a href="https://wa.me/91${o.mobile}" target="_blank" class="text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5 font-semibold" title="WhatsApp">
-                            <i data-lucide="message-circle" class="w-2.5 h-2.5"></i> WA
-                        </a>
-                    </div>
-                ` : '';
-
                 return `
                     <tr class="hover:bg-slate-50/80 transition ${is1112 ? 'bg-amber-50/20' : ''}">
                         <td class="py-2.5 px-3 text-center font-semibold text-slate-600">${o.sl_no}</td>
@@ -835,7 +673,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${o.officer_name}
                             </div>
                             <div class="text-[11px] font-mono text-slate-500">HRMS: ${o.hrms_id || 'N/A'}</div>
-                            ${phoneContact}
                         </td>
                         <td class="py-2.5 px-5">
                             <div class="text-slate-800 font-medium">${o.present_post_full || o.present_designation || '-'}</div>
@@ -891,17 +728,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const initials = getMonogram(o.officer_name);
-
-                    const phoneContact = (o.mobile && o.mobile !== '—') ? `
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <a href="tel:${o.mobile}" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition active:scale-95 touch-target btn-touch">
-                                <i data-lucide="phone" class="w-3.5 h-3.5 text-blue-600"></i> Call (${o.mobile})
-                            </a>
-                            <a href="https://wa.me/91${o.mobile}" target="_blank" class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center text-xs flex items-center justify-center gap-1.5 shadow-xs shadow-emerald-600/20 transition active:scale-95 touch-target btn-touch">
-                                <i data-lucide="message-circle" class="w-3.5 h-3.5"></i> WhatsApp
-                            </a>
-                        </div>
-                    ` : '';
 
                     return `
                         <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive ${is1112 ? 'border-l-4 border-amber-400 pl-3.5' : ''}">
@@ -974,9 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div class="text-slate-800">${o.administrative_remarks}</div>
                                 </div>
                             ` : ''}
-
-                            <!-- Ergonomic Contact Buttons -->
-                            ${phoneContact}
 
                             <!-- Actions -->
                             <div class="pt-0.5">
@@ -1094,13 +917,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200 text-[10px] font-bold">Female</span>`
                     : `<span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-medium">Male</span>`;
 
-                const catPill = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                    o.category === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
-                    o.category === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' :
-                    (o.category && o.category.startsWith('OBC')) ? 'bg-blue-100 text-blue-900 border border-blue-300' :
-                    'bg-slate-100 text-slate-700'
-                }">${o.category || 'Gen'}</span>`;
-
                 return `
                     <tr class="transition border-b border-slate-100 ${rowBg}">
                         <td class="py-2.5 px-3 text-center">${sl26Display}</td>
@@ -1118,10 +934,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </td>
                         <td class="py-2.5 px-2 text-center">${genderPill}</td>
-                        <td class="py-2.5 px-2 text-center">${catPill}</td>
                         <td class="py-2.5 px-3 text-center">${statusBadge}</td>
                         <td class="py-2.5 px-3">
-                            <div class="font-mono text-xs ${isRet ? 'line-through text-slate-400' : 'text-slate-700'}">DOB: ${o.dob || '—'}</div>
                             <div class="font-mono text-xs ${isRet ? 'line-through text-slate-400' : 'text-rose-700 font-semibold'}">DOR: ${o.dor || '—'}</div>
                         </td>
                         <td class="py-2.5 px-5">
@@ -1939,10 +1753,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const offName = officer.officer_name || officer.incumbent_name || 'Officer';
             const hid = officer.hrms_id || officer.incumbent_hrms || 'N/A';
             nameHeader.innerText = `${offName} (HRMS: ${hid})`;
-            subtitle.innerText = `${offName} | Category: ${officer.caste || 'Gen'}`;
+            subtitle.innerText = `${offName}${officer.point_reserved_for ? ` | Quota: ${officer.point_reserved_for}` : ''}`;
             currPost.innerText = officer.present_posting || officer.post_name || officer.designation || 'N/A';
             currDist.innerText = `${officer.present_block ? officer.present_block + ' Block, ' : ''}${officer.present_district || officer.district || 'N/A'}`;
-            rosterPt.innerText = officer.roster_point ? `Point ${officer.roster_point} (${officer.point_reserved_for || officer.caste})` : `Cadre Post`;
+            rosterPt.innerText = officer.roster_point ? `Point ${officer.roster_point} (${officer.point_reserved_for || 'General'})` : `Cadre Post`;
             dorEl.innerText = officer.service_ends || officer.incumbent_dor || 'N/A';
             prefsEl.innerText = officer.all_preferences || officer.pref_1 || 'None listed';
         }
@@ -3133,10 +2947,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = await res.json();
             window.activeDossierOfficer = d;
 
-            if (window.sendTelemetryPing) {
-                window.sendTelemetryPing('dossier_view', `Officer Dossier: ${d.officer_name} (${d.hrms_id})`);
-            }
-
             subtitle.innerText = `${d.officer_name} | HRMS: ${d.hrms_id} | ${d.source_category}`;
 
             btnAI.onclick = () => {
@@ -3200,117 +3010,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${(d.officer_name || 'Dr').replace(/^Dr\\.?\\s*/i, '').split(' ').filter(Boolean).map(n=>n[0]).slice(0,2).join('').toUpperCase() || 'DR'}
                     </div>
                 `;
-            }
-
-            // Contacts bar
-            const mobileHtml = (d.mobile && d.mobile !== '—') ? `
-                <div class="flex items-center gap-2 flex-wrap">
-                    <strong class="text-slate-600">Mobile:</strong>
-                    <span class="font-mono text-slate-900 font-bold">${d.mobile}</span>
-                    <a href="tel:${d.mobile}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-800 hover:bg-blue-200 text-[10px] font-bold transition shadow-xs">
-                        <i data-lucide="phone" class="w-3 h-3"></i> Call
-                    </a>
-                    <a href="https://wa.me/91${d.mobile}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 hover:bg-emerald-200 text-[10px] font-bold transition shadow-xs">
-                        <i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp
-                    </a>
-                </div>
-            ` : `<div><strong class="text-slate-600">Mobile:</strong> <span class="text-slate-400 italic">Not recorded</span></div>`;
-
-            const altMobileHtml = (d.alt_mobile && d.alt_mobile !== '—' && d.alt_mobile !== '') ? `
-                <div class="flex items-center gap-1.5 text-slate-600">
-                    <strong class="text-slate-600">Alt Mobile:</strong>
-                    <span class="font-mono text-slate-800 font-semibold">${d.alt_mobile}</span>
-                    <a href="tel:${d.alt_mobile}" class="text-[10px] text-blue-700 hover:underline">Call</a>
-                </div>
-            ` : '';
-
-            const emailHtml = (d.email && d.email !== '—') ? `
-                <div class="flex items-center gap-1.5 truncate">
-                    <strong class="text-slate-600">Email:</strong>
-                    <a href="mailto:${d.email}" class="text-wbblue-700 hover:underline truncate">${d.email}</a>
-                </div>
-            ` : `<div><strong class="text-slate-600">Email:</strong> <span class="text-slate-400 italic">Not recorded</span></div>`;
-
-            // Welfare banners
-            const welfareAlerts = [];
-            if (d.children_board_exams && d.children_board_exams !== '—') {
-                welfareAlerts.push(`
-                    <div class="p-3 rounded-lg bg-purple-50 border border-purple-200 text-purple-900 flex items-start gap-2.5">
-                        <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700 shrink-0 mt-0.5"></i>
-                        <div>
-                            <span class="font-bold text-purple-950">Children Board Exam Year:</span> ${d.children_board_exams}
-                            <div class="text-[10px] text-purple-700 font-medium mt-0.5">Transfer Policy 2009 statutory accommodation priority for board exam candidates.</div>
-                        </div>
-                    </div>
-                `);
-            }
-            if (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) {
-                const sp = d.dynamic_spouse_info;
-                const coLocBadge = sp.is_same_district
-                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold border border-emerald-300 shadow-2xs">
-                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i> Co-located in ${sp.spouse_current_district || 'Same District'}
-                       </span>`
-                    : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300 shadow-2xs">
-                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Cross-District (${d.district || 'Current'} ↔ ${sp.spouse_current_district || 'Spouse Post'})
-                       </span>`;
-
-                welfareAlerts.push(`
-                    <div class="p-3.5 rounded-xl bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/90 border-2 border-amber-300 text-amber-950 shadow-xs space-y-2.5">
-                        <div class="flex items-center justify-between flex-wrap gap-2">
-                            <div class="flex items-center gap-2 font-bold text-amber-900 text-sm">
-                                <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
-                                <span>Spouse in WBAH&VS Cadre (Dynamic Cadre Match)</span>
-                            </div>
-                            ${coLocBadge}
-                        </div>
-                        <div class="text-xs bg-white/95 p-3 rounded-lg border border-amber-200 shadow-2xs space-y-1.5">
-                            <div class="flex items-center justify-between flex-wrap gap-2">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <strong class="text-slate-700">Spouse Name:</strong> 
-                                    <span class="font-bold text-slate-900 text-sm">${sp.spouse_name}</span>
-                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">HRMS: ${sp.spouse_hrms}</span>
-                                </div>
-                                <button type="button" onclick="openOfficerDossier('${sp.spouse_hrms}')" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer">
-                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Spouse Dossier
-                                </button>
-                            </div>
-                            <div class="text-slate-800 text-xs">
-                                <span class="text-slate-600 font-medium">Live Designation:</span> 
-                                <span class="font-bold text-slate-900">${sp.spouse_current_designation || 'Veterinary Cadre Officer'}</span>
-                            </div>
-                            <div class="text-slate-800 text-xs">
-                                <span class="text-slate-600 font-medium">Station & District:</span> 
-                                <span class="font-semibold text-slate-900">${sp.spouse_current_district || '—'}</span>
-                                ${sp.spouse_current_establishment ? `<span class="text-slate-500 font-normal"> (${sp.spouse_current_establishment})</span>` : ''}
-                            </div>
-                            ${sp.spouse_current_posting ? `<div class="text-[11px] text-slate-500 font-mono bg-slate-50 p-1.5 rounded border border-slate-200/80 leading-relaxed">${sp.spouse_current_posting}</div>` : ''}
-                        </div>
-                        <div class="text-[11px] text-amber-950 font-medium flex items-center gap-1.5 bg-amber-100/70 p-2 rounded-md border border-amber-200/80">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-amber-700 shrink-0"></i>
-                            <span><strong>Statutory Safeguard:</strong> Transfer Policy 2009 (Memo 291 Clause 7) entitles working spouses to co-location within same station/district.</span>
-                        </div>
-                    </div>
-                `);
-            } else if (d.spouse_service_details && d.spouse_service_details !== '—' && !d.spouse_service_details.includes('Standard') && !d.spouse_service_details.includes('No spouse') && !d.spouse_service_details.toLowerCase().includes('confidential')) {
-                welfareAlerts.push(`
-                    <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
-                        <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
-                        <div>
-                            <span class="font-bold text-amber-950">Spouse in Public Service:</span> ${d.spouse_name ? `<strong class="text-slate-900">${d.spouse_name}</strong> — ` : ''}${d.spouse_service_details}
-                            <div class="text-[10px] text-amber-700 font-medium mt-0.5">Memo 291 Clause 7 Co-location safeguard applies for working spouses.</div>
-                        </div>
-                    </div>
-                `);
-            }
-            if (d.health_conditions && d.health_conditions !== '—' && !d.health_conditions.includes('Standard')) {
-                welfareAlerts.push(`
-                    <div class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-2.5">
-                        <i data-lucide="activity" class="w-4 h-4 text-rose-700 shrink-0 mt-0.5"></i>
-                        <div>
-                            <span class="font-bold text-rose-950">Medical / Health Ground:</span> ${d.health_conditions} ${d.health_details ? `(${d.health_details})` : ''}
-                        </div>
-                    </div>
-                `);
             }
 
             // Stated Field Preferences (1 to 8 + free text)
@@ -3474,64 +3173,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 historyTimelineHtml = `<div class="p-3 bg-slate-50 rounded border text-slate-600 text-center italic">Standard service tenure across departmental postings.</div>`;
             }
 
-            // 4-Stream Strengths Ranking
-            let streamHtml = '';
-            if (d.stream_ranking) {
-                const parts = d.stream_ranking.split(',').map(s => s.trim()).filter(Boolean);
-                streamHtml = parts.map(p => {
-                    const [label, rank] = p.split(':').map(s => s.trim());
-                    let colorClass = 'bg-slate-100 text-slate-800 border-slate-300';
-                    if (rank && rank.includes('1')) colorClass = 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold';
-                    else if (rank && rank.includes('2')) colorClass = 'bg-blue-50 text-blue-900 border-blue-300 font-semibold';
-                    else if (rank && rank.includes('3')) colorClass = 'bg-amber-50 text-amber-900 border-amber-300';
-                    return `
-                        <div class="p-2.5 rounded-lg border ${colorClass} flex items-center justify-between text-xs shadow-xs">
-                            <span class="font-medium">${label || p}</span>
-                            <span class="px-2 py-0.5 rounded text-[10px] bg-white/80 font-bold border border-current">${rank || ''}</span>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Self reported questions (all 114+ fields)
-            const selfRepData = d.self_reported_data || {};
-            const selfRepEntries = Object.entries(selfRepData);
-            let selfRepHtml = '';
-            if (selfRepEntries.length > 0) {
-                selfRepHtml = `
-                    <div class="space-y-3">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-100 rounded-lg border border-slate-200">
-                            <div>
-                                <div class="font-bold text-slate-800 text-xs">Self-Reported Survey & Preference Responses</div>
-                                <div class="text-[11px] text-slate-500">Verified master response dataset (204-column record for HRMS ${d.hrms_id})</div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span id="selfReportedCountBadge" class="px-2.5 py-1 rounded bg-teal-100 text-teal-800 font-bold text-[11px] border border-teal-300 shrink-0">
-                                    ${selfRepEntries.length} responses
-                                </span>
-                                <input type="text" placeholder="Filter questions..." oninput="window.filterSelfReported(this.value)" class="text-xs px-2.5 py-1 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-teal-600 w-44">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[480px] overflow-y-auto p-1">
-                            ${selfRepEntries.map(([question, answer]) => `
-                                <div class="self-reported-item p-3 rounded-lg border border-slate-200 bg-white shadow-xs space-y-1 hover:border-teal-400 transition">
-                                    <div class="text-[11px] font-semibold text-wbblue-900 leading-snug">${question}</div>
-                                    <div class="text-xs text-slate-800 font-medium break-words leading-relaxed">${answer || '<span class="text-slate-400 italic">Nil / Not specified</span>'}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            } else {
-                selfRepHtml = `<div class="p-4 text-center text-slate-400 italic bg-slate-50 rounded-lg border border-slate-200">No self-reported questionnaire responses recorded for this officer.</div>`;
-            }
-
             container.innerHTML = `
                 <!-- TAB 1: SERVICE & IDENTITY PROFILE -->
                 <div id="dossierSecProfile" class="dossier-sec space-y-4">
                     ${masterOrderHtml}
-
-                    ${welfareAlerts.length > 0 ? `<div class="space-y-2">${welfareAlerts.join('')}</div>` : ''}
 
                     ${d.attention_flag ? `
                         <div class="p-3.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 flex items-start gap-3 shadow-sm animate-pulse">
@@ -3544,7 +3189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     ` : ''}
 
-                    <!-- Identity & Contacts Grid with Photo -->
+                    <!-- Identity & Profile Header with Photo -->
                     <div class="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
                         ${photoHtml}
                         <div class="flex-1 space-y-2">
@@ -3552,7 +3197,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div class="text-base font-bold text-slate-900 flex items-center gap-2">
                                         <span>${d.officer_name}</span>
-                                        ${d.caste ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800">${d.caste}</span>` : ''}
                                         ${d.gender && d.gender !== '—' ? `
                                             <span class="px-2 py-0.5 text-[10px] font-bold rounded ${d.gender === 'Female' ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-blue-100 text-blue-800 border border-blue-300'} flex items-center gap-1">
                                                 <i data-lucide="${d.gender === 'Female' ? 'user-check' : 'user'}" class="w-3 h-3"></i>
@@ -3565,7 +3209,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ${d.wbvc_reg_no && d.wbvc_reg_no !== '—' ? `<span>WBVC Reg: ${d.wbvc_reg_no}</span>` : ''}
                                         ${d.employee_id && d.employee_id !== '—' ? `<span>Emp ID: ${d.employee_id}</span>` : ''}
                                         ${d.gradation_sl && d.gradation_sl !== '—' ? `<span>Gradation Sl: ${d.gradation_sl}</span>` : ''}
-                                        ${d.caste ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">Category: ${d.caste}</span>` : ''}
                                         ${d.verification_summary ? `
                                             <span class="px-2 py-0.5 rounded-full ${d.verification_summary.consensus_status.includes('PASS') ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'} font-semibold inline-flex items-center gap-1 text-[11px]" title="Audited across 10 independent administrative benchmarks">
                                                 <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-700"></i>
@@ -3594,21 +3237,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${d.source_category || 'WBAH&VS Cadre'}
                                 </span>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200 text-[11px]">
-                                ${mobileHtml}
-                                ${emailHtml}
-                                ${altMobileHtml}
-                                ${d.languages ? `<div><strong class="text-slate-600">Languages:</strong> <span class="text-slate-800 font-medium">${d.languages}</span></div>` : ''}
-                            </div>
+                            ${d.languages ? `
+                                <div class="pt-2 border-t border-slate-200 text-[11px]">
+                                    <div><strong class="text-slate-600">Languages:</strong> <span class="text-slate-800 font-medium">${d.languages}</span></div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
                     <!-- Dates of Service & WBSR Rule 75(a) -->
-                    <div class="grid grid-cols-3 gap-2 p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-center">
-                        <div>
-                            <div class="text-[10px] text-blue-700 font-semibold">Date of Birth (DOB)</div>
-                            <div class="text-xs font-bold text-slate-900 font-mono">${d.dob}</div>
-                        </div>
+                    <div class="grid grid-cols-2 gap-2 p-3 rounded-lg bg-blue-50/50 border border-blue-200 text-center">
                         <div>
                             <div class="text-[10px] text-blue-700 font-semibold">Seniority Entry (DOJ)</div>
                             <div class="text-xs font-bold text-slate-900 font-mono">${d.doj}</div>
@@ -3616,7 +3254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <div class="text-[10px] text-blue-700 font-semibold">Superannuation (DOR)</div>
                             <div class="text-xs font-bold text-rose-700 font-mono">${d.dor}</div>
-                            <div class="text-[9px] text-blue-600 font-medium">Rule 75(a) Compliant</div>
+                            <div class="text-[9px] text-blue-600 font-medium">WBSR Rule 75(a) Compliant</div>
                         </div>
                     </div>
 
@@ -3645,41 +3283,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div><strong class="text-slate-600">DDO Code:</strong> <span class="font-mono px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-900 font-semibold">${d.ddo_code}</span></div>
                             <div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Present Scale:</strong> ${d.present_pay_level}</div>
                         </div>
-                    </div>
-
-                    <!-- Permanent & Current Addresses -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50/50">
-                        <div>
-                            <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                                <i data-lucide="home" class="w-3.5 h-3.5 text-slate-500"></i>
-                                <span>Ancestral Permanent Address</span>
-                            </div>
-                            <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
-                                ${d.ancestral_address}
-                                ${d.ancestral_district ? `<div class="text-slate-500 font-medium mt-0.5">District: ${d.ancestral_district}</div>` : ''}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                                <i data-lucide="building" class="w-3.5 h-3.5 text-slate-500"></i>
-                                <span>Current Residential Address</span>
-                            </div>
-                            <div class="text-[11px] text-slate-800 bg-white p-2 rounded border border-slate-200 leading-relaxed">
-                                ${d.current_address}
-                                ${d.current_district ? `<div class="text-slate-500 font-medium mt-0.5">District: ${d.current_district} ${d.current_pin ? `· PIN: ${d.current_pin}` : ''}</div>` : ''}
-                            </div>
-                        </div>
-                        ${d.temp_address ? `
-                            <div class="col-span-1 md:col-span-2 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200">
-                                <strong>Temporary / Rented Residence:</strong> ${d.temp_address}
-                            </div>
-                        ` : ''}
-                        ${d.post_retirement_district ? `
-                            <div class="col-span-1 md:col-span-2 text-[11px] text-slate-700 bg-white p-2 rounded border border-slate-200 flex items-center gap-2">
-                                <i data-lucide="compass" class="w-3.5 h-3.5 text-wbblue-600 shrink-0"></i>
-                                <span><strong>Post-Retirement Intended Settlement District:</strong> ${d.post_retirement_district}</span>
-                            </div>
-                        ` : ''}
                     </div>
 
                     <!-- Current Simulated Allotment -->
@@ -3787,124 +3390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- TAB 4: FAMILY & WELFARE SAFEGUARDS -->
-                <div id="dossierSecFamily" class="dossier-sec hidden space-y-4">
-                    <!-- Spouse Matter -->
-                    <div class="p-3.5 rounded-xl border-2 border-amber-200 bg-amber-50/40 space-y-2.5">
-                        <div class="flex items-center justify-between flex-wrap gap-2">
-                            <div class="font-bold text-amber-900 flex items-center gap-1.5 text-sm">
-                                <i data-lucide="heart-handshake" class="w-4 h-4 text-amber-700"></i>
-                                <span>Spouse Public Service Profile & Co-Location Safeguards (Memo 291)</span>
-                            </div>
-                            ${d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched ? `
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${d.dynamic_spouse_info.is_same_district ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
-                                    ${d.dynamic_spouse_info.is_same_district ? 'Co-located in Same District' : 'Cross-District Station'}
-                                </span>
-                            ` : ''}
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs bg-white p-3 rounded-lg border border-amber-200">
-                            <div class="flex items-center justify-between flex-wrap gap-1">
-                                <div><strong class="text-slate-600">Spouse Name:</strong> <span class="text-slate-900 font-semibold">${d.spouse_name || 'Not recorded'}</span></div>
-                                ${d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_hrms ? `
-                                    <button type="button" onclick="openOfficerDossier('${d.dynamic_spouse_info.spouse_hrms}')" class="px-2 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 cursor-pointer">
-                                        View Spouse Dossier →
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div><strong class="text-slate-600">Department:</strong> <span class="text-slate-800">${d.spouse_dept || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched ? 'WBAH&VS (ARD Department)' : '—')}</span></div>
-                            <div><strong class="text-slate-600">Live Designation:</strong> <span class="text-slate-800 font-medium">${(d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_current_designation) || d.spouse_desig || '—'}</span></div>
-                            <div><strong class="text-slate-600">Live Station / District:</strong> <span class="text-slate-800 font-medium">${(d.dynamic_spouse_info && d.dynamic_spouse_info.spouse_current_district) || d.spouse_district || '—'}</span></div>
-                            <div class="sm:col-span-2 flex items-center gap-2">
-                                <strong class="text-slate-600">WBAH&VS Cadre Status:</strong> 
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.spouse_is_wbahvs === 'Yes' || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-700'}">
-                                    ${d.spouse_is_wbahvs === 'Yes' || (d.dynamic_spouse_info && d.dynamic_spouse_info.is_cadre_matched) ? 'Active WBAH&VS Cadre Member (Verified Live)' : (d.spouse_is_wbahvs || 'No')}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="text-xs text-amber-950 bg-amber-100/70 p-2.5 rounded border border-amber-300/70 leading-relaxed">
-                            <strong>Statutory Safeguard Note:</strong> ${d.spouse_service_details || 'Memo 291 Clause 7 Co-location safeguard applies.'}
-                        </div>
-                    </div>
-
-                    <!-- Children & Dependants -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="p-3.5 rounded-xl border border-purple-200 bg-purple-50/40 space-y-2">
-                            <div class="font-bold text-purple-900 flex items-center gap-1.5 text-xs">
-                                <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-700"></i>
-                                <span>Children & Academic Board Exams</span>
-                            </div>
-                            <div class="bg-white p-2.5 rounded-lg border border-purple-200 text-xs space-y-1.5">
-                                <div><strong class="text-slate-600">Children Count:</strong> <span class="font-bold text-slate-800">${d.children_count || '0'}</span></div>
-                                ${d.children_board_exams ? `
-                                    <div class="p-2 rounded bg-purple-100 text-purple-950 font-medium">
-                                        <strong>Board Exam Year:</strong> ${d.children_board_exams}
-                                    </div>
-                                ` : '<div class="text-slate-400 italic">No 2026-27 board exams recorded.</div>'}
-                            </div>
-                        </div>
-
-                        <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
-                            <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                                <i data-lucide="users" class="w-4 h-4 text-wbblue-700"></i>
-                                <span>Family Dependencies & Care</span>
-                            </div>
-                            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs text-slate-800 leading-relaxed">
-                                ${d.family_dependencies || 'Standard family dependencies.'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 5: HEALTH & COMPETENCIES -->
-                <div id="dossierSecCompetencies" class="dossier-sec hidden space-y-4">
-                    <!-- Medical Grounds -->
-                    <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-2.5">
-                        <div class="font-bold text-rose-900 flex items-center gap-1.5">
-                            <i data-lucide="activity" class="w-4 h-4 text-rose-700"></i>
-                            <span>Medical Conditions & Special Treatment Requirements</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-3 rounded-lg border border-rose-200">
-                            <div><strong class="text-slate-600">Officer Condition:</strong> <span class="text-slate-900 font-medium">${d.health_conditions || 'None reported'}</span></div>
-                            <div><strong class="text-slate-600">Spouse Condition:</strong> <span class="text-slate-800">${d.spouse_health || 'None reported'}</span></div>
-                            <div><strong class="text-slate-600">Care Needed:</strong> <span class="text-slate-800">${d.care_needed || '—'}</span></div>
-                            <div><strong class="text-slate-600">Facility Needed:</strong> <span class="text-slate-800">${d.facility_needed || '—'}</span></div>
-                            <div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">PwD Status:</strong> <span class="px-2 py-0.5 rounded text-[10px] font-bold ${d.pwd_status && d.pwd_status !== 'Not applicable' ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-700'}">${d.pwd_status || 'Not applicable'}</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Academic & Specializations -->
-                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
-                        <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                            <i data-lucide="graduation-cap" class="w-4 h-4 text-indigo-700"></i>
-                            <span>Academic Qualifications & Post-Graduate Specializations</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
-                            <div><strong class="text-slate-600">Degree:</strong> <span class="text-slate-900 font-bold">${d.qualifications || d.academic_details || 'B.V.Sc. & A.H.'}</span></div>
-                            <div><strong class="text-slate-600">MVSc / PhD Specialization:</strong> <span class="text-slate-900 font-semibold">${d.mvsc_specialization || '—'}</span></div>
-                            ${d.skills_certifications ? `<div class="col-span-1 sm:col-span-2"><strong class="text-slate-600">Skills / Certifications:</strong> <span class="text-slate-800">${d.skills_certifications}</span></div>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- 4-Stream Strengths Ranking -->
-                    ${streamHtml ? `
-                        <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
-                            <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                                <i data-lucide="bar-chart-2" class="w-4 h-4 text-wbblue-700"></i>
-                                <span>Self-Evaluated Core Strengths Ranking (4 Departmental Streams)</span>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                                ${streamHtml}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-
-                <!-- TAB 6: SELF-REPORTED FORM RESPONSES (114+ QUESTIONS) -->
-                <div id="dossierSecResponses" class="dossier-sec hidden space-y-3">
-                    ${selfRepHtml}
-                </div>
-
-                <!-- TAB 7: DISTRICT POSTINGS / INTERACTIVE ALLOCATION COCKPIT -->
+                <!-- TAB 4: DISTRICT POSTINGS / INTERACTIVE ALLOCATION COCKPIT -->
                 <div id="dossierSecGrid" class="dossier-sec hidden space-y-3.5">
                     <!-- Instruction Alert Banner -->
                     <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
@@ -6093,283 +5579,7 @@ ${r.statutory_justification}
     window.setOrganogramFilter = setOrganogramFilter;
     window.filterOrganogram = filterOrganogram;
     window.openOrganogramModal = openOrganogramModal;
-    window.closeOrganogramModal = closeOrganogramModal;
 })();
-
-    // =========================================================================
-    // VISITOR & ACCESS INTELLIGENCE MODAL CONTROLLER
-    // =========================================================================
-
-    let analyticsRefreshInterval = null;
-
-    function formatDuration(totalSec) {
-        if (!totalSec || totalSec <= 0) return '0s';
-        if (totalSec < 60) return `${totalSec}s`;
-        const mins = Math.floor(totalSec / 60);
-        const secs = totalSec % 60;
-        if (mins < 60) return `${mins}m ${secs}s`;
-        const hrs = Math.floor(mins / 60);
-        const remMins = mins % 60;
-        return `${hrs}h ${remMins}m`;
-    }
-
-    function timeAgo(isoStr) {
-        if (!isoStr) return '—';
-        const diffMs = Date.now() - new Date(isoStr).getTime();
-        const diffSec = Math.floor(diffMs / 1000);
-        if (diffSec < 15) return 'Just now';
-        if (diffSec < 60) return `${diffSec}s ago`;
-        const diffMin = Math.floor(diffSec / 60);
-        if (diffMin < 60) return `${diffMin}m ago`;
-        const diffHr = Math.floor(diffMin / 60);
-        if (diffHr < 24) return `${diffHr}h ago`;
-        return `${Math.floor(diffHr / 24)}d ago`;
-    }
-
-    async function loadVisitorAnalytics() {
-        const totalIPsEl = document.getElementById('analyticsTotalIPs');
-        const activeNowEl = document.getElementById('analyticsActiveNow');
-        const avgTimeEl = document.getElementById('analyticsAvgTime');
-        const totalTimeEl = document.getElementById('analyticsTotalTime');
-        const totalIntEl = document.getElementById('analyticsTotalInteractions');
-        const citiesList = document.getElementById('analyticsTopCitiesList');
-        const devicesList = document.getElementById('analyticsDevicesList');
-        const popularList = document.getElementById('analyticsPopularPagesList');
-        const tableBody = document.getElementById('analyticsSessionsTableBody');
-        const searchInput = document.getElementById('analyticsSearchInput');
-        const query = searchInput ? searchInput.value.trim() : '';
-
-        try {
-            const [statsRes, sessionsRes] = await Promise.all([
-                fetch('/api/analytics/stats'),
-                fetch(`/api/analytics/sessions?search=${encodeURIComponent(query)}`)
-            ]);
-
-            const stats = await statsRes.json();
-            const sessionsData = await sessionsRes.json();
-
-            // 1. Update KPI Cards
-            if (totalIPsEl) totalIPsEl.innerText = (stats.total_unique_ips || 0).toLocaleString();
-            if (activeNowEl) activeNowEl.innerText = (stats.active_now || 0).toLocaleString();
-            if (avgTimeEl) avgTimeEl.innerText = formatDuration(stats.avg_time_seconds);
-            if (totalTimeEl) totalTimeEl.innerText = `Total: ${formatDuration(stats.total_time_seconds)} across sessions`;
-            if (totalIntEl) totalIntEl.innerText = (stats.total_pageviews || 0).toLocaleString();
-
-            // 2. Render Top Locations
-            if (citiesList) {
-                const cities = stats.top_cities || [];
-                if (cities.length === 0) {
-                    citiesList.innerHTML = '<div class="text-slate-400 text-center py-4">No location records yet.</div>';
-                } else {
-                    const maxCount = Math.max(...cities.map(c => c.count), 1);
-                    citiesList.innerHTML = cities.map(c => {
-                        const pct = Math.round((c.count / maxCount) * 100);
-                        return `
-                            <div class="space-y-1">
-                                <div class="flex items-center justify-between text-xs">
-                                    <span class="font-bold text-slate-800">${c.city || 'Unknown'}${c.region ? `, ${c.region}` : ''}</span>
-                                    <span class="font-mono text-slate-500 font-semibold">${c.count} ${c.count === 1 ? 'visit' : 'visits'}</span>
-                                </div>
-                                <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-wbblue-600 rounded-full" style="width: ${pct}%"></div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            }
-
-            // 3. Render Devices & Platforms
-            if (devicesList) {
-                const devices = stats.devices || {};
-                const osBreakdown = stats.os_breakdown || {};
-                const browsers = stats.browsers || {};
-
-                const devEntries = Object.entries(devices);
-                if (devEntries.length === 0) {
-                    devicesList.innerHTML = '<div class="text-slate-400 text-center py-4">No device records yet.</div>';
-                } else {
-                    devicesList.innerHTML = `
-                        <div class="space-y-2">
-                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Device Type</div>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${devEntries.map(([k, v]) => `
-                                    <span class="px-2.5 py-1 rounded-xl bg-purple-50 text-purple-900 border border-purple-200 text-xs font-bold flex items-center gap-1.5">
-                                        <i data-lucide="${k === 'Mobile' ? 'smartphone' : k === 'Tablet' ? 'tablet' : 'laptop'}" class="w-3.5 h-3.5 text-purple-700"></i>
-                                        <span>${k}: <strong>${v}</strong></span>
-                                    </span>
-                                `).join('')}
-                            </div>
-                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-2">Operating Systems</div>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${Object.entries(osBreakdown).map(([k, v]) => `
-                                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold border border-slate-200">
-                                        ${k}: ${v}
-                                    </span>
-                                `).join('')}
-                            </div>
-                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-2">Browsers</div>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${Object.entries(browsers).map(([k, v]) => `
-                                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold border border-slate-200">
-                                        ${k}: ${v}
-                                    </span>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-
-            // 4. Render Popular Modules
-            if (popularList) {
-                const popular = stats.popular_pages || [];
-                if (popular.length === 0) {
-                    popularList.innerHTML = '<div class="text-slate-400 text-center py-4">No module data yet.</div>';
-                } else {
-                    popularList.innerHTML = popular.map((p, idx) => `
-                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-[10px] shrink-0 font-mono">${idx + 1}</span>
-                                <span class="font-bold text-slate-800 truncate">${p.page}</span>
-                            </div>
-                            <span class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md text-[11px] shrink-0">${p.count} views</span>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            // 5. Render Sessions Table
-            if (tableBody) {
-                const sessions = sessionsData.sessions || [];
-                if (sessions.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">No matching visitor sessions recorded yet.</td></tr>`;
-                } else {
-                    tableBody.innerHTML = sessions.map(s => {
-                        const statusBadge = s.is_active
-                            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span><span>Online</span></span>`
-                            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold border border-slate-200"><span>Idle</span></span>`;
-
-                        const devIcon = s.device_type === 'Mobile' ? 'smartphone' : (s.device_type === 'Tablet' ? 'tablet' : 'laptop');
-                        const pagesVisited = s.pages_visited || [];
-                        const pagesHtml = pagesVisited.length > 0
-                            ? pagesVisited.slice(-4).map(p => `<span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80 text-[10px] font-medium mr-1 mb-1">${p}</span>`).join('')
-                            : `<span class="text-slate-400">—</span>`;
-
-                        return `
-                            <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${s.is_active ? 'bg-emerald-50/20' : ''}">
-                                <td class="py-2.5 px-3 whitespace-nowrap">${statusBadge}</td>
-                                <td class="py-2.5 px-3 font-mono font-bold text-wbblue-900 whitespace-nowrap">${s.ip_address}</td>
-                                <td class="py-2.5 px-4">
-                                    <div class="font-bold text-slate-900">${s.city}${s.region ? `, ${s.region}` : ''}</div>
-                                    <div class="text-[10px] text-slate-500">${s.country}</div>
-                                </td>
-                                <td class="py-2.5 px-3 whitespace-nowrap">
-                                    <div class="flex items-center gap-1.5 font-medium text-slate-800 text-xs">
-                                        <i data-lucide="${devIcon}" class="w-3.5 h-3.5 text-slate-500"></i>
-                                        <span>${s.device_type}</span>
-                                    </div>
-                                    <div class="text-[10px] font-mono text-slate-500">${s.os} • ${s.browser}</div>
-                                </td>
-                                <td class="py-2.5 px-3 font-mono font-bold text-purple-900 whitespace-nowrap">
-                                    ${formatDuration(s.total_time_seconds)}
-                                </td>
-                                <td class="py-2.5 px-4 max-w-xs">
-                                    <div class="flex flex-wrap">${pagesHtml}</div>
-                                </td>
-                                <td class="py-2.5 px-3 text-right font-mono text-[11px] text-slate-500 whitespace-nowrap">
-                                    ${timeAgo(s.last_seen)}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                }
-            }
-
-            if (window.lucide) lucide.createIcons();
-        } catch (err) {
-            console.error('Error loading visitor analytics:', err);
-        }
-    }
-
-    function openVisitorAnalyticsModal() {
-        const modal = document.getElementById('visitorAnalyticsModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            loadVisitorAnalytics();
-            if (analyticsRefreshInterval) clearInterval(analyticsRefreshInterval);
-            analyticsRefreshInterval = setInterval(loadVisitorAnalytics, 10000);
-            if (window.lucide) lucide.createIcons();
-        }
-    }
-
-    function closeVisitorAnalyticsModal() {
-        const modal = document.getElementById('visitorAnalyticsModal');
-        if (modal) {
-            modal.classList.add('hidden');
-            if (analyticsRefreshInterval) {
-                clearInterval(analyticsRefreshInterval);
-                analyticsRefreshInterval = null;
-            }
-        }
-    }
-
-    function initVisitorAnalyticsUI() {
-        const btnOpenHeader = document.getElementById('btnOpenTrafficAnalytics');
-        if (btnOpenHeader) btnOpenHeader.addEventListener('click', openVisitorAnalyticsModal);
-
-        const btnOpenDrawer = document.getElementById('btnDrawerTrafficAnalytics');
-        if (btnOpenDrawer) {
-            btnOpenDrawer.addEventListener('click', () => {
-                const mobileDrawer = document.getElementById('mobileDrawerModal');
-                if (mobileDrawer) mobileDrawer.classList.add('hidden');
-                openVisitorAnalyticsModal();
-            });
-        }
-
-        const btnFooterSecret = document.getElementById('btnFooterSecretTraffic');
-        if (btnFooterSecret) btnFooterSecret.addEventListener('click', openVisitorAnalyticsModal);
-
-        // Optional discrete admin shortcut: Alt+Shift+T
-        window.addEventListener('keydown', (e) => {
-            if (e.altKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
-                e.preventDefault();
-                openVisitorAnalyticsModal();
-            }
-        });
-
-        const btnClose = document.getElementById('btnCloseVisitorAnalytics');
-        if (btnClose) btnClose.addEventListener('click', closeVisitorAnalyticsModal);
-
-        const btnRefresh = document.getElementById('btnRefreshAnalytics');
-        if (btnRefresh) btnRefresh.addEventListener('click', loadVisitorAnalytics);
-
-        const btnClear = document.getElementById('btnClearAnalytics');
-        if (btnClear) {
-            btnClear.addEventListener('click', async () => {
-                if (confirm('Are you sure you want to reset all visitor and access logs?')) {
-                    await fetch('/api/analytics/clear', { method: 'POST' });
-                    loadVisitorAnalytics();
-                }
-            });
-        }
-
-        const modal = document.getElementById('visitorAnalyticsModal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeVisitorAnalyticsModal();
-            });
-        }
-
-        const searchInput = document.getElementById('analyticsSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', debounce(loadVisitorAnalytics, 300));
-        }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeVisitorAnalyticsModal();
-        });
-    }
 
     // =========================================================================
     // CADRE GIS GEO-MAP MODULE (1,794 POSTS & 23 DISTRICTS)
@@ -6645,8 +5855,4 @@ ${r.statutory_justification}
         }, 300);
     }
     window.viewPostOnMap = viewPostOnMap;
-
-    window.openVisitorAnalyticsModal = openVisitorAnalyticsModal;
-    window.closeVisitorAnalyticsModal = closeVisitorAnalyticsModal;
-    window.loadVisitorAnalytics = loadVisitorAnalytics;
 });

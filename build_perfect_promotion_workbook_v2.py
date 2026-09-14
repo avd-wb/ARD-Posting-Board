@@ -174,6 +174,16 @@ cur.execute("""
     WHERE hrms_id = '2000010253'
 """)
 
+# 13. Purulia: Dr. Samir Kumar Mahapatra [HRMS 1994000296, Roster 109]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Purulia',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Purulia',
+        comments_directive = 'DDARD, Purulia'
+    WHERE hrms_id = '1994000296'
+""")
+
 # Harmonize available_dd_posts
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000000755', allotted_name = 'Dr. Tapan Kumar Sur (SC)' WHERE dd_sl = 94")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994005981', allotted_name = 'Dr. Debasish Dutta' WHERE dd_sl = 97")
@@ -182,6 +192,7 @@ cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1997000337', allotte
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2001000684', allotted_name = 'Dr. Swapan Kumar Dass (SC)' WHERE dd_sl = 104")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998006066', allotted_name = 'Dr. Sudhangsu Sekhar Das (SC)' WHERE dd_sl = 151")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000010253', allotted_name = 'Dr. Kesang Bomzon (ST)' WHERE dd_sl = 83")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994000296', allotted_name = 'Dr. Samir Kumar Mahapatra' WHERE dd_sl = 217")
 conn.commit()
 
 # Load all 326 clean records
@@ -226,7 +237,9 @@ DESIGNATED_INCHARGE_JD = {
     "Bankura": "1992000335",            # Dr. Ganesh Chandra Maji
     "Darjeeling": "1994009135",         # Dr. La Tshering Bhutia (ST)
     "Kalimpong": "2000010253",          # Dr. Kesang Bomzon (ST)
-    "Purulia": "1995000991",            # Dr. Sajal Kumar Bhunia
+    "Purulia": "1994000296",            # Dr. Samir Kumar Mahapatra (per explicit user directive)
+    "Hooghly": "2013001674",            # Dr. Rupam Barua (substantive DDARD&PO, SU as Jt Director)
+    "Howrah": "2008007232",             # Dr. Swarup Bakshi (original Joint Director continues)
 }
 
 def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
@@ -249,22 +262,22 @@ def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
         row = cur.fetchone()
         if row:
             return dict(row)
-        # Dedicated fallback for existing cadre Joint Directors (e.g. Purulia: Dr. Sajal Kumar Bhunia)
-        if target_h == "1995000991":
+        # Dedicated fallback for cadre Deputy Director serving as In-Charge JD (e.g. Hooghly: Dr. Rupam Barua)
+        if target_h == "2013001674":
             return {
                 'dd_sl': '—',
-                'office': 'District Office, Purulia',
-                'post_name': 'Joint Director, ARD',
-                'allotted_hrms': '1995000991',
-                'allotted_name': 'Dr. Sajal Kumar Bhunia',
-                'roster_sl': 'Civil Gradation #2 (JD)',
-                'service_utilized_at': 'Nil',
-                'comments_directive': 'Designated DDARD & In-Charge Joint Director, Purulia',
-                'office_code': '4ADHO062',
-                'ddo_code': 'PUAARA001',
-                'transferred_substantive_post': 'Joint Director, ARD, Purulia',
+                'office': 'District Office, Hooghly',
+                'post_name': 'Deputy Director, ARD & PO',
+                'allotted_hrms': '2013001674',
+                'allotted_name': 'Dr. Rupam Barua (ST)',
+                'roster_sl': 'Civil Gradation #5 (DD)',
+                'service_utilized_at': 'Joint Director, ARD, Hooghly',
+                'comments_directive': 'Substantive DDARD & PO, Hooghly; SU as Joint Director, Hooghly',
+                'office_code': '3ADHO008',
+                'ddo_code': 'HGBARA001',
+                'transferred_substantive_post': 'DDARD & PO, Hooghly',
                 'gender': 'Male',
-                'category': 'SC'
+                'category': 'ST'
             }
 
     # Priority 2: Filter allotted DDs with SU == Nil (stationed at District HQ)
@@ -687,7 +700,11 @@ for idx, cfg in enumerate(DISTRICT_HQ_CONFIG, 1):
     non_count = len(allotted_dds) - avd_count
     avd_pct = f"{(avd_count / len(allotted_dds) * 100):.1f}%" if allotted_dds else "0%"
 
-    if sub_jds:
+    if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur']:
+        r_label = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
+        jd_str = f"In-Charge (SU): {senior_dd['allotted_name']} [{r_label}]"
+        rem_str = f"Designated DDARD and In-Charge JD ({senior_dd['allotted_name']}, {r_label}) under Order 575."
+    elif sub_jds:
         if len(sub_jds) == 1:
             jd_str = f"Substantive: {sub_jds[0]['incumbent_name']} ({sub_jds[0]['incumbent_hrms']})"
             rem_str = f"Substantive JD in position; {len(allotted_dds)} DD posts substantively filled."
@@ -1022,7 +1039,17 @@ for cfg in DISTRICT_HQ_CONFIG:
         inc_h = (j['incumbent_hrms'] or '').strip()
         is_sub = bool(inc_n and inc_n.lower() not in ['vacant', 'none', 'null', ''])
 
-        if is_sub:
+        if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur'] and senior_dd and idx == 1:
+            o_name = f"In-Charge: {senior_dd['allotted_name']}"
+            o_hrms = senior_dd['allotted_hrms'] or ''
+            r_sl = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
+            dep = f"Held on Additional Charge / In-Charge Joint Director by DDARD ({senior_dd['allotted_name']})"
+            status = 'Filled (In-Charge SU)'
+            p_class = 'Additional Charge / In-Charge SU'
+            w_stat = estab
+            is_m, _ = roll.is_member(o_hrms, senior_dd['allotted_name'])
+            rem = f"Designated DDARD and In-Charge Joint Director, ARD under Order No. 575-AR&AH dt. 24.02.2023"
+        elif is_sub:
             o_name = inc_n
             o_hrms = inc_h
             r_sl = 'Incumbent JD'
@@ -1639,7 +1666,9 @@ for idx, r in enumerate(records, 1):
 
     codes_text = f"[HRMS: {hid or '—'} | Office: {off_c or '—'} | DDO: {ddo_c or '—'}]"
     present_loc = f"{pest or ''}, {pblk or ''}, {pdist or ''}".strip(", ")
-    col2_val = f"{name} ({gen}, {cat}) {codes_text}\n[Present: {pdes or 'Officer'}, {present_loc}]"
+    pres_su = r.get('present_su')
+    pres_su_txt = f" (SU at {pres_su})" if pres_su and str(pres_su).strip() not in ['Nil', '—', '', 'None'] else ""
+    col2_val = f"{name} ({gen}, {cat}) {codes_text}\n[Present: {pdes or 'Officer'}, {present_loc}{pres_su_txt}]"
 
     if su and su != "Nil" and su != "—":
         col4_val = f"Service Utilized at:\n{su}\n({comm or rem or 'Under Administrative Directive'})"
@@ -1702,7 +1731,9 @@ rectifications = [
     (10, "Executive Directive: BLDO Joypur (Bankura) Deployment", "Dr. Shampa Dey (HRMS 1995004636, Roster Sl 136) was tentatively slotted on Service Utilization at BLDO Uttardinajpur.",
      "Assigned Service Utilization (SU) as Block Livestock Development Officer, Joypur, Bankura per explicit executive instruction, filling the block post vacated by Dr. Srimanta Sarkar's promotion.", "Dr. Shampa Dey (Sl 136)", "100% RESOLVED"),
     (11, "Telephonic Executive Directives: Additional District DDARD Postings", "District leadership assignments for North 24 Parganas, Nadia, South 24 Parganas, Bankura, Darjeeling, Kalimpong, and Purulia were pending final authorization.",
-     "Designated Dr. Rajkumar Maity (N 24 Pgs), Dr. Sudhangsu Sekhar Das (Nadia), Dr. Nisith Kr. Panda (S 24 Pgs), Dr. Ganesh Chandra Maji (Bankura), Dr. La Tshering Bhutia (Darjeeling), Dr. Kesang Bomzon (Kalimpong), and Dr. Sajal Kumar Bhunia (Purulia) as DDARD & In-Charge Joint Directors per explicit executive directives.", "7 Districts (12 Total Assigned)", "100% RESOLVED")
+     "Designated Dr. Rajkumar Maity (N 24 Pgs), Dr. Sudhangsu Sekhar Das (Nadia), Dr. Nisith Kr. Panda (S 24 Pgs), Dr. Ganesh Chandra Maji (Bankura), Dr. La Tshering Bhutia (Darjeeling), Dr. Kesang Bomzon (Kalimpong), and Dr. Samir Kumar Mahapatra (Purulia) as DDARD & In-Charge Joint Directors per explicit executive directives.", "7 Districts (12 Total Assigned)", "100% RESOLVED"),
+    (12, "Executive Directives: Purulia, Howrah & Hooghly Affirmation", "Executive guidance clarified that Purulia is designated exclusively for Dr. Samir Kumar Mahapatra, Howrah continues with original JD Dr. Swarup Bakshi, and Hooghly is assigned to Dr. Rupam Barua.",
+     "Confirmed Dr. Samir Kumar Mahapatra as DDARD & In-Charge Joint Director, Purulia. Confirmed Dr. Swarup Bakshi continuing as original Joint Director, Howrah. Designated Dr. Rupam Barua (substantive DDARD&PO, Hooghly) on SU as Joint Director, Hooghly. All non-JD districts continue with active SU Joint Directors.", "Statewide Headquarters Setups", "100% RESOLVED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):

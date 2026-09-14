@@ -149,11 +149,7 @@ DATASET_SCHEMAS: Dict[str, Dict[str, Any]] = {
             {"key": "incumbent_hrms", "label": "HRMS ID", "width": 14, "align": "center", "is_default": True},
             {"key": "incumbent_tenure", "label": "Tenure (Yrs)", "width": 14, "align": "right", "is_default": True},
             {"key": "tenure_over_flag", "label": "Tenure Status", "width": 16, "align": "center", "is_default": True},
-            {"key": "incumbent_dor", "label": "Retirement Date", "width": 16, "align": "center", "is_default": True},
-            {"key": "caste", "label": "Caste", "width": 12, "align": "center", "is_default": False},
-            {"key": "home_district", "label": "Native District", "width": 16, "align": "left", "is_default": False},
-            {"key": "spouse_service_details", "label": "Spouse Details", "width": 24, "align": "left", "is_default": False},
-            {"key": "children_board_exams", "label": "Board Exam Safeguard", "width": 20, "align": "left", "is_default": False}
+            {"key": "incumbent_dor", "label": "Retirement Date", "width": 16, "align": "center", "is_default": True}
         ],
         "default_sort": "post_sl",
         "default_order": "asc"
@@ -296,11 +292,9 @@ class DepartmentDataExporter:
                 p.id, p.post_sl, p.district, p.block, p.establishment, p.estab_type,
                 p.designation, p.pay_level, p.occupancy_status, p.incumbent_name,
                 p.incumbent_hrms, p.incumbent_tenure, p.tenure_norm, p.tenure_over_flag,
-                p.incumbent_dor, e.caste, d.home_district, d.spouse_service_details,
-                d.children_board_exams
+                p.incumbent_dor
             FROM cadre_1794_posts p
             LEFT JOIN master_all_cadre_employees e ON p.incumbent_hrms = e.hrms_id
-            LEFT JOIN officer_extended_dossier d ON p.incumbent_hrms = d.hrms_id
             """
 
         # 2. Apply Filters

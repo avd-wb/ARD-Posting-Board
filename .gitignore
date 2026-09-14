@@ -14,3 +14,10 @@ debi_da_final.xlsx
 scratch/
 ard_posting_master.db
 avd_database.db
+*.bak
+*.bak.*
+Promotion_242_Draft_*.xlsx
+Promotion_242_Final_List_*.xlsx
+Promotion_242_Final_List_*.AG.xlsx
+*.docx
+latest_gdrive_download/

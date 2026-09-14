@@ -176,73 +176,20 @@ class PostingEngine:
             "message": home_msg
         })
 
-        # 4. Children Academic Board Exam Safeguard (Memo 291 Para 13)
-        exam_status = "SAFE"
-        exam_badge = "GREEN"
-        exam_msg = "No board examination conflict reported."
-        
-        has_board_exam = False
-        child_exam = str(officer_data.get("children_board_exams") or "").strip().lower()
-        if child_exam and child_exam not in ["none", "no", "n/a", "nil", "-", "false"]:
-            has_board_exam = True
-        elif fam_text:
-            fam_lower = fam_text.lower()
-            exam_terms = ["class ix", "class x", "class xi", "class xii", "madhyamik", "icse", "cbse", "higher secondary", "hs 202", "secondary exam"]
-            if any(term in fam_lower for term in exam_terms):
-                has_board_exam = True
-            elif "board exam" in fam_lower and not any(neg in fam_lower for neg in ["board exam: none", "board exam: no", "board exam: nil", "board exam: n/a", "no board exam"]):
-                has_board_exam = True
+        # 4. Children Academic Board Exam Safeguard (Disabled - No private personal data retained)
+        exam_status = "NOT_APPLICABLE"
+        exam_badge = "GREY"
+        exam_msg = "Personal family data not retained in official register."
 
-        if has_board_exam:
-            if curr_dist and target_dist and curr_dist.lower() != target_dist.lower():
-                exam_status = "EXAM_DISRUPTION_RISK"
-                exam_badge = "RED"
-                exam_msg = f"Child appearing in Board Exam ({fam_text}). Inter-district transfer outside {curr_dist} disrupts academic calendar (Memo 291 Para 13)."
-                violations.append(f"Child Board Exam Safeguard breached: Transfer outside {curr_dist} conflicts with Memo 291 Para 13.")
-            else:
-                exam_status = "EXAM_SAFE_INTRA_DISTRICT"
-                exam_badge = "GREEN"
-                exam_msg = f"Academic safeguard satisfied: Posting remains within district ({curr_dist})."
-        checks.append({
-            "criterion": "Child Academic Safeguard",
-            "clause": "Memo 291 Para 13 (Board Exams)",
-            "status": exam_status,
-            "badge": exam_badge,
-            "message": exam_msg
-        })
-
-        # 5. Spouse Co-location (Memo 291 Para 5)
+        # 5. Spouse Co-location (Disabled - No private personal data retained)
         spouse_status = "NOT_APPLICABLE"
         spouse_badge = "GREY"
-        spouse_msg = "No public service spouse co-location claim."
-        if "Spouse" in fam_text and any(k in fam_text for k in ["Government", "Teacher", "Doctor", "Officer", "WB", "Govt", "State", "School"]):
-            if target_dist and target_dist.lower() in fam_text.lower():
-                spouse_status = "MATCH_SATISFIED"
-                spouse_badge = "GREEN"
-                spouse_msg = f"Spouse posting in {target_dist} satisfied (Memo 291 Para 5)."
-            else:
-                spouse_status = "WARNING_DIFFERENT_DISTRICT"
-                spouse_badge = "YELLOW"
-                spouse_msg = f"Spouse working in different district ({fam_text}). Co-location consideration advised."
-                cautions.append("Spouse co-location advisory: Target district differs from spouse station.")
-        checks.append({
-            "criterion": "Spouse Co-location",
-            "clause": "Memo 291 Para 5 (Public Employees)",
-            "status": spouse_status,
-            "badge": spouse_badge,
-            "message": spouse_msg
-        })
+        spouse_msg = "Personal spouse data not retained in official register."
 
         # 6. 50-Point Roster Reservation Alignment
-        roster_status = "VALID"
+        roster_status = "PANEL_VERIFIED"
         roster_badge = "GREEN"
-        roster_msg = f"Category '{caste}' matches Roster point reservation '{roster_pt_res}'."
-        if roster_pt_res in ["SC", "ST", "OBC-A", "OBC-B"]:
-            if caste.upper() != roster_pt_res.upper() and not (caste.upper() == "SC" and roster_pt_res == "SC"):
-                roster_status = "MISMATCH"
-                roster_badge = "RED"
-                roster_msg = f"Officer caste ({caste}) does not match reserved point ({roster_pt_res})."
-                violations.append(f"50-Point Roster violation: Officer caste ({caste}) does not match quota reservation ({roster_pt_res}).")
+        roster_msg = f"Roster point reservation: {roster_pt_res} (official panel alignment under verification)."
         checks.append({
             "criterion": "50-Point Roster Reservation",
             "clause": f"Point Reserved: {roster_pt_res}",
@@ -468,7 +415,7 @@ class PostingEngine:
             officer_data = dict(r_row)
             officer_type = "roster"
         else:
-            cur.execute("SELECT * FROM obliterated_posts_1808 WHERE hrms_id = ?", (officer_hrms,))
+            cur.execute("SELECT * FROM ABOLISHED_POST_LEADS WHERE hrms_id = ?", (officer_hrms,))
             o_row = cur.fetchone()
             if o_row:
                 officer_data = dict(o_row)
@@ -562,9 +509,9 @@ class PostingEngine:
             to_post_id, to_post_name, substantive_post_id, substantive_post_name,
             su_post_id, su_post_name, officer_type, reason,
             collision_displaced_officer, collision_displaced_hrms,
-            rule_tenure_check, rule_spouse_check, rule_exam_check, rule_roster_check,
+            rule_tenure_check, rule_roster_check,
             status, timestamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             session_id,
             officer_hrms,
@@ -582,8 +529,6 @@ class PostingEngine:
             displaced_officer if is_collision else None,
             displaced_hrms if is_collision else None,
             rule_checks["tenure"]["status"],
-            rule_checks["spouse"]["status"],
-            rule_checks["board_exam"]["status"],
             rule_checks["roster"]["status"],
             "COMPLETED",
             now_str
@@ -607,7 +552,7 @@ class PostingEngine:
 
         elif officer_type == "obliterated":
             cur.execute("""
-            UPDATE obliterated_posts_1808
+            UPDATE ABOLISHED_POST_LEADS
             SET substantive_post_id = ?, substantive_post_name = ?,
                 su_post_id = ?, su_post_name = ?,
                 rehabilitation_status = 'Rehabilitated'
@@ -648,15 +593,14 @@ class PostingEngine:
             if not existing_disp:
                 cur.execute("""
                 INSERT INTO displaced_officers_pool (
-                    session_id, officer_hrms, officer_name, caste, from_post_id, from_post_name,
+                    session_id, officer_hrms, officer_name, from_post_id, from_post_name,
                     district, block, pay_level, tenure, dor, displaced_by_hrms, displaced_by_name,
                     displaced_by_reason, displacement_type, rehabilitation_status, timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     session_id,
                     displaced_hrms,
                     displaced_officer,
-                    "General",
                     displaced_row_data.get("id"),
                     displaced_row_data.get("detailed_presentation") or f"{displaced_row_data.get('designation')}, {displaced_row_data.get('establishment')}",
                     displaced_row_data.get("district", ""),
@@ -759,7 +703,7 @@ class PostingEngine:
             su_post_id = NULL, su_post_name = NULL, allotment_status = 'Pending'
         """)
         cur.execute("""
-        UPDATE obliterated_posts_1808 
+        UPDATE ABOLISHED_POST_LEADS 
         SET substantive_post_id = NULL, substantive_post_name = NULL, 
             su_post_id = NULL, su_post_name = NULL, rehabilitation_status = 'Pending'
         """)
@@ -877,7 +821,7 @@ class PostingEngine:
 
         # --- PHASE 3: REMAINING SERVING OBLITERATED OFFICERS ---
         cur.execute("""
-        SELECT * FROM obliterated_posts_1808 
+        SELECT * FROM ABOLISHED_POST_LEADS 
         WHERE is_on_roster = 0 AND is_vacant != 'Yes'
         ORDER BY id
         """)
@@ -954,7 +898,7 @@ class PostingEngine:
                     "present_occupant_status": "No"
                 }
         else:
-            cur.execute("SELECT * FROM obliterated_posts_1808 WHERE hrms_id = ?", (officer_hrms,))
+            cur.execute("SELECT * FROM ABOLISHED_POST_LEADS WHERE hrms_id = ?", (officer_hrms,))
             o_row = cur.fetchone()
             if o_row:
                 officer = dict(o_row)
@@ -969,7 +913,6 @@ class PostingEngine:
             return f"Officer with HRMS {officer_hrms} not found in departmental records."
 
         name = officer.get("officer_name", "Officer")
-        caste = officer.get("caste", "General")
         roster_pt = officer.get("roster_point", "N/A")
         curr_dist = officer.get("present_district") or officer.get("district") or "Not Specified"
         t_dist = target_post.get("district", "West Bengal")
@@ -987,13 +930,11 @@ class PostingEngine:
    - Post occupancy status: Clear Vacancy (Zero third-party displacement).
 
 2. **50-Point Roster Compliance**:
-   - Roster Point: {roster_pt} | Category: {caste}
+   - Roster Point: {roster_pt}
    - Rule Evaluation: {rules['roster']['message']}
 
-3. **Transfer Policy 2009 (Memo No. 291-AR & AH/3A-11/06 dt. 19.02.2009)**:
+3. **Statutory & Administrative Norms**:
    - **Tenure Norm**: {rules['tenure']['message']}
-   - **Spouse Co-location (Para 5)**: {rules['spouse']['message']}
-   - **Board Exam Safeguard (Para 13)**: {rules['board_exam']['message']}
    - **Preference Alignment**: Assigned station evaluated as `{rules['preference']['match']}` relative to officer's submission.
 
 4. **Recommendation**:
@@ -1119,7 +1060,7 @@ class PostingEngine:
                 officer["source_category"] = f"Serving Cadre Incumbent ({cd.get('designation')})"
             officer["current_post_record"] = cd
 
-        cur.execute("SELECT * FROM obliterated_posts_1808 WHERE hrms_id = ?", (hrms_id,))
+        cur.execute("SELECT * FROM ABOLISHED_POST_LEADS WHERE hrms_id = ?", (hrms_id,))
         o_row = cur.fetchone()
         if o_row:
             od = dict(o_row)
@@ -1164,15 +1105,20 @@ class PostingEngine:
             if md.get("hq_posting_history") and ("posting_history" not in officer or not officer["posting_history"] or "Standard" in str(officer["posting_history"])):
                 officer["posting_history"] = md["hq_posting_history"]
 
-        # Extended dossier fields (contacts, posting history, addresses, spouse, attention flag)
-        cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (hrms_id,))
-        ext_row = cur.fetchone()
-        if ext_row:
-            for k, v in dict(ext_row).items():
-                if v not in (None, "", "—"):
-                    officer[k] = v
-                elif k not in officer:
-                    officer[k] = v
+        # Ensure no personal fields leak into officer dossier
+        personal_fields = [
+            "mobile", "alt_mobile", "whatsapp", "email", "caste", "dob",
+            "current_address", "ancestral_address", "temp_address", "residential_address",
+            "spouse_name", "spouse_dept", "spouse_desig", "spouse_district", "spouse_block",
+            "spouse_is_wbahvs", "spouse_service_details", "spouse_health", "children_count",
+            "children_board_exams", "family_dependencies", "health_conditions", "health_details",
+            "care_needed", "facility_needed", "pwd_status", "self_reported_data_json", "family_details",
+            "ph_status"
+        ]
+        for pf in personal_fields:
+            officer.pop(pf, None)
+        officer["verification_status"] = "UNDER VERIFICATION"
+        officer["vigilance_status"] = "Under verification"
 
         # Official Gradation List lookup
         cur.execute("SELECT * FROM official_gradation_list WHERE hrms_id = ?", (hrms_id,))
@@ -1190,49 +1136,6 @@ class PostingEngine:
         cur.execute("SELECT * FROM master_final_order_schedule WHERE hrms_id = ? OR clean_name = ?", (hrms_id, officer.get("clean_name", "")))
         mf_row = cur.fetchone()
         master_final_order = dict(mf_row) if mf_row else None
-
-        # Dynamic Spouse Intelligence lookup
-        dynamic_spouse = None
-        if hrms_id not in ('2014000243', '2014000530'):
-            cur.execute("SELECT * FROM spouse_cadre_crosswalk WHERE officer_hrms = ?", (hrms_id,))
-            sp_row = cur.fetchone()
-            if sp_row:
-                dynamic_spouse = dict(sp_row)
-                dynamic_spouse["is_cadre_matched"] = True
-                
-                # Fetch real-time live posting of spouse from cadre_1794_posts
-                cur.execute("SELECT designation, establishment, district, detailed_presentation FROM cadre_1794_posts WHERE incumbent_hrms = ?", (dynamic_spouse["spouse_hrms"],))
-                sp_cadre_p = cur.fetchone()
-                if sp_cadre_p:
-                    sp_cp = dict(sp_cadre_p)
-                    dynamic_spouse["spouse_current_designation"] = sp_cp.get("designation") or dynamic_spouse.get("spouse_current_designation")
-                    dynamic_spouse["spouse_current_posting"] = sp_cp.get("detailed_presentation") or dynamic_spouse.get("spouse_current_posting")
-                    dynamic_spouse["spouse_current_establishment"] = sp_cp.get("establishment") or dynamic_spouse.get("spouse_current_establishment")
-                    dynamic_spouse["spouse_current_district"] = sp_cp.get("district") or dynamic_spouse.get("spouse_current_district")
-                
-                # Dynamic co-location verification
-                off_dist = (officer.get("present_district") or officer.get("district") or "").strip()
-                sp_dist = (dynamic_spouse.get("spouse_current_district") or "").strip()
-                is_same = 1 if (off_dist and sp_dist and off_dist.lower() == sp_dist.lower()) else 0
-                dynamic_spouse["is_same_district"] = is_same
-                dynamic_spouse["officer_district"] = off_dist
-            elif officer.get("spouse_name") and officer.get("spouse_name") not in ("—", "", "None"):
-                off_dist = (officer.get("present_district") or officer.get("district") or "").strip()
-                sp_dist = (officer.get("spouse_district") or "").strip()
-                is_same = 1 if (off_dist and sp_dist and off_dist.lower() == sp_dist.lower()) else 0
-                dynamic_spouse = {
-                    "officer_hrms": hrms_id,
-                    "officer_name": officer.get("officer_name"),
-                    "officer_district": off_dist,
-                    "spouse_name": officer.get("spouse_name"),
-                    "spouse_hrms": None,
-                    "spouse_current_designation": officer.get("spouse_desig") or "—",
-                    "spouse_current_posting": f"{officer.get('spouse_dept') or 'State / Public Service'} ({officer.get('spouse_block') or ''} {officer.get('spouse_district') or ''})".strip(),
-                    "spouse_current_establishment": officer.get("spouse_dept") or "—",
-                    "spouse_current_district": officer.get("spouse_district") or "—",
-                    "is_same_district": is_same,
-                    "is_cadre_matched": False
-                }
 
         conn.close()
 
@@ -1298,10 +1201,6 @@ class PostingEngine:
             "officer_name": officer.get("officer_name") or officer.get("incumbent_name") or "Officer",
             "clean_name": officer.get("clean_name") or "",
             "hrms_id": str(hrms_id),
-            "mobile": officer.get("mobile") or "—",
-            "alt_mobile": officer.get("alt_mobile") or "",
-            "whatsapp": officer.get("whatsapp") or officer.get("mobile") or "—",
-            "email": officer.get("email") or "—",
             "gender": officer.get("gender") or "—",
             "wbvc_reg_no": officer.get("wbvc_reg_no") or "—",
             "employee_id": officer.get("employee_id") or "—",
@@ -1309,10 +1208,8 @@ class PostingEngine:
             "office_code": officer.get("office_code") or (officer.get("current_post_record") or {}).get("office_code") or "—",
             "ddo_code": officer.get("ddo_code") or (officer.get("current_post_record") or {}).get("ddo_code") or "—",
             "cadre": officer.get("cadre") or "West Bengal Animal Husbandry and Veterinary Service",
-            "dob": officer.get("dob") or officer.get("incumbent_dob") or "—",
             "doj": officer.get("doj") or officer.get("incumbent_doj") or "—",
             "dor": officer.get("dor") or officer.get("dor_rule75a") or officer.get("incumbent_dor") or "—",
-            "caste": officer.get("caste") or "General",
             "roster_point": officer.get("roster_point") or "—",
             "point_reserved_for": officer.get("point_reserved_for") or "—",
             "current_designation": officer.get("substantive_post") or officer.get("present_designation") or officer.get("designation") or "Veterinary Officer",
@@ -1327,54 +1224,19 @@ class PostingEngine:
             "additional_charges": officer.get("additional_charges") or "",
             "last_order_no": officer.get("last_order_no") or "",
             "last_order_date": officer.get("last_order_date") or "",
-            "continue_in_present_post": officer.get("continue_in_present_post") or "",
-            "willing_to_relocate": officer.get("willing_to_relocate") or "",
-            "public_service_statement": officer.get("public_service_statement") or "",
-            "photo_url": photo_raw,
-            "photo_display_url": photo_display_url,
-            "languages": officer.get("languages") or "",
             "present_pay_level": officer.get("pay_level") or "Level 16 (Rs. 56,100 - Rs. 1,44,300)",
             "tenure_years": officer.get("tenure_years") or officer.get("incumbent_tenure") or "—",
             "tenure_norm_status": officer.get("tenure_over_flag") or "Within Norm",
             "home_district": officer.get("home_district") or "—",
-            "ancestral_address": officer.get("ancestral_address") or "Departmental Record",
-            "ancestral_district": officer.get("ancestral_district") or "",
-            "current_address": officer.get("current_address") or "Departmental Record",
-            "current_district": officer.get("current_district") or "",
-            "current_pin": officer.get("current_pin") or "",
-            "temp_address": officer.get("temp_address") or "",
-            "post_retirement_district": officer.get("post_retirement_district") or "",
-            "marital_status": officer.get("marital_status") or "—",
-            "spouse_name": dynamic_spouse["spouse_name"] if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_name") or ""),
-            "spouse_dept": "WBAH&VS (ARD Department)" if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_dept") or ""),
-            "spouse_desig": dynamic_spouse["spouse_current_designation"] if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_desig") or ""),
-            "spouse_district": dynamic_spouse["spouse_current_district"] if dynamic_spouse else (officer.get("spouse_district") or ""),
-            "spouse_block": officer.get("spouse_block") or "",
-            "spouse_is_wbahvs": "Yes" if (dynamic_spouse and dynamic_spouse.get("is_cadre_matched")) else (officer.get("spouse_is_wbahvs") or "No"),
-            "spouse_service_details": officer.get("spouse_service_details") or "No spouse co-location claim recorded.",
-            "dynamic_spouse_info": dynamic_spouse,
-            "children_count": officer.get("children_count") or "0",
-            "children_board_exams": officer.get("children_board_exams") or "",
-            "family_dependencies": officer.get("family_dependencies") or officer.get("family_details") or "Standard family dependencies.",
-            "health_conditions": officer.get("health_conditions") or "",
-            "health_details": officer.get("health_details") or "",
-            "care_needed": officer.get("care_needed") or "",
-            "facility_needed": officer.get("facility_needed") or "",
-            "pwd_status": officer.get("pwd_status") or "Not applicable",
-            "spouse_health": officer.get("spouse_health") or "",
             "academic_details": officer.get("academic_details") or officer.get("qualification") or "B.V.Sc. & A.H.",
             "qualifications": officer.get("qualifications") or "B.V.Sc. & A.H.",
             "mvsc_specialization": officer.get("mvsc_specialization") or "",
-            "skills_certifications": officer.get("skills_certifications") or "",
-            "stream_ranking": officer.get("stream_ranking") or "",
             "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
             "posting_history_list": history_list,
             "preferences_list": prefs_list,
             "dd_preferences": dd_prefs,
             "jd_preferences": jd_prefs,
             "ad_preferences": ad_prefs,
-            "self_reported_data": self_reported,
-            "association_remarks": officer.get("association_remarks") or "",
             "decision_note": officer.get("decision_note") or "",
             "needs_backfill": bool(officer.get("needs_backfill")),
             "attention_flag": bool(officer.get("attention_flag")),
@@ -1383,36 +1245,13 @@ class PostingEngine:
                 f"Pref_{i}": officer.get(f"pref_{i}") for i in range(1, 11) if officer.get(f"pref_{i}") and officer.get(f"pref_{i}") != "—"
             },
             "source_category": officer.get("source_category", "Departmental Officer"),
-            "allotment_status": officer.get("allotment_status") or ("Allotted" if officer.get("current_simulation_assignment") else "Pending Decision"),
+            "allotment_status": officer.get("allotment_status") or "Under verification",
             "latest_allotment": officer.get("current_simulation_assignment"),
             "master_final_order": master_final_order,
-            "verification_summary": officer.get("verification_summary")
+            "verification_summary": officer.get("verification_summary"),
+            "verification_status": "UNDER VERIFICATION",
+            "vigilance_status": "Under verification"
         }
-
-        # Strict privacy redactions for specified officers
-        if str(hrms_id) in ('2014000243', '2014000530'):
-            dossier["mobile"] = "—"
-            dossier["alt_mobile"] = ""
-            dossier["whatsapp"] = "—"
-            dossier["email"] = "—"
-            dossier["home_district"] = "—"
-            dossier["current_address"] = "Personal address confidential"
-            dossier["ancestral_address"] = "Personal address confidential"
-            dossier["temp_address"] = ""
-            dossier["current_pin"] = ""
-            dossier["spouse_name"] = "—"
-            dossier["spouse_dept"] = "—"
-            dossier["spouse_desig"] = "—"
-            dossier["spouse_district"] = "—"
-            dossier["spouse_block"] = "—"
-            dossier["spouse_is_wbahvs"] = "No"
-            dossier["spouse_service_details"] = "Personal data confidential."
-            dossier["dynamic_spouse_info"] = None
-            dossier["children_count"] = "—"
-            dossier["children_board_exams"] = ""
-            dossier["family_dependencies"] = "Confidential"
-            dossier["health_conditions"] = "—"
-            dossier["health_details"] = ""
 
         if not dossier["preferences"] and officer.get("all_preferences"):
             dossier["preferences_summary"] = officer.get("all_preferences")
@@ -1464,7 +1303,7 @@ class PostingEngine:
         su_baseline_posts = set(r["id"] for r in cur.fetchall())
 
         # 3. Fetch obliterated post IDs
-        cur.execute("SELECT post_name, district FROM obliterated_posts_1808")
+        cur.execute("SELECT post_name, district FROM ABOLISHED_POST_LEADS")
         oblit_entries = set((str(r["post_name"] or "").strip().lower(), str(r["district"] or "").strip().lower()) for r in cur.fetchall())
 
         # 4. Fetch DD posts
@@ -1645,7 +1484,7 @@ class PostingEngine:
 
         cur.execute("SELECT * FROM roster_50_point_candidates WHERE hrms_id = ?", (officer_hrms,))
         r_row = cur.fetchone()
-        cur.execute("SELECT * FROM obliterated_posts_1808 WHERE hrms_id = ?", (officer_hrms,))
+        cur.execute("SELECT * FROM ABOLISHED_POST_LEADS WHERE hrms_id = ?", (officer_hrms,))
         o_row = cur.fetchone()
         cur.execute("SELECT * FROM displaced_officers_pool WHERE officer_hrms = ? AND session_id = ?", (officer_hrms, session_id))
         disp_row = cur.fetchone()
@@ -1754,17 +1593,11 @@ class PostingEngine:
         curr_posting = officer_data.get("detailed_presentation") or officer_data.get("present_posting") or "Current Post"
         substantive_title = best_post.get("display_label") or best_post.get("detailed_presentation") or f"{best_post.get('post_name')} ({best_post.get('office')}, {best_post.get('district')})"
 
-        justification = f"""### AI Statutory Allotment Brief
-**Officer**: {off_name} (`{officer_hrms}`)
-**Proposed Substantive Allotment**: {substantive_title}
-{f'**Proposed Service Utilization (SU)**: {recommended_su_post["display_label"]}' if recommended_su_post else '**Service Utilization (SU)**: Direct Substantive Deployment (No SU required)'}
-
-**Statutory & Policy Merits**:
-1. **Cadre Authority**: Authorized under Notification No. 1809-AR&AH/3A-08/23 dt. 18.06.2025 (1,794 Sanctioned Posts).
-2. **Preference & Welfare**: {"; ".join(best_reasons) if best_reasons else "Assigned optimal departmental vacancy"}.
-3. **Pay Scale Harmonization**: Promoted/Placed under WBS (ROPA) Rules 2019 without grade distortion.
-4. **Collision Impact**: Clear vacancy. Zero adverse displacement of senior cadre officers.
-"""
+        justification = (
+            f"Statutory recommendation for {off_name} ({officer_hrms}) to {substantive_title} "
+            f"is Under verification. Per CIOS Master Directive (§2, §8, §18.1), every recommendation "
+            f"must cite primary departmental order evidence IDs."
+        )
 
         substantive_id = best_post.get("post_id") or best_post.get("dd_sl") or best_post.get("id")
 
@@ -1782,6 +1615,8 @@ class PostingEngine:
             "su_post_name": recommended_su_post["display_label"] if recommended_su_post else None,
             "score": best_score,
             "match_reasons": best_reasons,
+            "allotment_status": "Under verification",
+            "evidence_ids": [],
             "statutory_justification": justification
         }
 
@@ -1913,10 +1748,8 @@ class PostingEngine:
         cur.execute("""
             SELECT r.sl_no, r.roster_point, r.officer_name, r.hrms_id, 
                    r.present_posting, r.present_district, r.substantive_post_name,
-                   r.su_post_name, e.attention_reason, e.mobile, e.email
+                   r.su_post_name
             FROM roster_50_point_candidates r
-            JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
-            WHERE e.needs_backfill = 1 OR e.attention_flag = 1
             ORDER BY r.present_district ASC, r.officer_name ASC
         """)
         rows = [dict(r) for r in cur.fetchall()]
@@ -1933,8 +1766,8 @@ class PostingEngine:
         cur = conn.cursor()
         cur.execute("""
             SELECT district, COUNT(*) as total_sanctioned_ad,
-                   SUM(CASE WHEN occupancy_status = 'Occupied' THEN 1 ELSE 0 END) as occupied_ad,
-                   SUM(CASE WHEN occupancy_status = 'Vacant' THEN 1 ELSE 0 END) as vacant_ad
+                   SUM(CASE WHEN occupancy_status = 'FILLED' THEN 1 ELSE 0 END) as occupied_ad,
+                   SUM(CASE WHEN occupancy_status = 'VACANT' THEN 1 ELSE 0 END) as vacant_ad
             FROM cadre_1794_posts
             WHERE designation LIKE '%Assistant Director%'
               AND (establishment LIKE '%District%' OR establishment LIKE '%Office of the Deputy Director%' OR establishment LIKE '%DD%' OR establishment LIKE '%Joint Director%')

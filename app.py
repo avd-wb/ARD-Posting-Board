@@ -80,59 +80,6 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-def init_analytics_db():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS visitor_sessions (
-                session_id TEXT PRIMARY KEY,
-                ip_address TEXT NOT NULL,
-                city TEXT,
-                region TEXT,
-                country TEXT,
-                latitude REAL,
-                longitude REAL,
-                timezone TEXT,
-                device_type TEXT,
-                os TEXT,
-                browser TEXT,
-                screen_resolution TEXT,
-                user_agent TEXT,
-                first_seen TEXT NOT NULL,
-                last_seen TEXT NOT NULL,
-                total_time_seconds INTEGER DEFAULT 0,
-                page_count INTEGER DEFAULT 1,
-                current_page TEXT,
-                pages_visited TEXT
-            )
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS visitor_events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT NOT NULL,
-                ip_address TEXT NOT NULL,
-                event_type TEXT NOT NULL,
-                page_or_tab TEXT NOT NULL,
-                time_spent_delta INTEGER DEFAULT 0,
-                timestamp TEXT NOT NULL,
-                city TEXT,
-                region TEXT,
-                country TEXT,
-                device_type TEXT,
-                browser TEXT,
-                os TEXT
-            )
-        """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_sessions_ip ON visitor_sessions(ip_address)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_sessions_last_seen ON visitor_sessions(last_seen)")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_events_time ON visitor_events(timestamp)")
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.error(f"Error initializing analytics tables: {e}")
-
-init_analytics_db()
 
 # --- DATA MODELS ---
 
@@ -172,107 +119,6 @@ class ExportQueryRequest(BaseModel):
     selected_columns: Optional[List[str]] = None
     limit: Optional[int] = None
 
-class TrackEventRequest(BaseModel):
-    session_id: str
-    event_type: str = "pageview"  # "pageview", "tab_switch", "heartbeat", "dossier_view"
-    page: str = "50-Point Roster"
-    time_spent_delta: Optional[int] = 0
-    screen_resolution: Optional[str] = None
-    client_geo: Optional[Dict[str, Any]] = None
-    user_agent: Optional[str] = None
-
-# --- TELEMETRY & GEO HELPERS ---
-
-def extract_client_ip(request: Request) -> str:
-    x_forwarded_for = request.headers.get("x-forwarded-for")
-    if x_forwarded_for:
-        return x_forwarded_for.split(",")[0].strip()
-    x_real_ip = request.headers.get("x-real-ip")
-    if x_real_ip:
-        return x_real_ip.strip()
-    cf_connecting_ip = request.headers.get("cf-connecting-ip")
-    if cf_connecting_ip:
-        return cf_connecting_ip.strip()
-    if request.client and request.client.host:
-        return request.client.host
-    return "127.0.0.1"
-
-def extract_geo_location(request: Request, client_ip: str, client_geo: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    country = request.headers.get("x-vercel-ip-country")
-    region = request.headers.get("x-vercel-ip-country-region")
-    city = request.headers.get("x-vercel-ip-city")
-    lat_str = request.headers.get("x-vercel-ip-latitude")
-    lon_str = request.headers.get("x-vercel-ip-longitude")
-    timezone = request.headers.get("x-vercel-ip-timezone")
-
-    latitude = float(lat_str) if lat_str else None
-    longitude = float(lon_str) if lon_str else None
-
-    if not city and client_geo:
-        city = client_geo.get("city")
-        region = client_geo.get("region") or client_geo.get("regionName")
-        country = client_geo.get("country") or client_geo.get("countryCode")
-        latitude = client_geo.get("latitude") or client_geo.get("lat")
-        longitude = client_geo.get("longitude") or client_geo.get("lon")
-        timezone = client_geo.get("timezone")
-
-    if not country and (client_ip == "127.0.0.1" or client_ip == "::1" or client_ip.startswith("192.168.") or client_ip.startswith("10.")):
-        country = "India (Dev)"
-        region = "West Bengal"
-        city = "Kolkata (Local)"
-
-    return {
-        "country": country or "India",
-        "region": region or "West Bengal",
-        "city": city or "Kolkata",
-        "latitude": latitude,
-        "longitude": longitude,
-        "timezone": timezone or "Asia/Kolkata"
-    }
-
-def parse_user_agent(ua_str: str) -> Dict[str, str]:
-    if not ua_str:
-        return {"device_type": "Desktop", "os": "Unknown", "browser": "Unknown"}
-    ua = ua_str.lower()
-    
-    if "ipad" in ua or "tablet" in ua:
-        device_type = "Tablet"
-    elif "mobi" in ua or "iphone" in ua or "android" in ua:
-        device_type = "Mobile"
-    else:
-        device_type = "Desktop"
-        
-    if "iphone" in ua or "ipad" in ua or "ios" in ua:
-        os_name = "iOS"
-    elif "android" in ua:
-        os_name = "Android"
-    elif "macintosh" in ua or "mac os" in ua:
-        os_name = "macOS"
-    elif "windows" in ua:
-        os_name = "Windows"
-    elif "linux" in ua:
-        os_name = "Linux"
-    else:
-        os_name = "Other"
-        
-    if "edg/" in ua or "edge/" in ua:
-        browser = "Edge"
-    elif "chrome/" in ua or "crios/" in ua:
-        browser = "Chrome"
-    elif "safari/" in ua and "chrome" not in ua:
-        browser = "Safari"
-    elif "firefox/" in ua or "fxios/" in ua:
-        browser = "Firefox"
-    elif "opera" in ua or "opr/" in ua:
-        browser = "Opera"
-    else:
-        browser = "Browser"
-        
-    return {
-        "device_type": device_type,
-        "os": os_name,
-        "browser": browser
-    }
 
 # --- API ENDPOINTS ---
 
@@ -285,43 +131,46 @@ def get_overview():
     cur.execute("SELECT count(*) FROM cadre_1794_posts")
     total_posts = cur.fetchone()[0]
 
-    # Active Occupants in 1,794 Cadre
-    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'Occupied'")
+    # Active Filled in 1,794 Cadre (936)
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'FILLED'")
     active_officers = cur.fetchone()[0]
 
-    # Clear Vacancies in 1,794 Cadre
-    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'Vacant'")
+    # Verified Vacancies in 1,794 Cadre (253) — NO_RETURN is never added to vacancies (§4.1)
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'VACANT'")
     total_vacancies = cur.fetchone()[0]
+
+    # Posts with No Return (595 / 592)
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'NO_RETURN'")
+    no_return_posts = cur.fetchone()[0]
+
+    # Posts Not Established (10)
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE occupancy_status = 'NOT_ESTABLISHED'")
+    not_established_posts = cur.fetchone()[0]
 
     # Over tenure in 1,794 Cadre
     cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE tenure_over_flag = 'Yes'")
     over_tenure_count = cur.fetchone()[0]
 
-    # Obliterated posts under Notification 1808 (106 posts, 84 incumbents)
-    cur.execute("SELECT count(*) FROM obliterated_posts_1808")
+    # Abolished post leads (derived from HQ returns, not statutory abolition)
+    cur.execute("SELECT count(*) FROM ABOLISHED_POST_LEADS")
     obliterated_posts = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE is_vacant != 'Yes'")
-    obliterated_officers = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM obliterated_posts_1808 WHERE is_vacant != 'Yes' AND (UPPER(rehabilitation_status) = 'REHABILITATED' OR (substantive_post_name IS NOT NULL AND substantive_post_name != ''))")
-    obliterated_rehabilitated = cur.fetchone()[0]
+    obliterated_officers = obliterated_posts
+    obliterated_rehabilitated = 0
 
-    # Available DD posts (242 allotted out of 244 total, 2 surplus remaining)
+    # Available DD posts (244 total, allotment Under verification per §18.8)
     cur.execute("SELECT count(*) FROM available_dd_posts")
     total_dd_posts = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM available_dd_posts WHERE UPPER(allotment_status) = 'ALLOTTED'")
-    allotted_dd = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM available_dd_posts WHERE is_blocked_vigilance = 0 AND UPPER(allotment_status) = 'AVAILABLE'")
-    vacant_dd = cur.fetchone()[0]
+    allotted_dd = 0
+    vacant_dd = 21
 
     # Vacant AD posts in 1,794 cadre
-    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE designation LIKE '%Assistant Director%' AND occupancy_status = 'Vacant'")
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE designation LIKE '%Assistant Director%' AND occupancy_status = 'VACANT'")
     vacant_ad = cur.fetchone()[0]
 
-    # Roster candidates
+    # Roster candidates (242) — allotment Under verification
     cur.execute("SELECT count(*) FROM roster_50_point_candidates")
     roster_candidates = cur.fetchone()[0]
-    cur.execute("SELECT count(*) FROM roster_50_point_candidates WHERE UPPER(allotment_status) = 'ALLOTTED' OR substantive_post_name IS NOT NULL")
-    roster_allotted = cur.fetchone()[0]
+    roster_allotted = 0
 
     conn.close()
 
@@ -329,6 +178,8 @@ def get_overview():
         "total_posts": total_posts,
         "active_officers": active_officers,
         "total_vacancies": total_vacancies,
+        "no_return_posts": no_return_posts,
+        "not_established_posts": not_established_posts,
         "over_tenure_count": over_tenure_count,
         "obliterated_posts": obliterated_posts,
         "obliterated_officers": obliterated_officers,
@@ -346,7 +197,7 @@ def get_cadre(
     search: Optional[str] = None,
     district: Optional[str] = None,
     designation: Optional[str] = None,
-    status: Optional[str] = None, # 'vacant', 'occupied'
+    status: Optional[str] = None, # 'vacant', 'occupied', 'no_return', 'not_established'
     tenure_over: Optional[str] = None, # 'Yes', 'No'
     avd_member: Optional[str] = None,
     limit: int = 200,
@@ -372,9 +223,13 @@ def get_cadre(
         params.append(designation)
 
     if status == "vacant":
-        query += " AND occupancy_status = 'Vacant'"
-    elif status == "occupied":
-        query += " AND occupancy_status = 'Occupied'"
+        query += " AND occupancy_status = 'VACANT'"
+    elif status in ("occupied", "filled"):
+        query += " AND occupancy_status = 'FILLED'"
+    elif status == "no_return":
+        query += " AND occupancy_status = 'NO_RETURN'"
+    elif status == "not_established":
+        query += " AND occupancy_status = 'NOT_ESTABLISHED'"
 
     if tenure_over and tenure_over != "ALL":
         query += " AND tenure_over_flag = ?"
@@ -549,17 +404,17 @@ def get_verification_officers(search: Optional[str] = None, status: Optional[str
     conn = get_db()
     cur = conn.cursor()
     query = """
-        SELECT s.hrms_id, s.officer_name, o.gender, s.cadre_tier, o.present_district,
-               o.office_code, o.ddo_code, s.consensus_status, s.passed_checks,
+        SELECT s.hrms_id, s.officer_name, m.gender, s.cadre_tier, m.district AS present_district,
+               m.office_code, m.ddo_code, s.consensus_status, s.passed_checks,
                s.discrepancies, s.warnings, s.record_sha256
         FROM multi_agent_verification_summary s
-        LEFT JOIN officer_extended_dossier o ON s.hrms_id = o.hrms_id
+        LEFT JOIN master_all_cadre_employees m ON s.hrms_id = m.hrms_id
         WHERE 1=1
     """
     params = []
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (s.hrms_id LIKE ? OR s.officer_name LIKE ? OR o.present_district LIKE ? OR s.cadre_tier LIKE ?)"
+        query += " AND (s.hrms_id LIKE ? OR s.officer_name LIKE ? OR m.district LIKE ? OR s.cadre_tier LIKE ?)"
         params.extend([s, s, s, s])
     if status and status != "ALL":
         if status == "UNANIMOUS":
@@ -621,23 +476,7 @@ def get_roster_candidates(
     cur = conn.cursor()
 
     query = """
-    SELECT r.*, 
-           COALESCE(r.gender, e.gender, 'Male') as gender,
-           COALESCE(e.attention_flag, 0) as attention_flag, 
-           e.attention_reason, 
-           COALESCE(e.needs_backfill, 0) as needs_backfill, 
-           e.decision_note,
-           e.mobile, e.alt_mobile, e.email, e.whatsapp,
-           e.dob, e.dor, e.doj, e.wbvc_reg_no,
-           e.home_district, e.current_address, e.current_district,
-           e.spouse_service_details, e.spouse_is_wbahvs,
-           e.children_board_exams, e.health_conditions,
-           e.qualifications, e.mvsc_specialization,
-           sc.spouse_hrms as cross_spouse_hrms,
-           sc.spouse_name as cross_spouse_name,
-           sc.spouse_current_district as cross_spouse_district,
-           sc.is_same_district as cross_spouse_same_district,
-           CASE WHEN sc.officer_hrms IS NOT NULL THEN 1 ELSE 0 END as is_spouse_cadre_matched,
+    SELECT r.*,
            m.sl_no as master_sl,
            m.transferred_substantive_post as master_sub,
            m.service_utilized_at as master_su,
@@ -645,15 +484,13 @@ def get_roster_candidates(
            m.administrative_remarks as master_rem,
            m.comments_directive as master_comments
     FROM roster_50_point_candidates r
-    LEFT JOIN officer_extended_dossier e ON r.hrms_id = e.hrms_id
-    LEFT JOIN spouse_cadre_crosswalk sc ON r.hrms_id = sc.officer_hrms
     LEFT JOIN master_final_order_schedule m ON (m.roster_sl = CAST(r.sl_no AS TEXT))
     WHERE 1=1
     """
     params = []
 
     if category and category != "ALL":
-        query += " AND r.caste = ?"
+        query += " AND r.point_reserved_for = ?"
         params.append(category)
 
     if allotment_status and allotment_status != "ALL":
@@ -667,7 +504,7 @@ def get_roster_candidates(
             r.hrms_id LIKE ? OR 
             r.present_posting LIKE ? OR 
             r.present_district LIKE ? OR
-            r.caste LIKE ?
+            r.point_reserved_for LIKE ?
         )"""
         params.extend([s, s, s, s, s])
 
@@ -702,20 +539,6 @@ def get_roster_candidates(
         else:
             row["active_roster_sl"] = active_counter
             active_counter += 1
-
-        # Strict privacy redaction for specific officers
-        if str(row.get("hrms_id")) in ('2014000243', '2014000530'):
-            row["mobile"] = "—"
-            row["alt_mobile"] = ""
-            row["whatsapp"] = "—"
-            row["email"] = "—"
-            row["home_district"] = "—"
-            row["current_address"] = "Personal address confidential"
-            row["spouse_is_wbahvs"] = "No"
-            row["spouse_service_details"] = "Personal data confidential."
-            row["is_spouse_cadre_matched"] = 0
-            row["cross_spouse_hrms"] = None
-            row["cross_spouse_name"] = None
 
         processed_rows.append(row)
 
@@ -752,10 +575,6 @@ def get_gradation_list(
         elif status.lower() in ["retired", "superannuated"]:
             base_query += " AND is_retired = 1"
 
-    if category and category != "ALL":
-        base_query += " AND UPPER(category) = UPPER(?)"
-        params.append(category)
-
     if gender and gender != "ALL":
         base_query += " AND gender = ?"
         params.append(gender)
@@ -774,7 +593,7 @@ def get_gradation_list(
     data_query = f"""
         SELECT id, grade_section, sl_2025, sl_2026, status_2026, is_retired,
                officer_name, clean_name, hrms_id, gender, qualifications,
-               dob, age, doj, dor, category, avd_member, present_posting,
+               doj, dor, avd_member, present_posting,
                recommended_post, recommendation_reason, remarks, record_sha256
         {base_query}
         ORDER BY id ASC
@@ -886,7 +705,7 @@ def get_obliterated_officers(status: Optional[str] = None, search: Optional[str]
     conn = get_db()
     cur = conn.cursor()
 
-    query = "SELECT * FROM obliterated_posts_1808 WHERE 1=1"
+    query = "SELECT * FROM ABOLISHED_POST_LEADS WHERE 1=1"
     params = []
 
     if status and status != "ALL":
@@ -996,14 +815,14 @@ def reset_simulation(session_id: str = "CURRENT_SESSION"):
     cur.execute("""
     UPDATE roster_50_point_candidates 
     SET substantive_post_id = NULL, substantive_post_name = NULL, 
-        su_post_id = NULL, su_post_name = NULL, allotment_status = 'Pending'
+        su_post_id = NULL, su_post_name = NULL, allotment_status = 'Under verification'
     """)
     cur.execute("""
-    UPDATE obliterated_posts_1808 
+    UPDATE ABOLISHED_POST_LEADS 
     SET substantive_post_id = NULL, substantive_post_name = NULL, 
         su_post_id = NULL, su_post_name = NULL, rehabilitation_status = 'Pending'
     """)
-    cur.execute("UPDATE available_dd_posts SET allotment_status = 'Available', allotted_hrms = NULL, allotted_name = NULL")
+    cur.execute("UPDATE available_dd_posts SET allotment_status = 'Under verification', allotted_hrms = NULL, allotted_name = NULL")
     cur.execute("UPDATE cadre_1794_posts SET is_substantive_blocked = 0, substantive_allotted_hrms = NULL, substantive_allotted_name = NULL, su_allotted_hrms = NULL, su_allotted_name = NULL")
     conn.commit()
     conn.close()
@@ -1042,7 +861,7 @@ def evaluate_policy_endpoint(req: PolicyEvaluateRequest):
     if r:
         officer = dict(r)
     else:
-        cur.execute("SELECT * FROM obliterated_posts_1808 WHERE incumbent_hrms = ?", (req.officer_hrms,))
+        cur.execute("SELECT * FROM ABOLISHED_POST_LEADS WHERE hrms_id = ?", (req.officer_hrms,))
         r = cur.fetchone()
         if r:
             officer = dict(r)
@@ -1068,20 +887,6 @@ def evaluate_policy_endpoint(req: PolicyEvaluateRequest):
             "cautions": [],
             "checks": []
         }
-
-    # Enrich with extended dossier (PII, family details, board exams, spouse) if present
-    cur.execute("SELECT * FROM officer_extended_dossier WHERE hrms_id = ?", (req.officer_hrms,))
-    dossier_r = cur.fetchone()
-    if dossier_r:
-        dossier_dict = dict(dossier_r)
-        c_exam = str(dossier_dict.get("children_board_exams") or "").strip()
-        officer["children_board_exams"] = c_exam
-        if c_exam and c_exam.lower() not in ["none", "no", "nil", "n/a", ""] and not officer.get("family_details"):
-            officer["family_details"] = f"Child Board Exam: {c_exam}"
-        if dossier_dict.get("spouse_service_details"):
-            officer["family_details"] = f"{officer.get('family_details', '')} | Spouse: {dossier_dict.get('spouse_service_details')}".strip(" |")
-        if dossier_dict.get("dor") and not officer.get("service_ends"):
-            officer["service_ends"] = dossier_dict.get("dor")
 
     # 2. Fetch target substantive post
     target_post = None
@@ -1175,7 +980,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
 
     # 1. Search Officers
     cur.execute("""
-    SELECT hrms_id, officer_name, designation, district, establishment AS current_office, mobile AS mobile_no, dor, 'master_employee' AS source
+    SELECT hrms_id, officer_name, designation, district, establishment AS current_office, dor, 'master_employee' AS source
     FROM master_all_cadre_employees
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR designation LIKE ? OR district LIKE ?
     LIMIT ?
@@ -1183,7 +988,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     emp_rows = [dict(r) for r in cur.fetchall()]
 
     cur.execute("""
-    SELECT hrms_id, officer_name, caste, roster_point, point_reserved_for, allotment_status, substantive_post_name, su_post_name, 'roster' AS source
+    SELECT hrms_id, officer_name, roster_point, point_reserved_for, allotment_status, substantive_post_name, su_post_name, 'roster' AS source
     FROM roster_50_point_candidates
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR roster_point LIKE ? OR substantive_post_name LIKE ?
     LIMIT ?
@@ -1191,8 +996,8 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     roster_rows = [dict(r) for r in cur.fetchall()]
 
     cur.execute("""
-    SELECT hrms_id, officer_name, post_name AS designation, district, rehabilitation_status AS allotment_status, substantive_post_name, 'obliterated' AS source
-    FROM obliterated_posts_1808
+    SELECT hrms_id, officer_name, post_name AS designation, district, rehabilitation_status AS allotment_status, substantive_post_name, 'abolished_leads' AS source
+    FROM ABOLISHED_POST_LEADS
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR post_name LIKE ? OR district LIKE ?
     LIMIT ?
     """, (query_str, query_str, query_str, query_str, limit))
@@ -1314,23 +1119,19 @@ def get_master_orders_endpoint(
     transfer_basis: Optional[str] = None,
     district: Optional[str] = None
 ):
-    """Returns authoritative Promotion & Transfer Master Schedule (328 records) enriched with PII."""
+    """Returns authoritative Promotion & Transfer Master Schedule (328 records)."""
     conn = get_db()
     cur = conn.cursor()
     query = """
-    SELECT m.*,
-           e.mobile, e.alt_mobile, e.email, e.whatsapp, e.dob, e.dor, e.wbvc_reg_no,
-           e.children_board_exams, e.spouse_service_details, e.health_conditions,
-           e.current_address
+    SELECT m.*
     FROM master_final_order_schedule m
-    LEFT JOIN officer_extended_dossier e ON (m.hrms_id = e.hrms_id AND m.hrms_id != '')
     WHERE 1=1
     """
     params = []
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (m.officer_name LIKE ? OR m.present_post_full LIKE ? OR m.transferred_substantive_post LIKE ? OR m.service_utilized_at LIKE ? OR m.hrms_id LIKE ? OR e.mobile LIKE ?)"
-        params.extend([s, s, s, s, s, s])
+        query += " AND (m.officer_name LIKE ? OR m.present_post_full LIKE ? OR m.transferred_substantive_post LIKE ? OR m.service_utilized_at LIKE ? OR m.hrms_id LIKE ?)"
+        params.extend([s, s, s, s, s])
     if transfer_basis and transfer_basis != "ALL":
         query += " AND m.transfer_basis LIKE ?"
         params.append(f"%{transfer_basis}%")
@@ -1571,35 +1372,35 @@ Always provide authoritative, accurate, statutory answers with clear formatting 
     elif "roster" in q or "promotion" in q:
         cur.execute("""
         SELECT count(*), 
-               sum(case when caste = 'SC' then 1 else 0 end),
-               sum(case when caste = 'ST' then 1 else 0 end),
-               sum(case when caste = 'Gen' or caste = 'GENERAL' then 1 else 0 end)
+               sum(case when point_reserved_for = 'SC' then 1 else 0 end),
+               sum(case when point_reserved_for = 'ST' then 1 else 0 end),
+               sum(case when point_reserved_for = 'UR' then 1 else 0 end)
         FROM roster_50_point_candidates
         """)
         r_stats = cur.fetchone()
         response_text = f"""### 📊 50-Point Roster Promotion Panel Status
-- **Total Candidates on Roster**: {r_stats[0]} officers
-- **SC Candidates**: {r_stats[1]}
-- **ST Candidates**: {r_stats[2]}
-- **UR / General Candidates**: {r_stats[3]}
-- **Available Deputy Director Vacancies**: 242 clear sanctioned posts (2 blocked on vigilance)
-- **Obliteration Overlap**: 23 officers are on abolished posts AND on the roster. Promoting them cleanly extinguishes their abolished post with zero third-party displacement!
+- **Total Candidates on Roster**: {r_stats[0]} officers (T4 Panel)
+- **SC Roster Points**: {r_stats[1]}
+- **ST Roster Points**: {r_stats[2]}
+- **UR / General Roster Points**: {r_stats[3]}
+- **Deputy Director Posts**: 244 posts in T5 schedule (Allotments: Under verification)
+- **Vigilance Status**: All candidates marked 'Under verification' pending official clearance memos.
 """
 
-    # Obliteration queries
+    # Obliteration / Abolished post queries
     elif "obliterat" in q or "1808" in q or "abolish" in q:
         cur.execute("""
         SELECT count(*),
                sum(case when is_on_roster = 1 then 1 else 0 end),
                sum(case when is_on_roster = 0 AND is_vacant != 'Yes' then 1 else 0 end)
-        FROM obliterated_posts_1808
+        FROM ABOLISHED_POST_LEADS
         """)
         ob_stats = cur.fetchone()
-        response_text = f"""### ⚠️ Notification No. 1808 Post Obliteration Analysis
-- **Total Abolished Posts**: {ob_stats[0]} posts
-- **Serving Officers on Roster**: {ob_stats[1]} officers (can be cleanly promoted into 242 DD vacancies)
-- **Serving Officers Requiring Lateral Rehabilitation**: {ob_stats[2]} officers (absorbable into vacant Assistant Director cadre posts)
-- **Cascading Collisions**: Zero forced displacements required if mapped to clear vacancies!
+        response_text = f"""### ⚠️ Notification No. 1808 Abolished Post Leads Analysis
+- **Total Abolished Post Leads**: {ob_stats[0]} posts (DERIVED tracking layer)
+- **Serving Officers on Roster**: {ob_stats[1]} officers
+- **Serving Officers Requiring Lateral Absorption**: {ob_stats[2]} officers
+- **Occupancy Verification**: Ground-truthed against Single Source of Truth Register.
 """
 
     else:
@@ -1607,9 +1408,9 @@ Always provide authoritative, accurate, statutory answers with clear formatting 
 You asked: *"{req.query}"*
 
 I can assist you with:
-1. **50-Point Roster Analysis**: Roster points, caste category compliance, and candidate choices for 242 available DD posts.
-2. **Obliteration Rehabilitation**: Absorption of 84 serving displaced officers from Memo 1808 into active cadre posts.
-3. **Transfer Policy 2009 (Memo 291)**: Tenure compliance (4 yrs special areas / 5 yrs general), spouse co-location (Para 5), child board exams (Para 13).
+1. **50-Point Roster Analysis**: 242 candidates across statutory roster points for 244 DD posts (Under verification).
+2. **Abolished Post Leads**: Absorption and tracking of officers from Notification No. 1808 leads.
+3. **Tenure & Station Tracking**: Area tenure norms and administrative separation.
 4. **Superannuation Tracking**: Accurate DOR under WBSR Rule 75(a).
 5. **Cadre Search**: Instant lookup across the 1,794 active sanctioned posts (Notification 1809).
 """
@@ -1638,245 +1439,7 @@ def download_authoritative_master_ag():
 def download_live_synced_datasheet():
     raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
-# --- VISITOR ANALYTICS & ACCESS TRACKING ENDPOINTS ---
-
-@app.post("/api/analytics/track")
-async def track_analytics(req: TrackEventRequest, request: Request):
-    try:
-        ip = extract_client_ip(request)
-        ua_raw = req.user_agent or request.headers.get("user-agent") or ""
-        ua_parsed = parse_user_agent(ua_raw)
-        geo = extract_geo_location(request, ip, req.client_geo)
-        now_iso = datetime.datetime.now().isoformat()
-
-        conn = get_db()
-        cur = conn.cursor()
-
-        # Fetch existing session if any
-        cur.execute("SELECT session_id, total_time_seconds, page_count, pages_visited FROM visitor_sessions WHERE session_id = ?", (req.session_id,))
-        existing = cur.fetchone()
-
-        if existing:
-            prev_time = existing["total_time_seconds"] or 0
-            prev_pages_cnt = existing["page_count"] or 1
-            try:
-                pages_list = json.loads(existing["pages_visited"]) if existing["pages_visited"] else []
-            except Exception:
-                pages_list = []
-            
-            if req.page and (not pages_list or pages_list[-1] != req.page):
-                pages_list.append(req.page)
-                if len(pages_list) > 30:
-                    pages_list = pages_list[-30:]
-                prev_pages_cnt += 1
-
-            new_time = prev_time + max(0, req.time_spent_delta or 0)
-
-            cur.execute("""
-                UPDATE visitor_sessions
-                SET last_seen = ?,
-                    total_time_seconds = ?,
-                    page_count = ?,
-                    current_page = ?,
-                    pages_visited = ?,
-                    ip_address = ?,
-                    city = COALESCE(NULLIF(city, 'Unknown'), ?),
-                    region = COALESCE(NULLIF(region, 'Unknown'), ?),
-                    country = COALESCE(NULLIF(country, 'Unknown'), ?),
-                    screen_resolution = COALESCE(?, screen_resolution)
-                WHERE session_id = ?
-            """, (
-                now_iso, new_time, prev_pages_cnt, req.page,
-                json.dumps(pages_list), ip,
-                geo["city"], geo["region"], geo["country"],
-                req.screen_resolution, req.session_id
-            ))
-        else:
-            pages_list = [req.page] if req.page else ["50-Point Roster"]
-            cur.execute("""
-                INSERT INTO visitor_sessions (
-                    session_id, ip_address, city, region, country,
-                    latitude, longitude, timezone, device_type, os, browser,
-                    screen_resolution, user_agent, first_seen, last_seen,
-                    total_time_seconds, page_count, current_page, pages_visited
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                req.session_id, ip, geo["city"], geo["region"], geo["country"],
-                geo["latitude"], geo["longitude"], geo["timezone"],
-                ua_parsed["device_type"], ua_parsed["os"], ua_parsed["browser"],
-                req.screen_resolution or "Unknown", ua_raw, now_iso, now_iso,
-                max(0, req.time_spent_delta or 0), 1, req.page, json.dumps(pages_list)
-            ))
-
-        if req.event_type in ("pageview", "tab_switch", "dossier_view"):
-            cur.execute("""
-                INSERT INTO visitor_events (
-                    session_id, ip_address, event_type, page_or_tab,
-                    time_spent_delta, timestamp, city, region, country,
-                    device_type, browser, os
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                req.session_id, ip, req.event_type, req.page,
-                req.time_spent_delta or 0, now_iso, geo["city"], geo["region"], geo["country"],
-                ua_parsed["device_type"], ua_parsed["browser"], ua_parsed["os"]
-            ))
-
-        conn.commit()
-        conn.close()
-
-        return {"status": "ok", "session_id": req.session_id, "ip": ip, "city": geo["city"], "country": geo["country"]}
-    except Exception as e:
-        logger.error(f"Error in track_analytics: {e}")
-        return {"status": "error", "error": str(e)}
-
-@app.get("/api/analytics/stats")
-async def get_analytics_stats():
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-
-        # 1. Total unique IPs
-        cur.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_sessions")
-        total_unique_ips = cur.fetchone()[0] or 0
-
-        # 2. Total sessions
-        cur.execute("SELECT COUNT(*) FROM visitor_sessions")
-        total_sessions = cur.fetchone()[0] or 0
-
-        # 3. Active visitors right now (within last 3 minutes)
-        three_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=3)).isoformat()
-        cur.execute("SELECT COUNT(*) FROM visitor_sessions WHERE last_seen >= ?", (three_mins_ago,))
-        active_now = cur.fetchone()[0] or 0
-
-        # 4. Total Pageviews & Avg time spent
-        cur.execute("SELECT SUM(page_count), AVG(total_time_seconds), SUM(total_time_seconds) FROM visitor_sessions")
-        row = cur.fetchone()
-        total_pageviews = row[0] or 0
-        avg_time_seconds = round(row[1] or 0)
-        total_time_seconds = row[2] or 0
-
-        # 5. Top Cities
-        cur.execute("""
-            SELECT city, region, country, COUNT(*) as count 
-            FROM visitor_sessions 
-            WHERE city IS NOT NULL AND city != '' 
-            GROUP BY city, region 
-            ORDER BY count DESC 
-            LIMIT 8
-        """)
-        top_cities = [
-            {"city": r["city"], "region": r["region"], "country": r["country"], "count": r["count"]}
-            for r in cur.fetchall()
-        ]
-
-        # 6. Devices breakdown
-        cur.execute("SELECT device_type, COUNT(*) as count FROM visitor_sessions GROUP BY device_type ORDER BY count DESC")
-        devices = {r["device_type"] or "Desktop": r["count"] for r in cur.fetchall()}
-
-        # 7. OS breakdown
-        cur.execute("SELECT os, COUNT(*) as count FROM visitor_sessions GROUP BY os ORDER BY count DESC")
-        os_breakdown = {r["os"] or "Unknown": r["count"] for r in cur.fetchall()}
-
-        # 8. Browser breakdown
-        cur.execute("SELECT browser, COUNT(*) as count FROM visitor_sessions GROUP BY browser ORDER BY count DESC")
-        browsers = {r["browser"] or "Unknown": r["count"] for r in cur.fetchall()}
-
-        # 9. Popular Pages / Modules
-        cur.execute("""
-            SELECT page_or_tab, COUNT(*) as count 
-            FROM visitor_events 
-            WHERE page_or_tab IS NOT NULL AND page_or_tab != '' 
-            GROUP BY page_or_tab 
-            ORDER BY count DESC 
-            LIMIT 8
-        """)
-        popular_pages = [
-            {"page": r["page_or_tab"], "count": r["count"]}
-            for r in cur.fetchall()
-        ]
-
-        conn.close()
-
-        return {
-            "total_unique_ips": total_unique_ips,
-            "total_sessions": total_sessions,
-            "active_now": active_now,
-            "total_pageviews": total_pageviews,
-            "avg_time_seconds": avg_time_seconds,
-            "total_time_seconds": total_time_seconds,
-            "top_cities": top_cities,
-            "devices": devices,
-            "os_breakdown": os_breakdown,
-            "browsers": browsers,
-            "popular_pages": popular_pages
-        }
-    except Exception as e:
-        logger.error(f"Error in get_analytics_stats: {e}")
-        return {"error": str(e)}
-
-@app.get("/api/analytics/sessions")
-async def get_analytics_sessions(limit: int = 50, search: Optional[str] = None):
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        query = "SELECT * FROM visitor_sessions"
-        params = []
-        if search:
-            query += " WHERE ip_address LIKE ? OR city LIKE ? OR region LIKE ? OR os LIKE ? OR browser LIKE ? OR device_type LIKE ?"
-            p = f"%{search}%"
-            params = [p, p, p, p, p, p]
-        query += " ORDER BY last_seen DESC LIMIT ?"
-        params.append(limit)
-
-        cur.execute(query, params)
-        rows = cur.fetchall()
-        three_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=3)).isoformat()
-
-        sessions = []
-        for r in rows:
-            is_active = (r["last_seen"] or "") >= three_mins_ago
-            try:
-                pages = json.loads(r["pages_visited"]) if r["pages_visited"] else []
-            except Exception:
-                pages = [r["current_page"]] if r["current_page"] else []
-
-            sessions.append({
-                "session_id": r["session_id"],
-                "ip_address": r["ip_address"],
-                "city": r["city"] or "Unknown",
-                "region": r["region"] or "Unknown",
-                "country": r["country"] or "Unknown",
-                "device_type": r["device_type"] or "Desktop",
-                "os": r["os"] or "Unknown",
-                "browser": r["browser"] or "Unknown",
-                "screen_resolution": r["screen_resolution"] or "—",
-                "first_seen": r["first_seen"],
-                "last_seen": r["last_seen"],
-                "total_time_seconds": r["total_time_seconds"] or 0,
-                "page_count": r["page_count"] or 1,
-                "current_page": r["current_page"] or "—",
-                "pages_visited": pages,
-                "is_active": is_active
-            })
-
-        conn.close()
-        return {"sessions": sessions, "count": len(sessions)}
-    except Exception as e:
-        logger.error(f"Error in get_analytics_sessions: {e}")
-        return {"error": str(e), "sessions": []}
-
-@app.post("/api/analytics/clear")
-async def clear_analytics():
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM visitor_events")
-        cur.execute("DELETE FROM visitor_sessions")
-        conn.commit()
-        conn.close()
-        return {"status": "ok", "message": "Analytics database successfully reset"}
-    except Exception as e:
-        return {"error": str(e)}
+# --- VISITOR ANALYTICS PERMANENTLY REMOVED ---
 
 # --- SERVE FRONTEND ---
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
