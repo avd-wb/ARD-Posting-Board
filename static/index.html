@@ -414,6 +414,12 @@
                         <span id="badgeCadreTotal" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">1,794</span>
                     </button>
 
+                    <button data-tab="tab-split-matrix" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 flex items-center gap-1.5 transition shrink-0 shadow-xs">
+                        <i data-lucide="git-pull-request" class="w-3 h-3 text-amber-400"></i>
+                        <span>Split Board</span>
+                        <span id="badgeSplitBoardCount" class="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">Dual-Pane</span>
+                    </button>
+
                     <button data-tab="tab-map" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="map" class="w-3 h-3 text-emerald-400"></i>
                         <span>GIS Map</span>
@@ -826,7 +832,7 @@
 
                 <!-- GIS Multi-Tier Filter Controls Bar -->
                 <div class="p-3 bg-slate-50/90 border-b border-slate-200">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
                         <select id="gisDistrictFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
                             <option value="ALL">All Districts (23)</option>
                         </select>
@@ -852,6 +858,12 @@
                             <option value="ALL">All Tenures</option>
                             <option value="Yes">⚠️ Over Tenure Norm (>3-4 yrs)</option>
                             <option value="No">Within Tenure Norm</option>
+                        </select>
+
+                        <select id="gisAvdFilter" class="w-full h-10 border border-amber-300 rounded-xl px-2.5 py-2 bg-amber-50/70 text-amber-900 font-semibold shadow-xs touch-target focus:ring-amber-500">
+                            <option value="ALL">AVD: All Posts</option>
+                            <option value="Yes">⭐ AVD Members Only</option>
+                            <option value="No">Non-AVD</option>
                         </select>
 
                         <div class="relative col-span-2 sm:col-span-1">
@@ -935,6 +947,11 @@
                                 <option value="ALL">All Status</option>
                                 <option value="Pending">Pending Allotment</option>
                                 <option value="Allotted">Allotted</option>
+                            </select>
+                            <select id="rosterAvdFilter" class="w-full sm:w-auto h-10 border border-amber-300 rounded-xl px-3 py-2 bg-amber-50/70 text-amber-900 font-semibold focus:ring-2 focus:ring-amber-500 shadow-xs touch-target">
+                                <option value="ALL">AVD: All Candidates</option>
+                                <option value="Yes">⭐ AVD Members Only</option>
+                                <option value="No">Non-AVD</option>
                             </select>
                         </div>
                         <div class="relative flex-1 sm:w-60">
@@ -1123,6 +1140,13 @@
                             <option value="Female">Female Officers</option>
                             <option value="Male">Male Officers</option>
                         </select>
+
+                        <!-- AVD Filter -->
+                        <select id="gradAvdFilter" class="h-10 border border-amber-300 rounded-xl px-3 py-2 bg-amber-50/70 text-amber-900 font-semibold focus:ring-2 focus:ring-amber-500 shadow-xs touch-target">
+                            <option value="ALL">AVD: All Members</option>
+                            <option value="Yes">⭐ AVD Members Only</option>
+                            <option value="No">Non-AVD</option>
+                        </select>
                     </div>
 
                     <div class="relative w-full md:w-72">
@@ -1189,6 +1213,11 @@
                             <option value="Pending">Pending Rehabilitation</option>
                             <option value="Rehabilitated">Rehabilitated</option>
                         </select>
+                        <select id="oblitAvdFilter" class="w-full sm:w-auto h-10 border border-amber-300 rounded-xl px-3 py-2 bg-amber-50/70 text-amber-900 font-semibold focus:ring-2 focus:ring-amber-500 shadow-xs touch-target">
+                            <option value="ALL">AVD: All Posts</option>
+                            <option value="Yes">⭐ AVD Members Only</option>
+                            <option value="No">Non-AVD</option>
+                        </select>
                         <div class="relative flex-1 sm:w-56">
                             <input type="search" id="oblitSearchInput" placeholder="Search officer, district..." class="w-full h-10 border border-slate-300 rounded-xl pl-9 pr-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-rose-500 shadow-xs touch-target">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
@@ -1226,6 +1255,237 @@
             </div>
         </div>
 
+        <!-- ==================== TAB: SPLIT DECISION BOARD (DUAL-PANE CANDIDATES & VACANCIES) ==================== -->
+        <div id="tab-split-matrix" class="tab-content hidden space-y-4">
+            <!-- Header Card -->
+            <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-slate-950 text-white rounded-2xl p-5 shadow-lg border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                            <i data-lucide="git-pull-request" class="w-6 h-6"></i>
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-lg md:text-xl font-black tracking-tight text-amber-100">Dual-Pane Split Transfer Board</h2>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-xs">Statutory Matching Matrix</span>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">
+                                Left-to-right statutory decision workbench: Filter & sort candidates across 50-Point Roster, Obliterated Leads, and Over-Tenure posts on the left; match against 253 sanctioned clear vacancies on the right.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-right">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Total Clear Vacancies</div>
+                        <div class="text-lg font-black text-emerald-400" id="splitVacSummaryCount">253</div>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-700/60 text-right">
+                        <div class="text-[10px] uppercase font-bold text-amber-300">AVD Candidates Borne</div>
+                        <div class="text-lg font-black text-amber-400" id="splitAvdSummaryCount">186</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Split Grid 2-Panes -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                <!-- ==================== LEFT PANE: TRANSFER CANDIDATES ==================== -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <!-- Pane Header -->
+                    <div class="p-4 bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-slate-50 border-b border-slate-200">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="p-1.5 rounded-lg bg-wbblue-700 text-white">
+                                    <i data-lucide="users" class="w-4 h-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                                        <span>Transfer Candidates Pool</span>
+                                        <span id="splitCandBadge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-blue-100 text-blue-900 border border-blue-300">0</span>
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500">Roster promotees, abolished post leads, and over-tenure officers</p>
+                                </div>
+                            </div>
+                            <button id="btnResetCandFilters" class="text-[11px] text-blue-700 hover:text-blue-900 font-semibold underline flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+
+                        <!-- Candidates Multi-Tier Filter Controls -->
+                        <div class="space-y-2 text-xs">
+                            <!-- Semantic Search Bar -->
+                            <div class="relative">
+                                <input type="search" id="splitCandSearchInput" placeholder="🔍 Semantic Search: e.g. 'Bankura SC', 'AVD Burdwan over-tenure', 'VO'..." class="w-full h-10 border border-slate-300 rounded-xl pl-9 pr-3 py-2 bg-white text-slate-900 shadow-xs focus:ring-2 focus:ring-wbblue-600">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                            </div>
+
+                            <!-- Filter Selects Grid -->
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <select id="splitPoolSelect" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-800 font-bold shadow-xs">
+                                    <option value="ALL">All Pools (348)</option>
+                                    <option value="roster">50-Point Roster (242)</option>
+                                    <option value="obliterated">Obliterated Leads (106)</option>
+                                    <option value="overtenure">Over-Tenure (>4y) (235)</option>
+                                    <option value="cadre_all">Full Cadre Serving (927)</option>
+                                </select>
+
+                                <select id="splitCandAvdFilter" class="h-9 border border-amber-300 rounded-xl px-2.5 py-1.5 bg-amber-50/70 text-amber-900 font-bold shadow-xs focus:ring-amber-500">
+                                    <option value="ALL">AVD: All</option>
+                                    <option value="Yes">⭐ AVD Members Only</option>
+                                    <option value="No">Non-AVD Only</option>
+                                </select>
+
+                                <select id="splitCandDistrictFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Source Districts</option>
+                                </select>
+
+                                <select id="splitCandCategoryFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Categories</option>
+                                    <option value="Gen">General / UR</option>
+                                    <option value="SC">SC (Scheduled Caste)</option>
+                                    <option value="ST">ST (Scheduled Tribe)</option>
+                                </select>
+
+                                <select id="splitCandTenureFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Tenures</option>
+                                    <option value="Yes">⚠️ Over-Tenure (>3-4 yrs)</option>
+                                    <option value="No">Within Norm</option>
+                                </select>
+
+                                <select id="splitCandSortSelect" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-800 font-bold shadow-xs">
+                                    <option value="seniority">Sort: Seniority / Sl</option>
+                                    <option value="tenure_desc">Sort: Highest Tenure</option>
+                                    <option value="dor_asc">Sort: DOR Soonest</option>
+                                    <option value="name_asc">Sort: Name (A-Z)</option>
+                                    <option value="district_asc">Sort: District (A-Z)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Candidates Scrollable List -->
+                    <div id="splitCandidateList" class="p-3 space-y-2.5 max-h-[640px] overflow-y-auto bg-slate-100/60 divide-y divide-slate-100">
+                        <div class="py-16 text-center text-slate-400 text-xs">Loading candidates pool...</div>
+                    </div>
+                </div>
+
+                <!-- ==================== RIGHT PANE: CLEAR VACANCIES ==================== -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <!-- Pane Header -->
+                    <div class="p-4 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-slate-50 border-b border-slate-200">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="p-1.5 rounded-lg bg-emerald-600 text-white">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                                        <span>Sanctioned Clear Vacancies</span>
+                                        <span id="splitVacBadge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">253</span>
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500">Unblocked sanctioned substantive vacancies across 24 districts</p>
+                                </div>
+                            </div>
+                            <button id="btnResetVacFilters" class="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+
+                        <!-- Vacancies Multi-Tier Filter Controls -->
+                        <div class="space-y-2 text-xs">
+                            <!-- Semantic Search Bar -->
+                            <div class="relative">
+                                <input type="search" id="splitVacSearchInput" placeholder="🔍 Semantic Search: e.g. 'North 24 Pgs Deputy Director', 'SAHC Birbhum', 'Polyclinic'..." class="w-full h-10 border border-slate-300 rounded-xl pl-9 pr-3 py-2 bg-white text-slate-900 shadow-xs focus:ring-2 focus:ring-emerald-600">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                            </div>
+
+                            <!-- Filter Selects Grid -->
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <select id="splitVacCategoryFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-800 font-bold shadow-xs">
+                                    <option value="ALL">All Categories (253)</option>
+                                    <option value="dd">Deputy Director (242)</option>
+                                    <option value="other">Asst Director / VO / Field (11)</option>
+                                </select>
+
+                                <select id="splitVacDistrictFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Target Districts (24)</option>
+                                </select>
+
+                                <select id="splitVacDesigFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Designations</option>
+                                </select>
+
+                                <select id="splitVacLevelFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
+                                    <option value="ALL">All Pay Levels</option>
+                                    <option value="17">Level 17 (DD)</option>
+                                    <option value="16">Level 16 (AD/BLDO)</option>
+                                    <option value="15">Level 15 (VO)</option>
+                                </select>
+
+                                <select id="splitVacSortSelect" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-800 font-bold shadow-xs col-span-2 sm:col-span-2">
+                                    <option value="district_asc">Sort: District (A-Z)</option>
+                                    <option value="level_desc">Sort: Highest Pay Level</option>
+                                    <option value="id_asc">Sort: Post ID (Ascending)</option>
+                                    <option value="office_asc">Sort: Office / Station (A-Z)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vacancies Scrollable List -->
+                    <div id="splitVacancyList" class="p-3 space-y-2.5 max-h-[640px] overflow-y-auto bg-slate-100/60 divide-y divide-slate-100">
+                        <div class="py-16 text-center text-slate-400 text-xs">Loading vacancies...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Statutory Matching Bar -->
+            <div id="splitMatchBar" class="sticky bottom-4 z-30 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-2xl border border-amber-500/40 hidden">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 w-full lg:w-auto flex-1">
+                        <!-- Selected Candidate Box -->
+                        <div id="splitMatchCandBox" class="flex-1 bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 min-w-[220px]">
+                            <div class="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1">
+                                <i data-lucide="user-check" class="w-3 h-3"></i>
+                                <span>Selected Candidate</span>
+                            </div>
+                            <div id="splitMatchCandName" class="font-bold text-xs text-white truncate mt-0.5">None Selected</div>
+                            <div id="splitMatchCandDetail" class="text-[11px] text-slate-400 truncate">Select a candidate on the left pane</div>
+                        </div>
+
+                        <!-- Connector Arrow -->
+                        <div class="shrink-0 text-amber-400">
+                            <i data-lucide="arrow-right" class="w-6 h-6 hidden lg:block animate-pulse"></i>
+                            <i data-lucide="arrow-down" class="w-6 h-6 lg:hidden animate-pulse"></i>
+                        </div>
+
+                        <!-- Selected Vacancy Box -->
+                        <div id="splitMatchVacBox" class="flex-1 bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 min-w-[220px]">
+                            <div class="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1">
+                                <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                <span>Target Clear Vacancy</span>
+                            </div>
+                            <div id="splitMatchVacName" class="font-bold text-xs text-white truncate mt-0.5">None Selected</div>
+                            <div id="splitMatchVacDetail" class="text-[11px] text-slate-400 truncate">Select a vacancy on the right pane</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2 shrink-0 w-full lg:w-auto justify-end">
+                        <button id="btnSplitClearSelection" class="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition cursor-pointer">
+                            Clear
+                        </button>
+                        <button id="btnSplitExecuteMatch" disabled class="px-5 py-2.5 text-xs font-black text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 rounded-xl shadow-lg flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+                            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                            <span>Execute Dual Allotment</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ==================== TAB 3: MASTER CADRE & VACANCIES (1,794) ==================== -->
         <div id="tab-cadre" class="tab-content hidden">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1255,7 +1515,7 @@
                     </div>
 
                     <!-- Multi-tier filters with 44px+ Touch Targets -->
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-2 border-t border-slate-200 text-xs">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-200 text-xs">
                         <select id="cadreDistrictFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
                             <option value="ALL">All Districts</option>
                         </select>
@@ -1276,6 +1536,12 @@
                             <option value="ALL">Tenure Status</option>
                             <option value="Yes">Over-Tenure (>4/5y)</option>
                             <option value="No">Within Tenure</option>
+                        </select>
+
+                        <select id="cadreAvdFilter" class="w-full h-10 border border-amber-300 rounded-xl px-2.5 py-2 bg-amber-50/70 text-amber-900 font-semibold shadow-xs touch-target focus:ring-amber-500">
+                            <option value="ALL">AVD: All Posts</option>
+                            <option value="Yes">⭐ AVD Members Only</option>
+                            <option value="No">Non-AVD</option>
                         </select>
 
                         <div class="relative col-span-2 sm:col-span-1">
@@ -1629,8 +1895,8 @@
                     </div>
 
                     <!-- Search & Filter Controls -->
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2">
-                        <div class="md:col-span-5 relative">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 pt-2">
+                        <div class="md:col-span-4 relative">
                             <input type="text" id="employeeSearchInput" placeholder="Search by name, HRMS ID, designation, station, district..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-wbblue-600 focus:outline-none bg-white">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
                         </div>
@@ -1639,11 +1905,18 @@
                                 <option value="ALL">All Districts & Complexes</option>
                             </select>
                         </div>
-                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5" id="employeeCategoryChips">
-                            <button data-cat="all" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-wbblue-800 text-white shadow-sm transition">All (1,624)</button>
-                            <button data-cat="hq" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">HQ Deployed (37)</button>
-                            <button data-cat="roster" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">50-Pt Roster (242)</button>
-                            <button data-cat="unsanctioned" class="emp-cat-btn px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Excess Posts (135)</button>
+                        <div class="md:col-span-2">
+                            <select id="employeeAvdFilter" class="w-full text-xs border border-amber-300 rounded-lg px-2.5 py-2 bg-amber-50/70 text-amber-900 font-semibold focus:ring-2 focus:ring-amber-500">
+                                <option value="ALL">AVD: All</option>
+                                <option value="Yes">⭐ AVD Members</option>
+                                <option value="No">Non-AVD</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3 flex flex-wrap items-center gap-1.5" id="employeeCategoryChips">
+                            <button data-cat="all" class="emp-cat-btn px-2 py-1.5 text-[10px] font-bold rounded-lg bg-wbblue-800 text-white shadow-xs transition">All (1,624)</button>
+                            <button data-cat="hq" class="emp-cat-btn px-2 py-1.5 text-[10px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">HQ (37)</button>
+                            <button data-cat="roster" class="emp-cat-btn px-2 py-1.5 text-[10px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">50-Pt (242)</button>
+                            <button data-cat="unsanctioned" class="emp-cat-btn px-2 py-1.5 text-[10px] font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Excess (135)</button>
                         </div>
                     </div>
                 </div>
@@ -2710,6 +2983,16 @@
                             </div>
                             <span class="text-xs font-bold text-slate-900">Cadre GIS Map</span>
                             <span class="text-[10px] text-slate-500 leading-tight">Statewide spatial map</span>
+                        </button>
+
+                        <!-- Split Decision Board -->
+                        <button data-tab="tab-split-matrix" class="mobile-drawer-btn p-3 rounded-2xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-left flex flex-col gap-1 transition active:scale-95 touch-target">
+                            <div class="flex items-center justify-between">
+                                <i data-lucide="git-pull-request" class="w-5 h-5 text-amber-600"></i>
+                                <span class="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-500 text-slate-950 font-black">Dual-Pane</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-900">Split Decision Board</span>
+                            <span class="text-[10px] text-slate-600 leading-tight">Candidates vs Vacancies Match</span>
                         </button>
                     </div>
                 </div>

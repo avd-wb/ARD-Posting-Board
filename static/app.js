@@ -148,6 +148,19 @@ window.handleAuthLogout = async function() {
     showAuthModal();
 };
 
+// --- SAFFRON STETHOSCOPE HELPER FOR VERIFIED AVD MEMBERS ---
+function renderAvdStethoscope(isAvd, size = 14) {
+    if (!isAvd || (isAvd !== 'Yes' && isAvd !== 1 && isAvd !== true && isAvd !== '1')) return '';
+    return `<span class="inline-flex items-center text-[#e05a10] hover:scale-110 transition-transform cursor-help ml-1 align-middle shrink-0" title="⭐ Verified AVD Member (WBAHVS)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#e05a10" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-xs">
+            <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/>
+            <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/>
+            <circle cx="20" cy="10" r="2"/>
+        </svg>
+    </span>`;
+}
+window.renderAvdStethoscope = renderAvdStethoscope;
+
 document.addEventListener('DOMContentLoaded', () => {
     // State management
     const state = {
@@ -169,7 +182,11 @@ document.addEventListener('DOMContentLoaded', () => {
         activeModalOfficer: null,
         activeModalRole: 'roster',
         substantivePosts: [],
-        suPosts: []
+        suPosts: [],
+        splitCandidates: [],
+        splitVacancies: [],
+        splitSelectedCand: null,
+        splitSelectedVac: null
     };
 
     // --- INITIALIZATION ---
@@ -194,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSpotlightSearch();
         initPolicyGuideModal();
         initLivePolicyEvaluator();
+        if (window.initSplitBoard) window.initSplitBoard();
         switchTab('tab-landing');
     };
 
@@ -331,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             loadObliterated();
         } else if (targetTab === 'tab-cadre') {
             loadCadre();
+        } else if (targetTab === 'tab-split-matrix') {
+            if (window.initSplitBoard) window.initSplitBoard();
         } else if (targetTab === 'tab-map') {
             loadCadreGisMap();
         } else if (targetTab === 'tab-cascade') {
@@ -503,6 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const distSelect = document.getElementById('cadreDistrictFilter');
             const moDistSelect = document.getElementById('masterOrdersDistrictFilter');
+            const splitCandDist = document.getElementById('splitCandDistrictFilter');
+            const splitVacDist = document.getElementById('splitVacDistrictFilter');
+
             state.districts.forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d;
@@ -515,14 +538,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     opt2.innerText = d;
                     moDistSelect.appendChild(opt2);
                 }
+
+                if (splitCandDist) {
+                    const opt3 = document.createElement('option');
+                    opt3.value = d;
+                    opt3.innerText = d;
+                    splitCandDist.appendChild(opt3);
+                }
+
+                if (splitVacDist) {
+                    const opt4 = document.createElement('option');
+                    opt4.value = d;
+                    opt4.innerText = d;
+                    splitVacDist.appendChild(opt4);
+                }
             });
 
             const desigSelect = document.getElementById('cadreDesigFilter');
+            const splitVacDesig = document.getElementById('splitVacDesigFilter');
             state.designations.forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d;
                 opt.innerText = d;
                 desigSelect.appendChild(opt);
+
+                if (splitVacDesig) {
+                    const opt5 = document.createElement('option');
+                    opt5.value = d;
+                    opt5.innerText = d;
+                    splitVacDesig.appendChild(opt5);
+                }
             });
         } catch (e) {
             console.error('Error initializing dropdown filters:', e);
@@ -545,8 +590,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const cat = document.getElementById('rosterCategoryFilter').value;
         const status = document.getElementById('rosterStatusFilter').value;
         const search = document.getElementById('rosterSearchInput').value;
+        const avd = document.getElementById('rosterAvdFilter')?.value;
 
         let url = `/api/roster?category=${encodeURIComponent(cat)}&allotment_status=${encodeURIComponent(status)}`;
+        if (avd && avd !== 'ALL') url += `&avd_member=${encodeURIComponent(avd)}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
 
         try {
@@ -638,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <div class="font-bold ${isRet ? 'line-through text-slate-500' : 'text-wbblue-900'} hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view full personnel dossier">
                                     <span>${c.officer_name}</span>
+                                    ${renderAvdStethoscope(c.avd_member)}
                                     ${dualBadge}
                                 </div>
                                 ${genderBadge}
@@ -726,8 +774,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                             <span class="px-1.5 py-0.5 rounded-md ${c.point_reserved_for === 'SC' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold' : c.point_reserved_for === 'ST' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold' : 'bg-slate-100 text-slate-700 font-bold'} text-[9px]">${c.point_reserved_for} Quota</span>
                                             <span class="px-1.5 py-0.5 rounded-md ${c.gender === 'Female' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-600'} text-[9px] font-bold">${c.gender || 'Male'}</span>
                                         </div>
-                                        <div class="font-extrabold text-sm ${c.is_retired ? 'line-through text-slate-500' : 'text-slate-900'} truncate cursor-pointer hover:text-wbblue-700 pt-0.5" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view dossier">
-                                            ${c.officer_name} ${dualBadge}
+                                        <div class="font-extrabold text-sm ${c.is_retired ? 'line-through text-slate-500' : 'text-slate-900'} truncate cursor-pointer hover:text-wbblue-700 pt-0.5 flex items-center gap-1" onclick="openOfficerDossier('${c.hrms_id}')" title="Click to view dossier">
+                                            <span>${c.officer_name}</span>
+                                            ${renderAvdStethoscope(c.avd_member)}
+                                            ${dualBadge}
                                         </div>
                                         <div class="text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5">
                                             <span>HRMS: <strong>${c.hrms_id || 'N/A'}</strong></span>
@@ -816,9 +866,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('rosterCategoryFilter').addEventListener('change', loadRoster);
-    document.getElementById('rosterStatusFilter').addEventListener('change', loadRoster);
-    document.getElementById('rosterSearchInput').addEventListener('input', debounce(loadRoster, 300));
+    document.getElementById('rosterCategoryFilter')?.addEventListener('change', loadRoster);
+    document.getElementById('rosterStatusFilter')?.addEventListener('change', loadRoster);
+    document.getElementById('rosterAvdFilter')?.addEventListener('change', loadRoster);
+    document.getElementById('rosterSearchInput')?.addEventListener('input', debounce(loadRoster, 300));
 
     // --- TAB: LOAD AUTHORITATIVE MASTER PROMOTION & TRANSFER ORDERS (328) ---
     async function loadMasterOrders() {
@@ -1040,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('gradStatusFilter')?.value || 'ALL';
         const category = document.getElementById('gradCategoryFilter')?.value || 'ALL';
         const gender = document.getElementById('gradGenderFilter')?.value || 'ALL';
+        const avd = document.getElementById('gradAvdFilter')?.value || 'ALL';
         const search = document.getElementById('gradSearchInput')?.value || '';
 
         let url = `/api/gradation?page=${currentGradationPage}&page_size=${GRADATION_PAGE_SIZE}`;
@@ -1047,6 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (status && status !== 'ALL') url += `&status=${encodeURIComponent(status)}`;
         if (category && category !== 'ALL') url += `&category=${encodeURIComponent(category)}`;
         if (gender && gender !== 'ALL') url += `&gender=${encodeURIComponent(gender)}`;
+        if (avd && avd !== 'ALL') url += `&avd_member=${encodeURIComponent(avd)}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
 
         try {
@@ -1103,8 +1156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     : `<span class="font-mono text-slate-600 text-xs">${o.sl_2025 || '—'}</span>`;
 
                 const nameDisplay = isRet
-                    ? `<span class="line-through text-slate-500 font-semibold cursor-pointer hover:text-slate-700" onclick="openOfficerDossier('${o.hrms_id}')">${o.officer_name}</span>`
-                    : `<span class="text-wbblue-900 font-bold cursor-pointer hover:text-wbblue-600 hover:underline" onclick="openOfficerDossier('${o.hrms_id}')">${o.officer_name}</span>`;
+                    ? `<span class="line-through text-slate-500 font-semibold cursor-pointer hover:text-slate-700 inline-flex items-center gap-1" onclick="openOfficerDossier('${o.hrms_id}')"><span>${o.officer_name}</span>${renderAvdStethoscope(o.avd_member)}</span>`
+                    : `<span class="text-wbblue-900 font-bold cursor-pointer hover:text-wbblue-600 hover:underline inline-flex items-center gap-1" onclick="openOfficerDossier('${o.hrms_id}')"><span>${o.officer_name}</span>${renderAvdStethoscope(o.avd_member)}</span>`;
 
                 const statusBadge = isRet
                     ? `<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold line-through">${o.status_2026}</span>`
@@ -1166,6 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gradSt = document.getElementById('gradStatusFilter');
     const gradCat = document.getElementById('gradCategoryFilter');
     const gradGen = document.getElementById('gradGenderFilter');
+    const gradAvd = document.getElementById('gradAvdFilter');
     const gradPrev = document.getElementById('gradPrevBtn');
     const gradNext = document.getElementById('gradNextBtn');
 
@@ -1174,6 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gradSt) gradSt.addEventListener('change', () => loadGradationList(true));
     if (gradCat) gradCat.addEventListener('change', () => loadGradationList(true));
     if (gradGen) gradGen.addEventListener('change', () => loadGradationList(true));
+    if (gradAvd) gradAvd.addEventListener('change', () => loadGradationList(true));
     if (gradPrev) gradPrev.addEventListener('click', () => {
         if (currentGradationPage > 1) {
             currentGradationPage--;
@@ -1191,8 +1246,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('oblitTableBody');
         const status = document.getElementById('oblitStatusFilter').value;
         const search = document.getElementById('oblitSearchInput').value;
+        const avd = document.getElementById('oblitAvdFilter')?.value;
 
         let url = `/api/obliterated?status=${encodeURIComponent(status)}`;
+        if (avd && avd !== 'ALL') url += `&avd_member=${encodeURIComponent(avd)}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
 
         try {
@@ -1250,8 +1307,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </td>
                         <td class="py-2.5 px-4 font-bold ${isVacant ? 'text-slate-400 italic' : 'text-slate-900'}">
                             ${isVacant ? o.officer_name : `
-                                <span class="text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${o.hrms_id}')" title="Click to view officer personnel dossier">
-                                    ${o.officer_name}
+                                <span class="text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer inline-flex items-center gap-1" onclick="openOfficerDossier('${o.hrms_id}')" title="Click to view officer personnel dossier">
+                                    <span>${o.officer_name}</span>
+                                    ${renderAvdStethoscope(o.avd_member)}
                                 </span>
                             `}
                         </td>
@@ -1327,8 +1385,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span>Serving Incumbent</span>
                                 </div>
                                 ${isVacant ? `<div class="text-slate-500 italic">Clear Abolished Vacancy (Vacant Post)</div>` : `
-                                    <div class="font-bold text-slate-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${o.hrms_id}')">
-                                        ${o.officer_name}
+                                    <div class="font-bold text-slate-900 text-xs cursor-pointer hover:underline flex items-center gap-1" onclick="openOfficerDossier('${o.hrms_id}')">
+                                        <span>${o.officer_name}</span>
+                                        ${renderAvdStethoscope(o.avd_member)}
                                     </div>
                                     <div class="text-[11px] font-mono text-slate-500 flex items-center gap-2">
                                         <span>HRMS: <strong>${o.hrms_id || '-'}</strong></span>
@@ -1385,8 +1444,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('oblitStatusFilter').addEventListener('change', loadObliterated);
-    document.getElementById('oblitSearchInput').addEventListener('input', debounce(loadObliterated, 300));
+    document.getElementById('oblitStatusFilter')?.addEventListener('change', loadObliterated);
+    document.getElementById('oblitAvdFilter')?.addEventListener('change', loadObliterated);
+    document.getElementById('oblitSearchInput')?.addEventListener('input', debounce(loadObliterated, 300));
 
     // --- TAB 3: LOAD CADRE POSTS (1,794) ---
     async function loadCadre() {
@@ -1396,6 +1456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const designation = document.getElementById('cadreDesigFilter').value;
         const status = document.getElementById('cadreStatusFilter').value;
         const tenureOver = document.getElementById('cadreTenureFilter').value;
+        const avdMember = document.getElementById('cadreAvdFilter')?.value || 'ALL';
 
         let url = `/api/cadre?limit=${state.cadreLimit}&offset=${state.cadreOffset}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -1403,6 +1464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (designation && designation !== 'ALL') url += `&designation=${encodeURIComponent(designation)}`;
         if (status && status !== 'ALL') url += `&status=${encodeURIComponent(status)}`;
         if (tenureOver && tenureOver !== 'ALL') url += `&tenure_over=${encodeURIComponent(tenureOver)}`;
+        if (avdMember && avdMember !== 'ALL') url += `&avd_member=${encodeURIComponent(avdMember)}`;
 
         try {
             const res = await fetch(url);
@@ -1445,7 +1507,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
                     occupantHtml = `
-                        <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">${p.incumbent_name || 'Serving Officer'}</div>
+                        <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">
+                            <span>${p.incumbent_name || 'Serving Officer'}</span>
+                            ${renderAvdStethoscope(p.avd_member)}
+                        </div>
                         <div class="text-[11px] font-mono text-slate-500">HRMS: ${p.incumbent_hrms || 'N/A'}</div>
                     `;
                 }
@@ -1559,8 +1624,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         Sanctioned post not physically established or operational.
                                     </div>
                                 ` : `
-                                    <div class="font-bold text-wbblue-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${p.incumbent_hrms}')">
-                                        ${p.incumbent_name || 'Serving Officer'}
+                                    <div class="font-bold text-wbblue-900 text-xs cursor-pointer hover:underline flex items-center gap-1.5" onclick="openOfficerDossier('${p.incumbent_hrms}')">
+                                        <span>${p.incumbent_name || 'Serving Officer'}</span>
+                                        ${renderAvdStethoscope(p.avd_member)}
                                     </div>
                                     <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
                                         <span>HRMS: <strong>${p.incumbent_hrms || 'N/A'}</strong></span>
@@ -1623,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    ['cadreDistrictFilter', 'cadreDesigFilter', 'cadreStatusFilter', 'cadreTenureFilter'].forEach(id => {
+    ['cadreDistrictFilter', 'cadreDesigFilter', 'cadreStatusFilter', 'cadreTenureFilter', 'cadreAvdFilter'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', () => {
@@ -2450,6 +2516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="truncate">
                                     <div class="font-bold text-xs text-neutral-900 flex items-center gap-1.5 truncate">
                                         <span>${offName}</span>
+                                        ${renderAvdStethoscope(o.avd_member)}
                                         ${tag}
                                     </div>
                                     <div class="text-[11px] text-neutral-500 truncate">
@@ -4397,6 +4464,7 @@ ${r.statutory_justification}
         query: '',
         district: 'ALL',
         category: 'all',
+        avd_member: 'ALL',
         page: 1,
         pageSize: 50,
         totalPages: 1
@@ -4412,10 +4480,14 @@ ${r.statutory_justification}
         if (cardsEl) cardsEl.innerHTML = '<div class="py-8 text-center text-slate-400 text-xs">Loading master directory...</div>';
 
         try {
+            const avdVal = document.getElementById('employeeAvdFilter')?.value || masterDirState.avd_member || 'ALL';
+            masterDirState.avd_member = avdVal;
+
             const params = new URLSearchParams({
                 query: masterDirState.query,
                 district: masterDirState.district,
                 category: masterDirState.category,
+                avd_member: masterDirState.avd_member,
                 page: masterDirState.page,
                 page_size: masterDirState.pageSize
             });
@@ -4474,6 +4546,7 @@ ${r.statutory_justification}
                             <td class="py-2.5 px-4">
                                 <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer flex items-center gap-1.5" onclick="openOfficerDossier('${emp.hrms_id}')" title="Click to view full personnel dossier">
                                     <span>${emp.officer_name}</span>
+                                    ${renderAvdStethoscope(emp.avd_member || (emp.avd_member_flag === 1 ? 'Yes' : 'No'))}
                                 </div>
                                 <div class="mt-1 flex flex-wrap gap-1">${badges}</div>
                             </td>
@@ -4524,8 +4597,9 @@ ${r.statutory_justification}
                                             <span class="px-2 py-0.5 rounded-md bg-slate-900 text-white font-mono text-[9px] font-bold">#${globalIdx}</span>
                                             <span class="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">HRMS: ${emp.hrms_id || '—'}</span>
                                         </div>
-                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700" onclick="openOfficerDossier('${emp.hrms_id}')" title="Click to view dossier">
-                                            ${emp.officer_name}
+                                        <div class="font-extrabold text-sm text-slate-900 truncate cursor-pointer hover:text-wbblue-700 flex items-center gap-1.5" onclick="openOfficerDossier('${emp.hrms_id}')" title="Click to view dossier">
+                                            <span>${emp.officer_name}</span>
+                                            ${renderAvdStethoscope(emp.avd_member || (emp.avd_member_flag === 1 ? 'Yes' : 'No'))}
                                         </div>
                                     </div>
                                 </div>
@@ -4583,6 +4657,14 @@ ${r.statutory_justification}
     if (distSelect) {
         distSelect.addEventListener('change', (e) => {
             masterDirState.district = e.target.value;
+            loadMasterDirectory(true);
+        });
+    }
+
+    const avdSelect = document.getElementById('employeeAvdFilter');
+    if (avdSelect) {
+        avdSelect.addEventListener('change', (e) => {
+            masterDirState.avd_member = e.target.value;
             loadMasterDirectory(true);
         });
     }
@@ -5969,7 +6051,7 @@ ${r.statutory_justification}
 
             gisMarkersLayer = L.layerGroup().addTo(gisMapInstance);
 
-            ['gisDistrictFilter', 'gisDesigFilter', 'gisStatusFilter', 'gisTenureFilter'].forEach(id => {
+            ['gisDistrictFilter', 'gisDesigFilter', 'gisStatusFilter', 'gisTenureFilter', 'gisAvdFilter'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('change', () => filterAndRenderGisMarkers());
             });
@@ -5986,11 +6068,13 @@ ${r.statutory_justification}
                     const desigF = document.getElementById('gisDesigFilter');
                     const statusF = document.getElementById('gisStatusFilter');
                     const tenureF = document.getElementById('gisTenureFilter');
+                    const avdF = document.getElementById('gisAvdFilter');
                     const searchF = document.getElementById('gisSearchInput');
                     if (distF) distF.value = 'ALL';
                     if (desigF) desigF.value = 'ALL';
                     if (statusF) statusF.value = 'ALL';
                     if (tenureF) tenureF.value = 'ALL';
+                    if (avdF) avdF.value = 'ALL';
                     if (searchF) searchF.value = '';
                     gisMapInstance.setView([23.8, 87.9], 7);
                     filterAndRenderGisMarkers();
@@ -6081,6 +6165,7 @@ ${r.statutory_justification}
         const desigVal = document.getElementById('gisDesigFilter')?.value || 'ALL';
         const statusVal = document.getElementById('gisStatusFilter')?.value || 'ALL';
         const tenureVal = document.getElementById('gisTenureFilter')?.value || 'ALL';
+        const avdVal = document.getElementById('gisAvdFilter')?.value || 'ALL';
         const searchVal = (document.getElementById('gisSearchInput')?.value || '').trim().toLowerCase();
 
         gisMarkersLayer.clearLayers();
@@ -6098,6 +6183,8 @@ ${r.statutory_justification}
             if (statusVal === 'occupied' && isVac) return false;
 
             if (tenureVal !== 'ALL' && p.tenure_over_flag !== tenureVal) return false;
+            if (avdVal === 'Yes' && p.avd_member !== 'Yes') return false;
+            if (avdVal === 'No' && p.avd_member === 'Yes') return false;
 
             if (searchVal) {
                 const combined = `${p.designation} ${p.establishment} ${p.resolved_location_name || ''} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''}`.toLowerCase();
@@ -6215,8 +6302,9 @@ ${r.statutory_justification}
                     ` : `
                         <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#ffffff;border:1px solid #cbd5e1;font-size:11px;">
                             <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Incumbent Officer</div>
-                            <div style="font-weight:bold;color:#0f172a;font-size:12px;margin-top:1px;">
+                            <div style="font-weight:bold;color:#0f172a;font-size:12px;margin-top:1px;display:flex;align-items:center;gap:4px;">
                                 <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedIncumbent}', 'officer')" style="color:#1e40af;text-decoration:underline;" title="Search officer postings in Cadre">${p.incumbent_name}</a>
+                                ${renderAvdStethoscope(p.avd_member)}
                             </div>
                             <div style="display:flex;align-items:center;gap:6px;color:#64748b;font-size:10px;margin-top:2px;">
                                 <span>HRMS: <a href="javascript:void(0)" onclick="window.openOfficerDossier('${p.incumbent_hrms}')" style="font-family:monospace;font-weight:bold;color:#2563eb;text-decoration:underline;" title="Open Personnel Dossier">${p.incumbent_hrms || 'N/A'}</a></span>
@@ -6416,6 +6504,7 @@ ${r.statutory_justification}
                         <td class="py-3 px-3">
                             <div class="font-bold text-white text-xs hover:text-rose-400 cursor-pointer flex items-center gap-1.5" onclick="window.openOfficerDossier('${t.hrms_id}')" title="Click to view personnel dossier">
                                 <span>${t.officer_name}</span>
+                                ${renderAvdStethoscope(t.avd_member)}
                                 <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-rose-400 transition"></i>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5 text-[10px]">
@@ -6645,4 +6734,378 @@ ${r.statutory_justification}
             if (cadreTable) cadreTable.scrollIntoView({ behavior: 'smooth' });
         }, 150);
     };
+
+    // =========================================================================
+    // DUAL-PANE SPLIT TRANSFER DECISION BOARD CONTROLLER
+    // =========================================================================
+    let splitBoardInitialized = false;
+
+    async function initSplitBoard() {
+        if (!splitBoardInitialized) {
+            splitBoardInitialized = true;
+            bindSplitBoardEvents();
+        }
+        await Promise.all([loadSplitCandidates(), loadSplitVacancies()]);
+    }
+    window.initSplitBoard = initSplitBoard;
+
+    function bindSplitBoardEvents() {
+        // Candidates Filter Listeners
+        const candSearch = document.getElementById('splitCandSearchInput');
+        if (candSearch) candSearch.addEventListener('input', debounce(loadSplitCandidates, 300));
+
+        ['splitPoolSelect', 'splitCandAvdFilter', 'splitCandDistrictFilter', 'splitCandCategoryFilter', 'splitCandTenureFilter', 'splitCandSortSelect'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', loadSplitCandidates);
+        });
+
+        const btnResetCand = document.getElementById('btnResetCandFilters');
+        if (btnResetCand) {
+            btnResetCand.addEventListener('click', () => {
+                if (candSearch) candSearch.value = '';
+                const pool = document.getElementById('splitPoolSelect');
+                const avd = document.getElementById('splitCandAvdFilter');
+                const dist = document.getElementById('splitCandDistrictFilter');
+                const cat = document.getElementById('splitCandCategoryFilter');
+                const ten = document.getElementById('splitCandTenureFilter');
+                const sort = document.getElementById('splitCandSortSelect');
+                if (pool) pool.value = 'ALL';
+                if (avd) avd.value = 'ALL';
+                if (dist) dist.value = 'ALL';
+                if (cat) cat.value = 'ALL';
+                if (ten) ten.value = 'ALL';
+                if (sort) sort.value = 'seniority';
+                loadSplitCandidates();
+            });
+        }
+
+        // Vacancies Filter Listeners
+        const vacSearch = document.getElementById('splitVacSearchInput');
+        if (vacSearch) vacSearch.addEventListener('input', debounce(loadSplitVacancies, 300));
+
+        ['splitVacCategoryFilter', 'splitVacDistrictFilter', 'splitVacDesigFilter', 'splitVacLevelFilter', 'splitVacSortSelect'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', loadSplitVacancies);
+        });
+
+        const btnResetVac = document.getElementById('btnResetVacFilters');
+        if (btnResetVac) {
+            btnResetVac.addEventListener('click', () => {
+                if (vacSearch) vacSearch.value = '';
+                const cat = document.getElementById('splitVacCategoryFilter');
+                const dist = document.getElementById('splitVacDistrictFilter');
+                const desig = document.getElementById('splitVacDesigFilter');
+                const lvl = document.getElementById('splitVacLevelFilter');
+                const sort = document.getElementById('splitVacSortSelect');
+                if (cat) cat.value = 'ALL';
+                if (dist) dist.value = 'ALL';
+                if (desig) desig.value = 'ALL';
+                if (lvl) lvl.value = 'ALL';
+                if (sort) sort.value = 'district_asc';
+                loadSplitVacancies();
+            });
+        }
+
+        // Match Bar Controls
+        const btnClearSelection = document.getElementById('btnSplitClearSelection');
+        if (btnClearSelection) {
+            btnClearSelection.addEventListener('click', () => {
+                state.splitSelectedCand = null;
+                state.splitSelectedVac = null;
+                renderSplitCandidatesList();
+                renderSplitVacanciesList();
+                updateSplitMatchBar();
+            });
+        }
+
+        const btnExecuteMatch = document.getElementById('btnSplitExecuteMatch');
+        if (btnExecuteMatch) {
+            btnExecuteMatch.addEventListener('click', () => {
+                if (state.splitSelectedCand && state.splitSelectedVac) {
+                    const cand = state.splitSelectedCand;
+                    const vac = state.splitSelectedVac;
+                    openDualAllotModal(cand.hrms_id, cand.source_pool || 'roster');
+                    setTimeout(() => {
+                        const postSelect = document.getElementById('modalSubstantivePostSelect');
+                        if (postSelect) {
+                            postSelect.value = String(vac.post_id);
+                            postSelect.dispatchEvent(new Event('change'));
+                        }
+                    }, 250);
+                }
+            });
+        }
+    }
+
+    async function loadSplitCandidates() {
+        const listEl = document.getElementById('splitCandidateList');
+        if (!listEl) return;
+
+        const pool = document.getElementById('splitPoolSelect')?.value || 'ALL';
+        const avd = document.getElementById('splitCandAvdFilter')?.value || 'ALL';
+        const dist = document.getElementById('splitCandDistrictFilter')?.value || 'ALL';
+        const cat = document.getElementById('splitCandCategoryFilter')?.value || 'ALL';
+        const ten = document.getElementById('splitCandTenureFilter')?.value || 'ALL';
+        const sort = document.getElementById('splitCandSortSelect')?.value || 'seniority';
+        const search = (document.getElementById('splitCandSearchInput')?.value || '').trim();
+
+        let url = `/api/split-board/candidates?pool=${encodeURIComponent(pool)}&district=${encodeURIComponent(dist)}&category=${encodeURIComponent(cat)}&tenure_over=${encodeURIComponent(ten)}&avd_member=${encodeURIComponent(avd)}&sort=${encodeURIComponent(sort)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs flex items-center justify-center gap-2"><svg class="animate-spin h-4 w-4 text-wbblue-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Filtering candidates pool...</span></div>';
+
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            state.splitCandidates = json.data || [];
+
+            const badge = document.getElementById('splitCandBadge');
+            if (badge) badge.innerText = (json.total || state.splitCandidates.length).toLocaleString();
+
+            const avdCountBadge = document.getElementById('splitAvdSummaryCount');
+            if (avdCountBadge && json.avd_count !== undefined) {
+                avdCountBadge.innerText = json.avd_count.toLocaleString();
+            }
+
+            renderSplitCandidatesList();
+        } catch (err) {
+            console.error('Failed to load split candidates:', err);
+            listEl.innerHTML = `<div class="py-12 text-center text-rose-500 text-xs">Error loading candidates: ${err.message}</div>`;
+        }
+    }
+
+    function renderSplitCandidatesList() {
+        const listEl = document.getElementById('splitCandidateList');
+        if (!listEl) return;
+
+        if (state.splitCandidates.length === 0) {
+            listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs">No transfer candidates found matching filters.</div>';
+            return;
+        }
+
+        listEl.innerHTML = state.splitCandidates.map(c => {
+            const isSelected = state.splitSelectedCand && state.splitSelectedCand.hrms_id === c.hrms_id;
+            const initials = getMonogram(c.officer_name);
+            const isOverTenure = c.tenure_over_flag === 'Yes';
+
+            let poolBadge = '';
+            if (c.source_pool === 'roster') {
+                poolBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">50-Pt Roster #${c.roster_point || '-'}</span>`;
+            } else if (c.source_pool === 'obliterated') {
+                poolBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">Abolished Lead</span>`;
+            } else if (c.source_pool === 'overtenure') {
+                poolBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">Over-Tenure</span>`;
+            } else {
+                poolBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Cadre Serving</span>`;
+            }
+
+            return `
+                <div onclick="window.selectSplitCandidate('${c.hrms_id}')" class="p-3 rounded-xl border transition cursor-pointer relative ${isSelected ? 'bg-amber-50/90 border-amber-400 shadow-md ring-2 ring-amber-400' : 'bg-white border-slate-200/90 hover:border-wbblue-300 hover:shadow-xs'}">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-full ${isSelected ? 'bg-amber-600 text-white' : 'bg-slate-800 text-white'} font-bold flex items-center justify-center text-xs shrink-0 tracking-tight shadow-xs">
+                                ${initials}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                    <div class="font-black text-xs text-slate-900 truncate hover:text-wbblue-700 flex items-center gap-1.5">
+                                        <span>${c.officer_name}</span>
+                                        ${renderAvdStethoscope(c.avd_member)}
+                                    </div>
+                                    ${poolBadge}
+                                </div>
+                                <div class="text-[11px] text-slate-600 font-medium truncate">
+                                    ${c.designation || 'Officer'}
+                                </div>
+                                <div class="text-[11px] text-slate-500 truncate">
+                                    ${c.present_posting || c.establishment || 'Present Posting N/A'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="shrink-0 flex flex-col items-end gap-1">
+                            <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">${c.hrms_id || 'N/A'}</span>
+                            ${c.category_caste ? `<span class="text-[10px] font-bold text-slate-500">${c.category_caste}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-medium text-slate-700">📍 ${c.district || 'District N/A'}</span>
+                            <span>•</span>
+                            <span class="${isOverTenure ? 'text-rose-700 font-bold' : ''}">Tenure: ${c.tenure || '-'} ${isOverTenure ? '⚠️' : ''}</span>
+                            <span>•</span>
+                            <span class="font-mono">DOR: ${c.dor || '-'}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                            <button onclick="window.openOfficerDossier('${c.hrms_id}')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="View Personnel Dossier">
+                                Dossier
+                            </button>
+                            <button onclick="window.selectSplitCandidate('${c.hrms_id}')" class="px-2.5 py-0.5 rounded text-[10px] font-black transition shadow-xs ${isSelected ? 'bg-amber-600 text-white' : 'bg-slate-800 text-white hover:bg-slate-700'}">
+                                ${isSelected ? '✓ Selected' : 'Select'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function loadSplitVacancies() {
+        const listEl = document.getElementById('splitVacancyList');
+        if (!listEl) return;
+
+        const cat = document.getElementById('splitVacCategoryFilter')?.value || 'ALL';
+        const dist = document.getElementById('splitVacDistrictFilter')?.value || 'ALL';
+        const desig = document.getElementById('splitVacDesigFilter')?.value || 'ALL';
+        const lvl = document.getElementById('splitVacLevelFilter')?.value || 'ALL';
+        const sort = document.getElementById('splitVacSortSelect')?.value || 'district_asc';
+        const search = (document.getElementById('splitVacSearchInput')?.value || '').trim();
+
+        let url = `/api/split-board/vacancies?category=${encodeURIComponent(cat)}&district=${encodeURIComponent(dist)}&designation=${encodeURIComponent(desig)}&level=${encodeURIComponent(lvl)}&sort=${encodeURIComponent(sort)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs flex items-center justify-center gap-2"><svg class="animate-spin h-4 w-4 text-emerald-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Filtering vacancies...</span></div>';
+
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            state.splitVacancies = json.data || [];
+
+            const badge = document.getElementById('splitVacBadge');
+            if (badge) badge.innerText = (json.total || state.splitVacancies.length).toLocaleString();
+
+            const sumCount = document.getElementById('splitVacSummaryCount');
+            if (sumCount && json.total !== undefined) sumCount.innerText = json.total.toLocaleString();
+
+            renderSplitVacanciesList();
+        } catch (err) {
+            console.error('Failed to load split vacancies:', err);
+            listEl.innerHTML = `<div class="py-12 text-center text-rose-500 text-xs">Error loading vacancies: ${err.message}</div>`;
+        }
+    }
+
+    function renderSplitVacanciesList() {
+        const listEl = document.getElementById('splitVacancyList');
+        if (!listEl) return;
+
+        if (state.splitVacancies.length === 0) {
+            listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs">No clear vacancies found matching filters.</div>';
+            return;
+        }
+
+        listEl.innerHTML = state.splitVacancies.map(v => {
+            const isSelected = state.splitSelectedVac && state.splitSelectedVac.post_id === v.post_id;
+            const isLevel17 = (v.pay_level || '').includes('17');
+
+            return `
+                <div onclick="window.selectSplitVacancy(${v.post_id})" class="p-3 rounded-xl border transition cursor-pointer relative ${isSelected ? 'bg-emerald-50/90 border-emerald-400 shadow-md ring-2 ring-emerald-400' : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:shadow-xs'}">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-white font-mono text-[9px] font-bold">Post #${v.post_id}</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isLevel17 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${v.pay_level || 'Cadre Post'}</span>
+                                <span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>
+                            </div>
+                            <div class="font-extrabold text-xs text-slate-900 leading-snug">
+                                ${v.designation}
+                            </div>
+                            <div class="text-[11px] text-slate-500 leading-snug truncate">
+                                ${v.establishment}
+                            </div>
+                        </div>
+
+                        <div class="shrink-0 text-right">
+                            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black block">Available</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <div class="flex items-center gap-1.5 truncate">
+                            <span class="font-semibold text-slate-700">📍 ${v.district || '-'}</span>
+                            <span>•</span>
+                            <span class="truncate">${v.block || 'HQ'}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                            <button onclick="window.filterCadreByKeyword('${v.district || ''}', 'district')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="View in Cadre Table">
+                                Cadre
+                            </button>
+                            <button onclick="window.selectSplitVacancy(${v.post_id})" class="px-2.5 py-0.5 rounded text-[10px] font-black transition shadow-xs ${isSelected ? 'bg-emerald-600 text-white' : 'bg-emerald-700 text-white hover:bg-emerald-800'}">
+                                ${isSelected ? '✓ Matched' : 'Match Target'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    window.selectSplitCandidate = function(hrmsId) {
+        if (state.splitSelectedCand && state.splitSelectedCand.hrms_id === hrmsId) {
+            state.splitSelectedCand = null;
+        } else {
+            state.splitSelectedCand = state.splitCandidates.find(c => c.hrms_id === hrmsId) || null;
+        }
+        renderSplitCandidatesList();
+        updateSplitMatchBar();
+    };
+
+    window.selectSplitVacancy = function(postId) {
+        if (state.splitSelectedVac && state.splitSelectedVac.post_id === postId) {
+            state.splitSelectedVac = null;
+        } else {
+            state.splitSelectedVac = state.splitVacancies.find(v => v.post_id === postId) || null;
+        }
+        renderSplitVacanciesList();
+        updateSplitMatchBar();
+    };
+
+    function updateSplitMatchBar() {
+        const bar = document.getElementById('splitMatchBar');
+        if (!bar) return;
+
+        const cand = state.splitSelectedCand;
+        const vac = state.splitSelectedVac;
+
+        if (!cand && !vac) {
+            bar.classList.add('hidden');
+            return;
+        }
+
+        bar.classList.remove('hidden');
+
+        // Candidate Box
+        const candNameEl = document.getElementById('splitMatchCandName');
+        const candDetailEl = document.getElementById('splitMatchCandDetail');
+        if (cand) {
+            if (candNameEl) candNameEl.innerHTML = `<span class="flex items-center gap-1.5"><span>${cand.officer_name}</span> ${renderAvdStethoscope(cand.avd_member)}</span>`;
+            if (candDetailEl) candDetailEl.innerText = `HRMS: ${cand.hrms_id} • ${cand.designation} (${cand.district || '-'})`;
+        } else {
+            if (candNameEl) candNameEl.innerText = 'None Selected';
+            if (candDetailEl) candDetailEl.innerText = 'Select a candidate on the left pane';
+        }
+
+        // Vacancy Box
+        const vacNameEl = document.getElementById('splitMatchVacName');
+        const vacDetailEl = document.getElementById('splitMatchVacDetail');
+        if (vac) {
+            if (vacNameEl) vacNameEl.innerText = `Post #${vac.post_id}: ${vac.designation}`;
+            if (vacDetailEl) vacDetailEl.innerText = `${vac.establishment} • ${vac.district} (${vac.pay_level || 'Cadre'})`;
+        } else {
+            if (vacNameEl) vacNameEl.innerText = 'None Selected';
+            if (vacDetailEl) vacDetailEl.innerText = 'Select a vacancy on the right pane';
+        }
+
+        // Action Button
+        const btnExec = document.getElementById('btnSplitExecuteMatch');
+        if (btnExec) {
+            btnExec.disabled = !(cand && vac);
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+    }
 });

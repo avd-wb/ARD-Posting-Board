@@ -1647,6 +1647,7 @@ class PostingEngine:
         query: str = "",
         district: str = "ALL",
         category: str = "all",
+        avd_member: Optional[str] = None,
         page: int = 1,
         page_size: int = 50
     ) -> Dict[str, Any]:
@@ -1678,6 +1679,12 @@ class PostingEngine:
         elif category == "unsanctioned":
             where_clauses.append("is_unsanctioned_post = 1")
 
+        if avd_member and avd_member != "ALL":
+            if avd_member == "Yes":
+                where_clauses.append("avd_member_flag = 1")
+            elif avd_member == "No":
+                where_clauses.append("avd_member_flag = 0")
+
         where_str = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
         # Total count
@@ -1689,9 +1696,9 @@ class PostingEngine:
         offset = max(0, (page - 1) * page_size)
         data_sql = f"""
             SELECT hrms_id, officer_name, designation, present_posting, establishment,
-                   district, cadre, service_status, dor, avd_member_flag,
+                   district, cadre, service_status, dor, avd_member_flag, avd_member,
                    is_50pt_candidate, is_hq_deployed, is_unsanctioned_post,
-                   hq_post_title, hq_doj, mobile, email
+                   hq_post_title, hq_doj, wbvc_reg_no, gender
             FROM master_all_cadre_employees
             {where_str}
             ORDER BY is_hq_deployed DESC, is_50pt_candidate DESC, officer_name ASC

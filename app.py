@@ -414,8 +414,10 @@ def get_cadre(
         params.append(tenure_over)
 
     if avd_member and avd_member != "ALL":
-        query += " AND avd_member = ?"
-        params.append(avd_member)
+        if avd_member.lower() in ("yes", "true", "1"):
+            query += " AND avd_member = 'Yes'"
+        elif avd_member.lower() in ("no", "false", "0"):
+            query += " AND (avd_member = 'No' OR avd_member IS NULL)"
 
     count_query = query.replace("SELECT *, id as post_id", "SELECT count(*)")
     cur.execute(count_query, params)
@@ -485,7 +487,7 @@ def get_redzone_pending_transfers(
         SELECT id, category, category_label, priority_score, officer_name, hrms_id, gender,
                current_designation, current_establishment, current_block, current_district,
                tenure_years, tenure_str, date_of_joining, date_of_retirement, transfer_reason,
-               target_post, target_district, ground_type, post_id, latitude, longitude, status
+               target_post, target_district, ground_type, post_id, latitude, longitude, status, avd_member
         FROM pending_transfers_redzone
         WHERE 1=1
     """
@@ -522,6 +524,7 @@ def get_map_posts(
     designation: Optional[str] = None,
     occupancy_status: Optional[str] = None,
     tenure_over: Optional[str] = None,
+    avd_member: Optional[str] = None,
     search: Optional[str] = None,
     limit: int = 1794
 ):
@@ -532,7 +535,7 @@ def get_map_posts(
         SELECT post_id as id, post_sl, district, block, establishment, estab_type,
                designation, post_code, pay_level, occupancy_status,
                incumbent_name, incumbent_hrms, incumbent_doj, incumbent_tenure,
-               tenure_norm, tenure_over_flag, incumbent_dor, latitude, longitude, record_sha256,
+               tenure_norm, tenure_over_flag, incumbent_dor, avd_member, latitude, longitude, record_sha256,
                resolved_location_name, location_detective_method, location_resolution_tier,
                google_maps_url, location_notes
         FROM sacrosanct_cadre_posts
@@ -553,6 +556,11 @@ def get_map_posts(
     if tenure_over and tenure_over != "ALL":
         query += " AND tenure_over_flag = ?"
         params.append(tenure_over)
+    if avd_member and avd_member != "ALL":
+        if avd_member.lower() in ("yes", "true", "1"):
+            query += " AND avd_member = 'Yes'"
+        elif avd_member.lower() in ("no", "false", "0"):
+            query += " AND (avd_member = 'No' OR avd_member IS NULL)"
     if search:
         s = f"%{search.strip()}%"
         query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ? OR resolved_location_name LIKE ?)"
@@ -597,6 +605,315 @@ def get_map_stats():
     summary = dict(cur.fetchone())
     conn.close()
     return {"summary": summary, "districts": districts}
+
+# =========================================================================
+# SPLIT DECISION BOARD ENDPOINTS (CANDIDATES & VACANCIES)
+# =========================================================================
+
+@app.get("/api/split-board/candidates")
+def get_split_board_candidates(
+    pool: str = "ALL",
+    district: Optional[str] = None,
+    designation: Optional[str] = None,
+    avd_member: Optional[str] = None,
+    category: Optional[str] = None,
+    tenure_over: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "seniority",
+    sort: Optional[str] = None
+):
+    """Returns unified list of transfer candidates across Roster, Obliterated, Over-Tenure, and Cadre."""
+    if sort:
+        sort_by = sort
+
+    conn = get_db()
+    cur = conn.cursor()
+    candidates = []
+
+    # 1. 50-Point Roster pool
+    if pool in ("ALL", "roster"):
+        cur.execute("""
+            SELECT 
+                'roster_' || sl_no AS candidate_id,
+                roster_point,
+                point_reserved_for AS reservation_category,
+                officer_name,
+                hrms_id,
+                present_posting AS current_designation,
+                present_block AS current_block,
+                present_district AS current_district,
+                tenure_years,
+                dor,
+                service_status,
+                gradation_sl,
+                avd_member,
+                '50-Point Roster' AS pool_label,
+                'roster' AS pool_type
+            FROM roster_50_point_candidates
+        """)
+        for r in cur.fetchall():
+            d = dict(r)
+            d["current_establishment"] = d.get("current_posting") or "Block / Sub-Div Office"
+            d["tenure_display"] = f"{d['tenure_years']} yrs" if d.get("tenure_years") else "-"
+            candidates.append(d)
+
+    # 2. Obliterated Posts / Abolished Leads pool
+    if pool in ("ALL", "obliterated"):
+        cur.execute("""
+            SELECT 
+                'oblit_' || id AS candidate_id,
+                oblit_sl AS roster_point,
+                officer_name,
+                hrms_id,
+                post_name AS current_designation,
+                establishment AS current_establishment,
+                block AS current_block,
+                district AS current_district,
+                tenure AS tenure_years,
+                '' AS dor,
+                avd_member,
+                'Obliterated Post Lead' AS pool_label,
+                'obliterated' AS pool_type
+            FROM ABOLISHED_POST_LEADS
+            WHERE officer_name IS NOT NULL AND officer_name != ''
+        """)
+        for r in cur.fetchall():
+            d = dict(r)
+            d["reservation_category"] = "UR"
+            d["gradation_sl"] = 9999
+            d["tenure_display"] = str(d.get("tenure_years") or "-")
+            candidates.append(d)
+
+    # 3. Over-Tenure pool
+    if pool in ("over_tenure", "overtenure"):
+        cur.execute("""
+            SELECT 
+                'cadre_' || id AS candidate_id,
+                post_sl,
+                incumbent_name AS officer_name,
+                incumbent_hrms AS hrms_id,
+                designation AS current_designation,
+                establishment AS current_establishment,
+                block AS current_block,
+                district AS current_district,
+                tenure_years,
+                dor,
+                avd_member,
+                'Over-Tenure (>3-4y)' AS pool_label,
+                'overtenure' AS pool_type
+            FROM cadre_1794_posts
+            WHERE tenure_over_flag = 'Yes' AND incumbent_name IS NOT NULL
+        """)
+        for r in cur.fetchall():
+            d = dict(r)
+            d["reservation_category"] = "UR"
+            d["gradation_sl"] = d.get("post_sl") or 9999
+            d["tenure_display"] = str(d.get("tenure_years") or "-")
+            candidates.append(d)
+
+    # 4. Cadre Serving pool
+    if pool in ("cadre", "cadre_all"):
+        cur.execute("""
+            SELECT 
+                'cadre_' || id AS candidate_id,
+                post_sl,
+                incumbent_name AS officer_name,
+                incumbent_hrms AS hrms_id,
+                designation AS current_designation,
+                establishment AS current_establishment,
+                block AS current_block,
+                district AS current_district,
+                tenure_years,
+                dor,
+                avd_member,
+                'Serving Cadre Officer' AS pool_label,
+                'cadre' AS pool_type
+            FROM cadre_1794_posts
+            WHERE UPPER(occupancy_status) = 'FILLED' AND incumbent_name IS NOT NULL
+        """)
+        for r in cur.fetchall():
+            d = dict(r)
+            d["reservation_category"] = "UR"
+            d["gradation_sl"] = d.get("post_sl") or 9999
+            d["tenure_display"] = str(d.get("tenure_years") or "-")
+            candidates.append(d)
+
+    conn.close()
+
+    # Client / parameter filters
+    filtered = []
+    for c in candidates:
+        # Standard field aliases
+        c["designation"] = c.get("current_designation") or ""
+        c["district"] = c.get("current_district") or ""
+        c["present_posting"] = c.get("current_establishment") or ""
+        c["tenure"] = c.get("tenure_display") or ""
+        c["source_pool"] = c.get("pool_type") or "cadre"
+        c["category_caste"] = c.get("reservation_category") or ""
+        ty = c.get("tenure_years")
+        try:
+            c["tenure_over_flag"] = "Yes" if (float(str(ty).replace("y","").strip()) >= 3.0) else "No"
+        except Exception:
+            c["tenure_over_flag"] = "No"
+
+        if district and district != "ALL":
+            if (c.get("current_district") or "").strip().lower() != district.strip().lower():
+                continue
+        if designation and designation != "ALL":
+            if designation.lower() not in (c.get("current_designation") or "").lower():
+                continue
+        if avd_member and avd_member != "ALL":
+            is_yes = (c.get("avd_member") or "").strip().lower() == "yes"
+            if avd_member.lower() in ("yes", "true", "1") and not is_yes:
+                continue
+            if avd_member.lower() in ("no", "false", "0") and is_yes:
+                continue
+        if category and category != "ALL":
+            cat_check = (c.get("reservation_category") or "UR").strip().upper()
+            if category.strip().upper() not in cat_check:
+                continue
+        if tenure_over and tenure_over != "ALL":
+            if c["tenure_over_flag"] != tenure_over:
+                continue
+        if search:
+            s = search.strip().lower()
+            combined = f"{c.get('officer_name') or ''} {c.get('hrms_id') or ''} {c.get('current_designation') or ''} {c.get('current_establishment') or ''} {c.get('current_district') or ''} {c.get('current_block') or ''}".lower()
+            if s not in combined:
+                continue
+        filtered.append(c)
+
+    # Sorting
+    if sort_by == "tenure_desc":
+        def parse_tenure(v):
+            txt = str(v or "")
+            try:
+                if "y" in txt:
+                    return float(txt.split("y")[0].strip())
+                return float(txt)
+            except Exception:
+                return 0.0
+        filtered.sort(key=lambda x: parse_tenure(x.get("tenure_years")), reverse=True)
+    elif sort_by == "dor_asc":
+        filtered.sort(key=lambda x: str(x.get("dor") or "9999"))
+    elif sort_by == "name_asc":
+        filtered.sort(key=lambda x: str(x.get("officer_name") or "").lower())
+    elif sort_by == "district_asc":
+        filtered.sort(key=lambda x: (str(x.get("current_district") or "").lower(), str(x.get("officer_name") or "").lower()))
+    else:  # seniority
+        def safe_int(v, default=9999):
+            try:
+                return int(v)
+            except Exception:
+                return default
+        filtered.sort(key=lambda x: (safe_int(x.get("gradation_sl")), safe_int(x.get("roster_point"))))
+
+    avd_count = sum(1 for c in filtered if (c.get("avd_member") or "").strip().lower() == "yes")
+
+    return {
+        "total": len(filtered),
+        "avd_count": avd_count,
+        "candidates": filtered,
+        "data": filtered
+    }
+
+@app.get("/api/split-board/vacancies")
+def get_split_board_vacancies(
+    type: str = "ALL",
+    category: Optional[str] = None,
+    district: Optional[str] = None,
+    designation: Optional[str] = None,
+    pay_level: Optional[str] = None,
+    level: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "district_asc",
+    sort: Optional[str] = None
+):
+    """Returns all 253 sanctioned clear vacancies with district, designation, and spatial metadata."""
+    if category and category != "ALL":
+        type = category
+    if level and level != "ALL":
+        pay_level = level
+    if sort:
+        sort_by = sort
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT 
+            id AS post_id,
+            post_sl,
+            district,
+            block,
+            establishment,
+            estab_type,
+            designation,
+            post_code,
+            pay_level,
+            occupancy_status,
+            detailed_presentation,
+            reported_block
+        FROM cadre_1794_posts
+        WHERE UPPER(occupancy_status) = 'VACANT'
+    """)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    filtered = []
+    for p in rows:
+        desig = (p.get("designation") or "").lower()
+        pl = (p.get("pay_level") or "").upper()
+        p_code = (p.get("post_code") or "").upper()
+
+        # Classify post
+        is_dd = "deputy director" in desig or p_code == "DD" or "17" in pl
+        p["post_type"] = "dd" if is_dd else "other"
+
+        if type and type != "ALL":
+            if type == "dd" and not is_dd:
+                continue
+            if type == "other" and is_dd:
+                continue
+
+        if district and district != "ALL":
+            if (p.get("district") or "").strip().lower() != district.strip().lower():
+                continue
+
+        if designation and designation != "ALL":
+            if designation.lower() not in desig:
+                continue
+
+        if pay_level and pay_level != "ALL":
+            if pay_level.upper() not in pl:
+                continue
+
+        if search:
+            s = search.strip().lower()
+            combined = f"{p.get('designation') or ''} {p.get('establishment') or ''} {p.get('district') or ''} {p.get('block') or ''} {p.get('detailed_presentation') or ''} {p.get('post_code') or ''}".lower()
+            if s not in combined:
+                continue
+
+        p["is_apex"] = p_code in ("DIR", "ADDL") or "director of ah" in desig
+        filtered.append(p)
+
+    # Sorting
+    if sort_by == "level_desc":
+        level_order = {"LEVEL-22": 1, "LEVEL-21": 2, "LEVEL-19": 3, "LEVEL-17": 4, "LEVEL-16": 5}
+        filtered.sort(key=lambda x: level_order.get((x.get("pay_level") or "").upper(), 99))
+    elif sort_by == "id_asc":
+        filtered.sort(key=lambda x: int(x.get("post_id") or 0))
+    elif sort_by == "office_asc":
+        filtered.sort(key=lambda x: (str(x.get("establishment") or "").lower(), str(x.get("district") or "").lower()))
+    else:  # district_asc
+        filtered.sort(key=lambda x: (str(x.get("district") or "").lower(), str(x.get("designation") or "").lower()))
+
+    districts_present = len(set(p.get("district") for p in filtered if p.get("district")))
+
+    return {
+        "total": len(filtered),
+        "districts_count": districts_present,
+        "vacancies": filtered,
+        "data": filtered
+    }
 
 @app.get("/api/verification/summary")
 def get_verification_summary():
@@ -710,7 +1027,8 @@ def get_sacrosanct_summary():
 def get_roster_candidates(
     category: Optional[str] = None,
     allotment_status: Optional[str] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    avd_member: Optional[str] = None
 ):
     conn = get_db()
     cur = conn.cursor()
@@ -736,6 +1054,10 @@ def get_roster_candidates(
     if allotment_status and allotment_status != "ALL":
         query += " AND r.allotment_status = ?"
         params.append(allotment_status)
+
+    if avd_member and avd_member != "ALL":
+        query += " AND r.avd_member = ?"
+        params.append(avd_member)
 
     if search:
         s = f"%{search.strip()}%"
@@ -796,6 +1118,7 @@ def get_gradation_list(
     category: Optional[str] = None,
     gender: Optional[str] = None,
     search: Optional[str] = None,
+    avd_member: Optional[str] = None,
     page: int = 1,
     page_size: int = 100
 ):
@@ -822,6 +1145,10 @@ def get_gradation_list(
     if gender and gender != "ALL":
         base_query += " AND gender = ?"
         params.append(gender)
+
+    if avd_member and avd_member != "ALL":
+        base_query += " AND avd_member = ?"
+        params.append(avd_member)
 
     if search:
         s = f"%{search.strip()}%"
@@ -922,6 +1249,7 @@ def get_master_employees_api(
     query: Optional[str] = None,
     district: Optional[str] = "ALL",
     category: Optional[str] = "all",
+    avd_member: Optional[str] = None,
     page: int = 1,
     page_size: int = 50
 ):
@@ -933,6 +1261,7 @@ def get_master_employees_api(
         query=query or "",
         district=district or "ALL",
         category=category or "all",
+        avd_member=avd_member,
         page=page,
         page_size=page_size
     )
@@ -945,7 +1274,7 @@ def get_hq_deployed_api():
     return engine.get_hq_deployed_officers()
 
 @app.get("/api/obliterated")
-def get_obliterated_officers(status: Optional[str] = None, search: Optional[str] = None):
+def get_obliterated_officers(status: Optional[str] = None, search: Optional[str] = None, avd_member: Optional[str] = None):
     conn = get_db()
     cur = conn.cursor()
 
@@ -955,6 +1284,10 @@ def get_obliterated_officers(status: Optional[str] = None, search: Optional[str]
     if status and status != "ALL":
         query += " AND rehabilitation_status = ?"
         params.append(status)
+
+    if avd_member and avd_member != "ALL":
+        query += " AND avd_member = ?"
+        params.append(avd_member)
 
     if search:
         s = f"%{search.strip()}%"
@@ -1224,7 +1557,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
 
     # 1. Search Officers
     cur.execute("""
-    SELECT hrms_id, officer_name, designation, district, establishment AS current_office, dor, 'master_employee' AS source
+    SELECT hrms_id, officer_name, designation, district, establishment AS current_office, dor, avd_member, 'master_employee' AS source
     FROM master_all_cadre_employees
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR designation LIKE ? OR district LIKE ?
     LIMIT ?
@@ -1232,7 +1565,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     emp_rows = [dict(r) for r in cur.fetchall()]
 
     cur.execute("""
-    SELECT hrms_id, officer_name, roster_point, point_reserved_for, allotment_status, substantive_post_name, su_post_name, 'roster' AS source
+    SELECT hrms_id, officer_name, roster_point, point_reserved_for, allotment_status, substantive_post_name, su_post_name, avd_member, 'roster' AS source
     FROM roster_50_point_candidates
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR roster_point LIKE ? OR substantive_post_name LIKE ?
     LIMIT ?
@@ -1240,7 +1573,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     roster_rows = [dict(r) for r in cur.fetchall()]
 
     cur.execute("""
-    SELECT hrms_id, officer_name, post_name AS designation, district, rehabilitation_status AS allotment_status, substantive_post_name, 'abolished_leads' AS source
+    SELECT hrms_id, officer_name, post_name AS designation, district, rehabilitation_status AS allotment_status, substantive_post_name, avd_member, 'abolished_leads' AS source
     FROM ABOLISHED_POST_LEADS
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR post_name LIKE ? OR district LIKE ?
     LIMIT ?
