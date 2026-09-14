@@ -650,12 +650,16 @@ def get_roster_candidates(
         is_ret = 1 if status in ["retired", "superannuated", "deceased", "left service"] else 0
 
         # Check DOR vs 01.09.2026
-        dor = row.get("dor") or row.get("service_ends") or ""
+        dor = (row.get("dor") or row.get("service_ends") or "").strip()
         if dor and not is_ret:
-            parts = dor.replace("-", "/").split("/")
+            clean_dor = dor.replace("/", "-")
+            parts = clean_dor.split("-")
             if len(parts) == 3:
                 try:
-                    d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+                    if len(parts[0]) == 4:  # YYYY-MM-DD
+                        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                    else:  # DD-MM-YYYY
+                        d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
                     if y < 2026 or (y == 2026 and m < 9):
                         is_ret = 1
                 except (ValueError, IndexError):

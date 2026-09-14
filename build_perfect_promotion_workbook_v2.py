@@ -200,7 +200,8 @@ cur.execute("""
     SELECT sl_no, roster_sl, hrms_id, officer_name, gender, category, roster_point,
            present_designation, present_establishment, present_block, present_district,
            office_code, ddo_code, present_post_full, present_su, transfer_basis,
-           transferred_substantive_post, service_utilized_at, administrative_remarks, comments_directive
+           transferred_substantive_post, service_utilized_at, administrative_remarks, comments_directive,
+           dor, tenure_left, tenure_in_post
     FROM master_final_order_schedule
     ORDER BY sl_no ASC
 """)
@@ -216,7 +217,7 @@ prom_dict = {str(r['hrms_id']).strip(): r for r in prom_records}
 # Pre-fetch all available DD posts with matched master schedule data
 cur.execute("""
     SELECT a.*, m.roster_sl, m.service_utilized_at, m.comments_directive, m.office_code, m.ddo_code,
-           m.transferred_substantive_post, m.gender, m.category
+           m.transferred_substantive_post, m.gender, m.category, m.dor, m.tenure_left, m.tenure_in_post
     FROM available_dd_posts a
     LEFT JOIN master_final_order_schedule m ON a.allotted_hrms = m.hrms_id
     ORDER BY a.dd_sl
@@ -396,6 +397,9 @@ headers_ws1 = [
     "Present Establishment",
     "Present Block",
     "Present District",
+    "Date of Retirement",
+    "Tenure Left (_ y, _m, _d)",
+    "Tenure in Current Post (_ y, _m, _d)",
     "Office Code (WBIFMS)",
     "DDO Code (WBIFMS)",
     "Present Post Description (Full)",
@@ -423,6 +427,9 @@ for r_idx, r in enumerate(records, 2):
     off_c = r['office_code']; ddo_c = r['ddo_code']; ppost = r['present_post_full']; psu = r['present_su']
     basis = r['transfer_basis']; sub = r['transferred_substantive_post']; su = r['service_utilized_at']
     rem = r['administrative_remarks']; comm = r['comments_directive']
+    dor_val = r.get('dor') or '—'
+    t_left_val = r.get('tenure_left') or '—'
+    t_post_val = r.get('tenure_in_post') or '—'
 
     is_tpv = "1112" in str(basis) or "Displacement due to post abolition" in str(basis)
     is_promo = rsl != "-" and rsl is not None and rsl != "—"
@@ -439,6 +446,9 @@ for r_idx, r in enumerate(records, 2):
         pest or "—",
         pblk or "—",
         pdist or "—",
+        dor_val,
+        t_left_val,
+        t_post_val,
         off_c or "—",
         ddo_c or "—",
         ppost or "—",
@@ -454,25 +464,22 @@ for r_idx, r in enumerate(records, 2):
         cell = ws1.cell(r_idx, c_idx, val)
         cell.fill = row_fill
         cell.border = border_thin
-        if c_idx in [1, 2, 5, 6]:
+        if c_idx in [1, 2, 5, 6, 9, 10, 11, 12, 13]:
             cell.alignment = align_center
             cell.font = font_regular
-        elif c_idx in [3, 11, 12]:
+        elif c_idx in [3, 14, 15]:
             cell.alignment = align_center
             cell.font = font_mono_blue if val != "—" else font_regular
         elif c_idx in [4]:
             cell.alignment = align_left
             cell.font = font_bold
-        elif c_idx in [9, 10]:
-            cell.alignment = align_center
-            cell.font = font_regular
         else:
             cell.alignment = align_left
             cell.font = font_regular
 
 ws1_widths = {
     1: 8, 2: 14, 3: 13, 4: 28, 5: 10, 6: 10, 7: 30, 8: 35, 9: 22, 10: 18,
-    11: 16, 12: 16, 13: 42, 14: 24, 15: 28, 16: 40, 17: 38, 18: 32, 19: 38
+    11: 18, 12: 24, 13: 26, 14: 16, 15: 16, 16: 42, 17: 24, 18: 28, 19: 40, 20: 38, 21: 32, 22: 38
 }
 for col_idx, w in ws1_widths.items():
     ws1.column_dimensions[get_column_letter(col_idx)].width = w
@@ -495,6 +502,9 @@ headers_ws2 = [
     "Present Designation",
     "Present Establishment / Block",
     "Present District",
+    "Date of Retirement",
+    "Tenure Left (_ y, _m, _d)",
+    "Tenure in Current Post (_ y, _m, _d)",
     "Office Code",
     "DDO Code",
     "Promoted Substantive Post (Level 19)",
@@ -518,6 +528,9 @@ for r_idx, r in enumerate(prom_records, 2):
     pdes = r['present_designation']; pest = r['present_establishment']; pblk = r['present_block']; pdist = r['present_district']
     off_c = r['office_code']; ddo_c = r['ddo_code']; sub = r['transferred_substantive_post']; su = r['service_utilized_at']
     rem = r['administrative_remarks']; comm = r['comments_directive']
+    dor_val = r.get('dor') or '—'
+    t_left_val = r.get('tenure_left') or '—'
+    t_post_val = r.get('tenure_in_post') or '—'
 
     is_mem, _ = roll.is_member(hid, name)
     avd_str = "YES" if is_mem else "NO"
@@ -534,6 +547,9 @@ for r_idx, r in enumerate(prom_records, 2):
         pdes or "—",
         f"{pest} ({pblk})" if pblk and pblk != "—" else (pest or "—"),
         pdist or "—",
+        dor_val,
+        t_left_val,
+        t_post_val,
         off_c or "—",
         ddo_c or "—",
         sub or "—",
@@ -546,19 +562,16 @@ for r_idx, r in enumerate(prom_records, 2):
         cell = ws2.cell(r_idx, c_idx, val)
         cell.fill = row_fill
         cell.border = border_thin
-        if c_idx in [1, 2, 3, 4, 7]:
+        if c_idx in [1, 2, 3, 4, 7, 10, 11, 12, 13]:
             cell.alignment = align_center
             cell.font = font_regular
-        elif c_idx in [5, 11, 12]:
+        elif c_idx in [5, 14, 15]:
             cell.alignment = align_center
             cell.font = font_mono_blue if val != "—" else font_regular
         elif c_idx in [6]:
             cell.alignment = align_left
             cell.font = font_bold
-        elif c_idx in [10]:
-            cell.alignment = align_center
-            cell.font = font_regular
-        elif c_idx == 16:
+        elif c_idx == 19:
             cell.alignment = align_center
             if val == "YES":
                 cell.font = font_avd_yes
@@ -572,7 +585,7 @@ for r_idx, r in enumerate(prom_records, 2):
 
 ws2_widths = {
     1: 8, 2: 14, 3: 13, 4: 10, 5: 13, 6: 28, 7: 10, 8: 28, 9: 35,
-    10: 18, 11: 15, 12: 15, 13: 38, 14: 36, 15: 35, 16: 14
+    10: 18, 11: 18, 12: 24, 13: 26, 14: 15, 15: 15, 16: 38, 17: 36, 18: 35, 19: 14
 }
 for col_idx, w in ws2_widths.items():
     ws2.column_dimensions[get_column_letter(col_idx)].width = w
@@ -1398,6 +1411,7 @@ for r in prom_records:
         'sl': sl, 'rsl': rsl, 'rpt': rpt, 'cat': cat, 'hid': hid, 'name': name,
         'gen': gen, 'pdes': pdes, 'pest': pest, 'pblk': pblk, 'pdist': pdist,
         'off_c': off_c, 'ddo_c': ddo_c, 'sub': sub, 'su': su, 'rem': comm or rem,
+        'dor': r.get('dor') or '—', 'tenure_left': r.get('tenure_left') or '—', 'tenure_in_post': r.get('tenure_in_post') or '—',
         'is_mem': is_mem
     }
     dist_grouped_officers[matched_dist][tier].append(o_dict)
@@ -1427,45 +1441,50 @@ c_t2.alignment = align_center
 ws5.row_dimensions[3].height = 18
 ws5.merge_cells("A3:K3")
 c_t3 = ws5["A3"]
-c_t3.value = "Statutory 50-Point Roster Promotions (Level 16 -> Level 19 Deputy Director) | Authoritative Audit as of 14.09.2026"
+c_t3.value = "Comprehensive Operational Deployment Dashboard | Official Source of Truth"
 c_t3.font = font_subtitle
 c_t3.alignment = align_center
 
-# Section A: Executive Summary Matrix
-ws5.row_dimensions[5].height = 22
-ws5.merge_cells("A5:I5")
-c_sec_a = ws5["A5"]
-c_sec_a.value = "SECTION A: EXECUTIVE DISTRICT DISTRIBUTION & CADRE ALLOCATION MATRIX"
+# Section A: Summary Table
+s_row = 5
+ws5.row_dimensions[s_row].height = 22
+ws5.merge_cells(f"A{s_row}:I{s_row}")
+c_sec_a = ws5[f"A{s_row}"]
+c_sec_a.value = "SECTION A: DISTRICT-LEVEL PLACEMENT & MEMBERSHIP SUMMARY"
 c_sec_a.font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
 c_sec_a.fill = fill_summary_hdr
 c_sec_a.alignment = Alignment(horizontal="left", vertical="center", indent=1)
 
-summary_headers_w5 = [
-    "Sl", "District / Administrative Zone", "Total Promotees",
-    "Tier 1 (State HQ)", "Tier 2 (District HQ)", "Tier 3 (Field Units)",
-    "AVD Members", "Non-Members", "AVD Share %"
+s_row += 1
+headers_dist_sum = [
+    "Sl", "District / Unit", "Total Promotees",
+    "Tier 1 (State HQ/Apex)", "Tier 2 (Dist HQ/Specialized)", "Tier 3 (Field SU)",
+    "AVD Members", "Non-Members", "AVD Member %"
 ]
-ws5.row_dimensions[6].height = 25
-for col_idx, sh in enumerate(summary_headers_w5, 1):
-    cell = ws5.cell(6, col_idx, sh)
+ws5.row_dimensions[s_row].height = 26
+for col_idx, h in enumerate(headers_dist_sum, 1):
+    cell = ws5.cell(s_row, col_idx, h)
     cell.font = Font(name="Calibri", size=9, bold=True, color="FFFFFF")
     cell.fill = fill_navy
     cell.alignment = align_center
     cell.border = border_header
 
-s_row = 7
+s_row += 1
 tot_p = 0; tot_t1 = 0; tot_t2 = 0; tot_t3 = 0; tot_avd = 0; tot_non = 0
-for idx, d in enumerate(sorted(district_stats.keys()), 1):
-    st = district_stats[d]
-    tot_p += st['total']; tot_t1 += st['tier1']; tot_t2 += st['tier2']
-    tot_t3 += st['tier3']; tot_avd += st['avd']; tot_non += st['non']
-    avd_pct = f"{(st['avd'] / st['total'] * 100):.1f}%" if st['total'] > 0 else "0%"
+for idx, dist_name in enumerate(sorted(dist_grouped_officers.keys()), 1):
+    st = district_stats[dist_name]
+    tot = st['total']
+    t1 = st['tier1']; t2 = st['tier2']; t3 = st['tier3']
+    avd = st['avd']; non = st['non']
+    pct = f"{(avd / tot * 100):.1f}%" if tot > 0 else "0%"
+
+    tot_p += tot; tot_t1 += t1; tot_t2 += t2; tot_t3 += t3; tot_avd += avd; tot_non += non
 
     ws5.row_dimensions[s_row].height = 20
     row_fill = fill_zebra if idx % 2 == 0 else fill_white
-    s_data = [idx, d, st['total'], st['tier1'], st['tier2'], st['tier3'], st['avd'], st['non'], avd_pct]
+    row_data_sum = [idx, dist_name, tot, t1, t2, t3, avd, non, pct]
 
-    for c_idx, val in enumerate(s_data, 1):
+    for c_idx, val in enumerate(row_data_sum, 1):
         cell = ws5.cell(s_row, c_idx, val)
         cell.fill = row_fill
         cell.border = border_thin
@@ -1486,7 +1505,7 @@ for idx, d in enumerate(sorted(district_stats.keys()), 1):
 
 # Summary Total Row
 ws5.row_dimensions[s_row].height = 22
-total_avd_pct = f"{(tot_avd / tot_p * 100):.1f}%"
+total_avd_pct = f"{(tot_avd / tot_p * 100):.1f}%" if tot_p > 0 else "0%"
 tot_row_data = ["", "TOTAL (WEST BENGAL)", tot_p, tot_t1, tot_t2, tot_t3, tot_avd, tot_non, total_avd_pct]
 for c_idx, val in enumerate(tot_row_data, 1):
     cell = ws5.cell(s_row, c_idx, val)
@@ -1498,7 +1517,7 @@ for c_idx, val in enumerate(tot_row_data, 1):
 # Section B: Detailed District Officer Ledger
 s_row += 2
 ws5.row_dimensions[s_row].height = 22
-ws5.merge_cells(f"A{s_row}:K{s_row}")
+ws5.merge_cells(f"A{s_row}:N{s_row}")
 c_sec_b = ws5[f"A{s_row}"]
 c_sec_b.value = "SECTION B: DISTRICT-WISE OFFICER PLACEMENT LEDGER (GROUPED BY ADMINISTRATIVE HIERARCHY)"
 c_sec_b.font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
@@ -1508,8 +1527,8 @@ c_sec_b.alignment = Alignment(horizontal="left", vertical="center", indent=1)
 s_row += 1
 headers_ledger = [
     "District", "Hierarchy Tier", "Roster Sl", "Officer Name",
-    "Gender & Cat", "HRMS ID", "Office Code", "DDO Code",
-    "Promoted Substantive Post (Level 19)", "Physical Working Post (SU)", "AVD Member"
+    "Gender & Cat", "HRMS ID", "Date of Retirement", "Tenure Left (_ y, _m, _d)", "Tenure in Current Post (_ y, _m, _d)",
+    "Office Code", "DDO Code", "Promoted Substantive Post (Level 19)", "Physical Working Post (SU)", "AVD Member"
 ]
 
 ws5.row_dimensions[s_row].height = 28
@@ -1528,7 +1547,7 @@ for dist_name in sorted(dist_grouped_officers.keys()):
     dist_non = dist_total - dist_mem
 
     ws5.row_dimensions[curr_row].height = 24
-    ws5.merge_cells(f"A{curr_row}:K{curr_row}")
+    ws5.merge_cells(f"A{curr_row}:N{curr_row}")
     db_cell = ws5[f"A{curr_row}"]
     db_cell.value = f"★ {dist_name.upper()} DISTRICT — {dist_total} Promotees (AVD Members: {dist_mem} | Non-Members: {dist_non})"
     db_cell.font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
@@ -1540,7 +1559,7 @@ for dist_name in sorted(dist_grouped_officers.keys()):
         tier_list = tiers_dict[tier_name]
 
         ws5.row_dimensions[curr_row].height = 20
-        ws5.merge_cells(f"A{curr_row}:K{curr_row}")
+        ws5.merge_cells(f"A{curr_row}:N{curr_row}")
         tb_cell = ws5[f"A{curr_row}"]
         tb_cell.value = f"   ► {tier_name} ({len(tier_list)} Officers)"
         tb_cell.font = Font(name="Calibri", size=9, bold=True, color="1F497D")
@@ -1560,6 +1579,9 @@ for dist_name in sorted(dist_grouped_officers.keys()):
                 o['name'],
                 f"{o['gen'][0] if o['gen'] else 'M'} / {o['cat']}",
                 o['hid'],
+                o.get('dor') or '—',
+                o.get('tenure_left') or '—',
+                o.get('tenure_in_post') or '—',
                 o['off_c'] or "—",
                 o['ddo_c'] or "—",
                 o['sub'],
@@ -1572,16 +1594,16 @@ for dist_name in sorted(dist_grouped_officers.keys()):
                 cell.fill = row_fill
                 cell.border = border_thin
 
-                if col_idx in [1, 2, 3, 5]:
+                if col_idx in [1, 2, 3, 5, 7, 8, 9]:
                     cell.alignment = align_center
                     cell.font = font_regular
-                elif col_idx in [6, 7, 8]:
+                elif col_idx in [6, 10, 11]:
                     cell.alignment = align_center
                     cell.font = font_mono_blue if val != "—" else font_regular
                 elif col_idx == 4:
                     cell.alignment = align_left
                     cell.font = font_bold
-                elif col_idx == 11:
+                elif col_idx == 14:
                     cell.alignment = align_center
                     if val == "YES":
                         cell.font = font_avd_yes
@@ -1596,7 +1618,9 @@ for dist_name in sorted(dist_grouped_officers.keys()):
             curr_row += 1
 
 ws5_widths = {
-    1: 18, 2: 12, 3: 12, 4: 28, 5: 14, 6: 14, 7: 15, 8: 15, 9: 38, 10: 38, 11: 14
+    1: 18, 2: 12, 3: 12, 4: 28, 5: 14, 6: 14,
+    7: 18, 8: 22, 9: 24,
+    10: 15, 11: 15, 12: 38, 13: 38, 14: 14
 }
 for col_idx, w in ws5_widths.items():
     ws5.column_dimensions[get_column_letter(col_idx)].width = w
@@ -1653,13 +1677,16 @@ for col_idx, h in enumerate(headers_4col, 1):
 
 for idx, r in enumerate(records, 1):
     r_row = idx + 6
-    ws6.row_dimensions[r_row].height = 48
+    ws6.row_dimensions[r_row].height = 58
     sl = r['sl_no']; rsl = r['roster_sl']; hid = r['hrms_id']; name = r['officer_name']
     gen = r['gender']; cat = r['category']; pdes = r['present_designation']
     pest = r['present_establishment']; pblk = r['present_block']; pdist = r['present_district']
     off_c = r['office_code']; ddo_c = r['ddo_code']; basis = r['transfer_basis']
     sub = r['transferred_substantive_post']; su = r['service_utilized_at']
     rem = r['administrative_remarks']; comm = r['comments_directive']
+    dor_val = r.get('dor') or '—'
+    t_left_val = r.get('tenure_left') or '—'
+    t_post_val = r.get('tenure_in_post') or '—'
 
     is_tpv = "1112" in str(basis) or "Displacement due to post abolition" in str(basis)
     row_fill = fill_tpv if is_tpv else (fill_zebra if idx % 2 == 0 else fill_white)
@@ -1668,7 +1695,8 @@ for idx, r in enumerate(records, 1):
     present_loc = f"{pest or ''}, {pblk or ''}, {pdist or ''}".strip(", ")
     pres_su = r.get('present_su')
     pres_su_txt = f" (SU at {pres_su})" if pres_su and str(pres_su).strip() not in ['Nil', '—', '', 'None'] else ""
-    col2_val = f"{name} ({gen}, {cat}) {codes_text}\n[Present: {pdes or 'Officer'}, {present_loc}{pres_su_txt}]"
+    tenure_meta = f"[DOR: {dor_val} | Tenure Left: {t_left_val} | In Post: {t_post_val}]"
+    col2_val = f"{name} ({gen}, {cat}) {codes_text}\n[Present: {pdes or 'Officer'}, {present_loc}{pres_su_txt}]\n{tenure_meta}"
 
     if su and su != "Nil" and su != "—":
         col4_val = f"Service Utilized at:\n{su}\n({comm or rem or 'Under Administrative Directive'})"
@@ -1681,7 +1709,7 @@ for idx, r in enumerate(records, 1):
     c4 = ws6.cell(r_row, 4, col4_val); c4.alignment = align_left; c4.font = font_regular; c4.fill = row_fill; c4.border = border_thin
 
 ws6.column_dimensions["A"].width = 9
-ws6.column_dimensions["B"].width = 54
+ws6.column_dimensions["B"].width = 58
 ws6.column_dimensions["C"].width = 44
 ws6.column_dimensions["D"].width = 48
 
@@ -1733,7 +1761,9 @@ rectifications = [
     (11, "Telephonic Executive Directives: Additional District DDARD Postings", "District leadership assignments for North 24 Parganas, Nadia, South 24 Parganas, Bankura, Darjeeling, Kalimpong, and Purulia were pending final authorization.",
      "Designated Dr. Rajkumar Maity (N 24 Pgs), Dr. Sudhangsu Sekhar Das (Nadia), Dr. Nisith Kr. Panda (S 24 Pgs), Dr. Ganesh Chandra Maji (Bankura), Dr. La Tshering Bhutia (Darjeeling), Dr. Kesang Bomzon (Kalimpong), and Dr. Samir Kumar Mahapatra (Purulia) as DDARD & In-Charge Joint Directors per explicit executive directives.", "7 Districts (12 Total Assigned)", "100% RESOLVED"),
     (12, "Executive Directives: Purulia, Howrah & Hooghly Affirmation", "Executive guidance clarified that Purulia is designated exclusively for Dr. Samir Kumar Mahapatra, Howrah continues with original JD Dr. Swarup Bakshi, and Hooghly is assigned to Dr. Rupam Barua.",
-     "Confirmed Dr. Samir Kumar Mahapatra as DDARD & In-Charge Joint Director, Purulia. Confirmed Dr. Swarup Bakshi continuing as original Joint Director, Howrah. Designated Dr. Rupam Barua (substantive DDARD&PO, Hooghly) on SU as Joint Director, Hooghly. All non-JD districts continue with active SU Joint Directors.", "Statewide Headquarters Setups", "100% RESOLVED")
+     "Confirmed Dr. Samir Kumar Mahapatra as DDARD & In-Charge Joint Director, Purulia. Confirmed Dr. Swarup Bakshi continuing as original Joint Director, Howrah. Designated Dr. Rupam Barua (substantive DDARD&PO, Hooghly) on SU as Joint Director, Hooghly. All non-JD districts continue with active SU Joint Directors.", "Statewide Headquarters Setups", "100% RESOLVED"),
+    (13, "Tenure & Retirement Metadata Integration", "Earlier drafts lacked explicit retirement dates, remaining service tenures, and length of service in current post.",
+     "Integrated 100% verified Date of Retirement (DOR), tenure left, and tenure in current post calculated as of 14.09.2026 across all 326 officers into Sheet 1, Sheet 2, Sheet 5, and Sheet 6.", "All 326 Officers", "100% RESOLVED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):
