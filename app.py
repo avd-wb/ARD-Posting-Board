@@ -92,11 +92,12 @@ class VercelPathRestoreMiddleware(BaseHTTPMiddleware):
 class AuthCheckMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        # Allow static files, root landing page, docs, authentication, and analytics endpoints
+        # Allow static files, root landing page, docs, authentication, analytics, and review endpoints
         if (
             not path.startswith("/api/")
             or path in ("/api/auth/login", "/api/auth/verify", "/api/auth/logout")
             or path.startswith("/api/analytics/")
+            or path.startswith("/api/review/")
             or path.startswith("/docs")
             or path.startswith("/openapi.json")
         ):
@@ -2431,6 +2432,58 @@ def get_review_data():
     if os.path.exists(data_file):
         return FileResponse(data_file, media_type="application/json")
     raise HTTPException(status_code=404, detail="Review data not found")
+
+@app.get("/api/review/status")
+def review_status(request: Request):
+    state_file = os.path.join(BASE_DIR, "review_security_state.json")
+    state = {
+        "current_password": "lehalwa",
+        "created_at": "2026-09-14 19:33:55",
+        "expires_at": "2026-09-16 19:33:55",
+        "ip_threshold": 20,
+        "is_rotated": False
+    }
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, "r") as f:
+                state = json.load(f)
+        except Exception:
+            pass
+
+    now = datetime.datetime.now()
+    deadline = datetime.datetime.strptime(state.get("expires_at", "2026-09-16 19:33:55"), "%Y-%m-%d %H:%M:%S")
+    secs_left = max(0, int((deadline - now).total_seconds()))
+
+    # Query active distinct IPs in the last 15 minutes
+    active_ips = 1
+    analytics_db = os.path.join(BASE_DIR, "ard_analytics.db")
+    if is_vercel and os.path.exists("/tmp/ard_analytics.db"):
+        analytics_db = "/tmp/ard_analytics.db"
+    if os.path.exists(analytics_db):
+        try:
+            conn = sqlite3.connect(f"file:{analytics_db}?mode=ro", uri=True)
+            cur = conn.cursor()
+            fifteen_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+            active_ips = cur.execute(
+                "SELECT COUNT(DISTINCT ip_address) FROM visitor_sessions WHERE last_seen >= ?",
+                (fifteen_mins_ago,)
+            ).fetchone()[0] or 1
+            conn.close()
+        except Exception:
+            pass
+
+    return {
+        "status": "active" if not state.get("is_rotated") and secs_left > 0 and active_ips < state.get("ip_threshold", 20) else "rotation_triggered",
+        "current_password": state.get("current_password"),
+        "created_at": state.get("created_at"),
+        "expires_at": state.get("expires_at"),
+        "seconds_remaining": secs_left,
+        "hours_remaining": round(secs_left / 3600, 1),
+        "concurrent_active_ips_15m": active_ips,
+        "ip_threshold": state.get("ip_threshold", 20),
+        "is_rotated": state.get("is_rotated", False),
+        "recipient_email": "nirmalyaranjansarkar@gmail.com"
+    }
 
 @app.get("/review", response_class=HTMLResponse)
 @app.get("/review-board", response_class=HTMLResponse)

@@ -69,8 +69,26 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 const HASH="b7786dab6bc03f4101c46eca32e365a573160213d9b3e33123da1708d99b8116";
 let D=null, ANS={};
 try{ANS=JSON.parse(localStorage.getItem("ard_answers")||"{}")}catch(e){ANS={}}
+function pingTelemetry(action="pageview"){
+  try{
+    let sid=sessionStorage.getItem("ard_rev_sid");
+    if(!sid){sid="rev_"+Math.random().toString(36).substring(2)+Date.now().toString(36);sessionStorage.setItem("ard_rev_sid",sid)}
+    fetch("/api/analytics/track",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        session_id:sid,
+        action:action,
+        current_page:"review_board_337",
+        details:{"module":"ARD Promotion Review Board 337","authenticated":sessionStorage.getItem("ard_ok")==="1"}
+      })
+    }).catch(()=>{});
+  }catch(e){}
+}
+pingTelemetry("pageview");
+setInterval(()=>pingTelemetry("heartbeat"), 40000);
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-async function login(){const v=document.getElementById("pw").value.trim();if(await sha(v)===HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";boot()}else document.getElementById("pwerr").style.display="block"}
+async function login(){const v=document.getElementById("pw").value.trim();if(await sha(v)===HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");boot()}else document.getElementById("pwerr").style.display="block"}
 document.getElementById("pw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 try{if(sessionStorage.getItem("ard_ok")==="1"){document.getElementById("gate").style.display="none";boot()}}catch(e){}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
