@@ -400,6 +400,58 @@ INSERT INTO master_sync_meta VALUES (?, ?, ?, 0, 242, 242, 1794, ?, ?, ?, ?, 383
     cur_occ_counts.get("NOT_ESTABLISHED", 10)
 ))
 
+# 6. Enrich AVD Association Status across all personnel & cadre tables
+print("\n--- Enriching AVD Membership Status ---")
+avd_hrms_set = set()
+EXCEL_AVD_PATH = "/Users/nirmalyaranjansarkar/Projects/AVD/_AI_Generated/04_AVD_Members/02 Master/20260914_0714_AVD_MDV-MEMBERS_AVD_WBAHVS_Members_with_HRMS_ID.xlsx"
+if os.path.exists(EXCEL_AVD_PATH):
+    try:
+        import pandas as pd
+        df_avd = pd.read_excel(EXCEL_AVD_PATH)
+        yes_mask = df_avd['AVD Member'].astype(str).str.strip().str.upper() == 'YES'
+        ids = df_avd[yes_mask]['HRMS ID'].dropna().astype(str).str.strip().tolist()
+        for hid in ids:
+            if hid and hid != 'nan':
+                avd_hrms_set.add(hid)
+        print(f"Loaded {len(avd_hrms_set)} AVD HRMS IDs from Master Excel.")
+    except Exception as e:
+        print(f"Warning: Could not read AVD Master Excel: {e}")
+
+# Supplement from official_gradation_list if exists in cache
+try:
+    has_grad = cache_cur.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='official_gradation_list'").fetchone()[0]
+    if has_grad:
+        for r in cache_cur.execute("SELECT hrms_id FROM official_gradation_list WHERE avd_member = 'Yes' AND hrms_id IS NOT NULL").fetchall():
+            hid = str(r[0]).strip()
+            if hid:
+                avd_hrms_set.add(hid)
+except Exception as e:
+    pass
+
+print(f"Total unified AVD HRMS IDs to tag: {len(avd_hrms_set)}")
+
+for tbl, hrms_field in [
+    ("cadre_1794_posts", "incumbent_hrms"),
+    ("sacrosanct_cadre_posts", "incumbent_hrms"),
+    ("roster_50_point_candidates", "hrms_id"),
+    ("ABOLISHED_POST_LEADS", "incumbent_hrms")
+]:
+    tbl_exists = cache_cur.execute(f"SELECT count(*) FROM sqlite_master WHERE type='table' AND name='{tbl}'").fetchone()[0]
+    if not tbl_exists:
+        continue
+    cols = [c[1] for c in cache_cur.execute(f"PRAGMA table_info({tbl})").fetchall()]
+    if "avd_member" not in cols:
+        cache_cur.execute(f"ALTER TABLE {tbl} ADD COLUMN avd_member TEXT DEFAULT 'No'")
+    cache_cur.execute(f"UPDATE {tbl} SET avd_member = 'No'")
+    
+    # Check if target hrms_field is present in columns, otherwise find column with 'hrms'
+    actual_hrms = hrms_field if hrms_field in cols else next((c for c in cols if 'hrms' in c.lower()), None)
+    if actual_hrms:
+        for hid in avd_hrms_set:
+            cache_cur.execute(f"UPDATE {tbl} SET avd_member = 'Yes' WHERE {actual_hrms} = ?", (hid,))
+        tagged = cache_cur.execute(f"SELECT count(*) FROM {tbl} WHERE avd_member = 'Yes'").fetchone()[0]
+        print(f"Tagged {tbl}: {tagged} records as AVD Member Yes.")
+
 cache_conn.commit()
 cache_conn.execute("VACUUM")
 cache_conn.close()

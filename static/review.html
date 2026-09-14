@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARD Promotion & Transfer — Review Board</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c1f24;--mut:#5b6472;--line:#dfe3e8;--acc:#1f4e78;--ok:#2e7d32;--warn:#b26a00;--bad:#b3261e;--chip:#eef2f7}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,"Noto Sans Bengali","Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+header{position:sticky;top:0;z-index:20;background:var(--acc);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+header h1{font-size:17px;margin:0 12px 0 0}header .tabs button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:18px;padding:5px 12px;margin-right:4px;cursor:pointer}
+header .tabs button.on{background:#fff;color:var(--acc);font-weight:600}
+main{padding:12px 14px 240px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.bar select,.bar input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.row{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.row .head{display:grid;grid-template-columns:52px 1.4fr 1fr 1fr 1fr 110px;gap:8px;padding:10px 12px;align-items:center;cursor:pointer}
+.row .head .nm{color:var(--acc);font-weight:600;text-decoration:underline dotted}
+.row .head small{color:var(--mut);display:block}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;background:var(--chip);font-size:12px;margin:1px 2px 1px 0}
+.tag.ok{background:#e6f4ea;color:var(--ok)}.tag.warn{background:#fff4e0;color:var(--warn)}.tag.bad{background:#fdecea;color:var(--bad)}.tag.dec{background:#e3ecf7;color:var(--acc)}
+.ai{border-top:1px dashed var(--line);padding:10px 12px;background:#fbfcfe}
+.ai .obs{margin:0 0 6px;padding-left:18px}.ai .q{font-weight:600;margin:6px 0}.ai label{display:block;padding:4px 0}.ai textarea{width:100%;min-height:54px;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+.ai .rec{color:var(--ok);font-size:13px}.ai .saved{color:var(--ok);font-size:13px;margin-left:8px}
+button.b{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit}button.b.l{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+#gate{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:100}#gate .card{width:min(92vw,380px)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 10px}
+#modal .card{width:min(96vw,900px);max-height:92vh;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}th{background:#f0f3f7;position:sticky;top:0}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:14px}.kv div b{color:var(--mut);font-weight:500}
+#float{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:2px solid var(--acc);max-height:45vh;overflow:auto;box-shadow:0 -4px 16px rgba(0,0,0,.12)}
+#float .h{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#eef2f7;cursor:pointer;position:sticky;top:0}
+#float .body{padding:8px 14px}
+.muted{color:var(--mut)}.small{font-size:13px}
+@media (max-width:760px){.row .head{grid-template-columns:40px 1fr 1fr;grid-auto-rows:auto}.row .head>div:nth-child(4),.row .head>div:nth-child(5){grid-column:2/4}.kv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="gate"><div class="card"><h2 style="margin-top:0">ARD Promotion & Transfer — Review Board</h2><p class="muted small">প্রবেশের জন্য পাসওয়ার্ড দিন।</p><input id="pw" type="password" placeholder="পাসওয়ার্ড" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font:inherit"><p id="pwerr" style="color:var(--bad);display:none">ভুল পাসওয়ার্ড</p><button class="b" style="width:100%;margin-top:8px" onclick="login()">ঢুকুন</button></div></div>
+
+<header><h1>ARD Promotion & Transfer</h1>
+<div class="tabs"><button class="on" data-t="list">অফিসার তালিকা</button><button data-t="vac">শূন্যপদ খুঁজুন</button><button data-t="dd">জেলা-হিসেব</button><button data-t="mine">আমার উত্তর</button></div>
+<span class="small" id="built" style="margin-left:auto;opacity:.85"></span></header>
+
+<main>
+<section id="t-list">
+ <div class="card small">নাম-এ ক্লিক → পুরো বিবরণ + আগের পোস্টিং + AI মতামত। প্রতিটি সারির নিচে প্রশ্ন ও ৪টি বিকল্প — একটা বেছে নিন বা লিখুন, তারপর <b>সেভ</b>। শেষে "আমার উত্তর" ট্যাব থেকে পাঠান। <span class="muted">তথ্যসূত্র: HRMS ০৮.০৯.২০২৬, Order 1809, Gradation List 3768, HQ status ০১.০৭.২০২৬, coordinator returns ২০.০৮.২০২৬, AVD register ১৪.০৯.২০২৬। "Under verification" = রেকর্ডে নেই, অনুমান করা হয়নি।</span></div>
+ <div class="bar"><input id="s" placeholder="নাম / HRMS / পদ / ব্লক খুঁজুন" style="flex:1;min-width:180px"><select id="fd"><option value="">সব জেলা (বর্তমান)</option></select><select id="fb"><option value="">সব ধরন</option><option>Promotion</option><option>Displacement due to post abolition</option><option>Displacement due to promotee accommodation</option><option>Transfer</option><option value="HQ">HQ AD / owner decision</option></select><select id="fs"><option value="">সব অবস্থা</option><option value="dec">সিদ্ধান্ত হয়েছে</option><option value="pend">প্রশ্ন খোলা</option><option value="ans">আমি উত্তর দিয়েছি</option><option value="2y">≤২ বছর বাকি</option><option value="flag">যাচাই-পতাকা আছে</option></select><span class="small muted" id="cnt" style="align-self:center"></span></div>
+ <div id="rows"></div>
+</section>
+<section id="t-vac" hidden>
+ <div class="card small">Order 1809-এর ১,৭৯৪ পদ + রিটার্নে আসা বাড়তি পদ। অবস্থা: VACANT = জেলা খালি বলেছে · NO_RETURN_RECEIVED = জেলা কিছু জানায়নি (খালি ধরা যাবে না) · FILLED_ON_SU = কাগজে ভরা, লোক অন্যত্র · "প্রমোশনে খালি হবে" = হোল্ডার DD-রোস্টারে।</div>
+ <div class="bar"><select id="vd"><option value="">সব জেলা</option></select><select id="vp"><option value="">সব পদ</option></select><select id="vs"><option value="">সব অবস্থা</option><option>VACANT</option><option>NO_RETURN_RECEIVED</option><option>FILLED_ON_SU</option><option>FILLED</option><option>NOT_ESTABLISHED</option><option value="promo">প্রমোশনে খালি হবে</option><option value="ret">২ বছরে অবসরে খালি হবে</option><option value="oblit">মুছে যাওয়া পদ (obliterated)</option></select><input id="vq" placeholder="ব্লক / প্রতিষ্ঠান খুঁজুন" style="flex:1;min-width:160px"><span class="small muted" id="vcnt" style="align-self:center"></span></div>
+ <div class="card" style="overflow:auto"><table id="vt"><thead><tr><th>POST_ID</th><th>জেলা</th><th>ব্লক/এলাকা</th><th>প্রতিষ্ঠান (1809)</th><th>পদ (1809)</th><th>অবস্থা</th><th>হোল্ডার</th><th>অবসর</th><th>প্রমোশনে খালি?</th><th>মুছে যাওয়া?</th></tr></thead><tbody></tbody></table></div>
+</section>
+<section id="t-dd" hidden><div class="card"><h3 style="margin-top:0">DD লাইন: কাগজে কতজন / Order 1809-এ কটা লাইন</h3><table id="ddt"><thead><tr><th>জেলা</th><th>কাগজে DD</th><th>লাইন</th><th>খালি</th></tr></thead><tbody></tbody></table><p class="small muted">কলকাতার ২টি লাইন ভিজিল্যান্স সাপেক্ষে আটকে। নদীয়ার খালি লাইন = হরিণঘাটা ফার্ম / SLF কল্যাণী।</p></div></section>
+<section id="t-mine" hidden>
+ <div class="card"><label>আপনার নাম / পদ: <input id="who" placeholder="যেমন: Dr. X, AD, Hooghly" style="padding:7px;border:1px solid var(--line);border-radius:8px;font:inherit;width:min(100%,360px)"></label>
+ <p class="small muted">উত্তর এই ফোনে/কম্পিউটারে জমা থাকে। পাঠাতে: WhatsApp-এ শেয়ার করুন বা কপি করে পাঠান — মালিক (Dr. NRS) সব উত্তর একত্র করবেন।</p>
+ <div class="bar"><button class="b" onclick="shareWA()">WhatsApp-এ পাঠান</button><button class="b l" onclick="copyAns()">কপি করুন</button><button class="b l" onclick="dlAns()">ফাইল নামান (.txt)</button><span id="ans-cnt" class="small muted" style="align-self:center"></span></div>
+ <pre id="anspre" style="white-space:pre-wrap;font:13px/1.4 ui-monospace,monospace;background:#f7f8fa;padding:10px;border-radius:8px;max-height:50vh;overflow:auto"></pre></div>
+</section>
+</main>
+
+<div id="float"><div class="h" onclick="document.getElementById('fbody').hidden=!document.getElementById('fbody').hidden"><b>সাধারণ প্রশ্ন (সবার জন্য) — <span id="fcount"></span></b><span class="small">খুলুন / বন্ধ করুন ▲▼</span></div><div class="body" id="fbody"></div></div>
+
+<div id="modal" onclick="if(event.target.id==='modal')this.style.display='none'"><div class="card" id="mbody"></div></div>
+
+<script>
+const HASH="b7786dab6bc03f4101c46eca32e365a573160213d9b3e33123da1708d99b8116";
+let D=null, ANS={};
+try{ANS=JSON.parse(localStorage.getItem("ard_answers")||"{}")}catch(e){ANS={}}
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+async function login(){const v=document.getElementById("pw").value.trim();if(await sha(v)===HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";boot()}else document.getElementById("pwerr").style.display="block"}
+document.getElementById("pw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+try{if(sessionStorage.getItem("ard_ok")==="1"){document.getElementById("gate").style.display="none";boot()}}catch(e){}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function save(){try{localStorage.setItem("ard_answers",JSON.stringify(ANS))}catch(e){}}
+async function boot(){
+  if(D)return;
+  let r = await fetch("/data.json").catch(()=>null);
+  if(!r || !r.ok) r = await fetch("/static/data.json").catch(()=>null);
+  if(!r || !r.ok) r = await fetch("data.json");
+  D = await r.json();
+  document.getElementById("built").textContent="তথ্য: "+D.built;
+  const ds=[...new Set(D.officers.map(o=>o.dist))].sort(); ds.forEach(d=>{document.getElementById("fd").insertAdjacentHTML("beforeend",`<option>${esc(d)}</option>`)});
+  const vds=[...new Set(D.vacancies.map(v=>v.dist))].sort(); vds.forEach(d=>document.getElementById("vd").insertAdjacentHTML("beforeend",`<option>${esc(d)}</option>`));
+  const vps=[...new Set(D.vacancies.map(v=>v.post))].sort(); vps.forEach(p=>document.getElementById("vp").insertAdjacentHTML("beforeend",`<option>${esc(p)}</option>`));
+  ["s","fd","fb","fs"].forEach(id=>document.getElementById(id).addEventListener("input",renderList));
+  ["vd","vp","vs","vq"].forEach(id=>document.getElementById(id).addEventListener("input",renderVac));
+  document.querySelectorAll("header .tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("header .tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");["list","vac","dd","mine"].forEach(t=>document.getElementById("t-"+t).hidden=(t!==b.dataset.t));if(b.dataset.t==="mine")renderMine();if(b.dataset.t==="vac")renderVac()});
+  renderList(); renderDD(); renderFloat();
+}
+function stateTag(o){if(o.decision)return '<span class="tag dec">সিদ্ধান্ত হয়েছে</span>';return '<span class="tag warn">প্রশ্ন খোলা</span>'}
+function renderList(){
+  const s=document.getElementById("s").value.toLowerCase(), fd=document.getElementById("fd").value, fb=document.getElementById("fb").value, fs=document.getElementById("fs").value;
+  const list=D.officers.filter(o=>{
+    if(fd&&o.dist!==fd)return false;
+    if(fb==="HQ"){if(["Promotion","Displacement due to post abolition","Displacement due to promotee accommodation","Transfer"].includes(o.basis))return false}else if(fb&&o.basis!==fb)return false;
+    if(fs==="dec"&&!o.decision)return false;if(fs==="pend"&&o.decision)return false;if(fs==="ans"&&!ANS[o.hrms])return false;if(fs==="2y"&&o.two!=="YES")return false;if(fs==="flag"&&!o.ai.flags.length)return false;
+    if(s&&!(o.name+" "+o.hrms+" "+o.desig+" "+o.block+" "+o.estab+" "+o.sub+" "+o.su).toLowerCase().includes(s))return false;return true});
+  document.getElementById("cnt").textContent=list.length+" জন";
+  document.getElementById("rows").innerHTML=list.map(o=>rowHTML(o)).join("");
+}
+function rowHTML(o){
+  const a=ANS[o.hrms]||{}; const two=o.two==="YES"?'<span class="tag bad">≤২ বছর</span>':'';
+  return `<div class="row" id="r-${o.hrms}"><div class="head" onclick="toggle('${o.hrms}')">
+   <div><b>${esc(o.sl)}</b><small>রোস্টার ${esc(o.roster)}</small></div>
+   <div><span class="nm" onclick="event.stopPropagation();openModal('${o.hrms}')">${esc(o.name)}</span><small>${esc(o.hrms)} · ${esc(o.desig)}</small></div>
+   <div class="small">${esc(o.dist)}<small>${esc(o.block)}</small></div>
+   <div class="small"><b>DD/পদ:</b> ${esc(o.sub.slice(0,70))}<small><b>বসবেন:</b> ${esc((o.su||"—").slice(0,70))}</small></div>
+   <div class="small">${esc(o.basis)}<small>অবসর ${esc(o.dor)} · ${esc(o.left)}</small></div>
+   <div>${stateTag(o)}${two}${a.opt||a.txt?'<span class="tag ok">উত্তর ✓</span>':''}</div></div>
+   <div class="ai" id="ai-${o.hrms}" hidden>${aiHTML(o)}</div></div>`}
+function aiHTML(o){const ai=o.ai,a=ANS[o.hrms]||{};return `<div class="small muted"><b>AI পর্যবেক্ষণ:</b></div><ul class="obs">${ai.obs.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+  ${o.exec?`<div class="small"><b>নির্দেশ:</b> ${esc(o.exec)}</div>`:""}${o.reanchor&&o.reanchor!=="unchanged"&&o.reanchor!=="—"?`<div class="small muted">${esc(o.reanchor)}</div>`:""}
+  <div class="q">প্রশ্ন: ${esc(ai.q)}</div>${ai.opts.map((op,i)=>`<label><input type="radio" name="o-${o.hrms}" value="${i}" ${a.opt==i?"checked":""}> ${esc(op)}</label>`).join("")}
+  <div class="rec">AI সুপারিশ: ${esc(ai.rec)}</div><textarea id="tx-${o.hrms}" placeholder="মন্তব্য / নিজের প্রস্তাব লিখুন">${esc(a.txt||"")}</textarea>
+  <div style="margin-top:6px"><button class="b" onclick="saveAns('${o.hrms}')">সেভ</button><span class="saved" id="sv-${o.hrms}"></span></div>`}
+function toggle(h){const e=document.getElementById("ai-"+h);e.hidden=!e.hidden}
+function saveAns(h){const r=document.querySelector(`input[name="o-${h}"]:checked`);const o=D.officers.find(x=>x.hrms===h);ANS[h]={name:o.name,opt:r?r.value:"",optText:r?o.ai.opts[r.value]:"",txt:document.getElementById("tx-"+h).value.trim(),t:new Date().toISOString()};save();document.getElementById("sv-"+h).textContent="সেভ হয়েছে ✓";const row=document.getElementById("r-"+h);row.querySelector(".head>div:last-child").innerHTML=stateTag(o)+(o.two==="YES"?'<span class="tag bad">≤২ বছর</span>':'')+'<span class="tag ok">উত্তর ✓</span>'}
+function openModal(h){const o=D.officers.find(x=>x.hrms===h);const kv=(k,v)=>`<div><b>${k}</b><br>${esc(v||"—")}</div>`;
+  const hist=(o.history.length?o.history:o.history_alt);
+  document.getElementById("mbody").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:start"><h2 style="margin:0">${esc(o.name)}</h2><button class="b l" onclick="document.getElementById('modal').style.display='none'">বন্ধ</button></div>
+   <div class="small muted">${esc(o.name_hrms)} · HRMS ${esc(o.hrms)} · রোস্টার ${esc(o.roster)} · ${esc(o.basis)}</div>
+   <h4>বর্তমান</h4><div class="kv">${kv("পদ (HRMS)",o.desig)}${kv("প্রতিষ্ঠান",o.estab)}${kv("ব্লক / এলাকা",o.block)}${kv("জেলা",o.dist)}${kv("যোগদান (এই পদে)",o.doj+" ("+o.doj_src+")")}${kv("এই পদে সময়",o.tenure)}${kv("অবসর",o.dor+" · বাকি "+o.left)}${kv("WBAH&VS-এ প্রবেশ",o.entry+" ("+o.entry_state+")")}${kv("গ্রেডেশন ক্রমিক",o.grad_sl)}${kv("Office / DDO",o.office+" / "+o.ddo)}${kv("SU (রেকর্ডে)",o.su_master||o.su_now)}${kv("AVD সদস্য",o.avd+" — "+o.avd_basis)}${kv("লিঙ্গ / শ্রেণি",o.gender+" / "+o.cat)}${kv("শেষ আদেশ (batch 2)",o.latest_order)}</div>
+   <h4>পছন্দ (Posting Preference form, ০৬.০৯.২০২৬)</h4><div class="kv">${kv("ফর্ম দিয়েছেন?",o.form)}${kv("বাড়ির জেলা",o.home)}${kv("স্বামী/স্ত্রী WBAH&VS?",o.spouse_cadre)}${kv("ব্যক্তিগত কারণ জানিয়েছেন?",o.grounds==="Y"?"হ্যাঁ (বিস্তারিত সীমিত শীটে)":o.grounds)}</div><div class="small" style="margin:6px 0">${esc(o.prefs)}</div>
+   <h4>প্রস্তাব</h4><div class="kv">${kv("DD / কাগজের পদ (FINAL)",o.sub)}${kv("বসবেন (SU FINAL)",o.su)}${kv("AG-র মূল প্রস্তাব",o.sub_orig+" | SU: "+o.su_orig)}${kv("Re-anchor",o.reanchor)}${kv("নির্দেশ",o.exec)}${kv("মালিকের সিদ্ধান্ত",o.decision)}${kv("AG মন্তব্য",o.remarks+" | "+o.directive_ag)}${kv("রোস্টার-লিঙ্ক ভিত্তি",o.roster_basis)}${kv("যাচাই (Fable)",o.check)}</div>
+   <h4>আগের পোস্টিং (${hist.length}) <span class="small muted">${hist.length&&hist[0].src?esc(hist[0].src):""}</span></h4>${hist.length?`<div style="overflow:auto;max-height:40vh"><table><thead><tr><th>#</th><th>পদ / জায়গা</th><th>জেলা</th><th>থেকে</th><th>পর্যন্ত</th></tr></thead><tbody>${hist.map(x=>`<tr><td>${esc(x.seq)}</td><td>${esc(x.post)}</td><td>${esc(x.dist)}</td><td>${esc(x.from)}</td><td>${esc(x.to)}</td></tr>`).join("")}</tbody></table></div>`:'<p class="muted small">রেকর্ডে নেই (Under verification)</p>'}
+   <h4>AI সারাংশ ও মতামত</h4><div class="ai" style="border:0;padding:0">${aiHTML(o)}</div>`;
+  document.getElementById("modal").style.display="flex"}
+function renderVac(){const d=document.getElementById("vd").value,p=document.getElementById("vp").value,s=document.getElementById("vs").value,q=document.getElementById("vq").value.toLowerCase();
+  const L=D.vacancies.filter(v=>{if(d&&v.dist!==d)return false;if(p&&v.post!==p)return false;
+    if(s==="promo"){if(!v.promo.startsWith("Yes"))return false}else if(s==="ret"){if(!v.retire2y.startsWith("Yes"))return false}else if(s==="oblit"){if(v.oblit==="No")return false}else if(s&&v.status!==s)return false;
+    if(q&&!(v.block+" "+v.estab+" "+v.rpost+" "+v.holder).toLowerCase().includes(q))return false;return true}).slice(0,600);
+  document.getElementById("vcnt").textContent=L.length+" পদ"+(L.length===600?" (প্রথম ৬০০)":"");
+  document.querySelector("#vt tbody").innerHTML=L.map(v=>`<tr><td>${esc(v.pid)}</td><td>${esc(v.dist)}</td><td>${esc(v.block)}</td><td>${esc(v.estab)}</td><td>${esc(v.post)}<br><span class="muted">${esc(v.rpost)}</span></td><td>${esc(v.status)}</td><td>${esc(v.holder)}<br><span class="muted">${esc(v.hrms)}</span></td><td>${esc(v.dor)}</td><td class="small">${esc(v.promo)}</td><td class="small">${esc(v.oblit)}</td></tr>`).join("")}
+function renderDD(){document.querySelector("#ddt tbody").innerHTML=D.dd.map(x=>`<tr><td>${esc(x.dist)}</td><td>${x.paper}</td><td>${x.lines}</td><td style="color:${x.lines-x.paper<0?'var(--bad)':x.lines-x.paper>0?'var(--ok)':'inherit'}">${x.lines-x.paper}</td></tr>`).join("")}
+function renderFloat(){document.getElementById("fcount").textContent=D.floating.length+"টি";document.getElementById("fbody").innerHTML=D.floating.map(f=>{const a=ANS[f.id]||{};return `<div class="card"><div class="q">${esc(f.id)}. ${esc(f.q)}</div>${f.opts.map((op,i)=>`<label><input type="radio" name="o-${f.id}" value="${i}" ${a.opt==i?"checked":""}> ${esc(op)}</label>`).join("")}${f.rec?`<div class="rec">AI সুপারিশ: ${esc(f.rec)}</div>`:""}<textarea id="tx-${f.id}" placeholder="লিখুন">${esc(a.txt||"")}</textarea><div style="margin-top:6px"><button class="b" onclick="saveF('${f.id}')">সেভ</button><span class="saved" id="sv-${f.id}"></span></div></div>`}).join("")}
+function saveF(id){const f=D.floating.find(x=>x.id===id);const r=document.querySelector(`input[name="o-${id}"]:checked`);ANS[id]={name:"[সাধারণ] "+f.q.slice(0,60),opt:r?r.value:"",optText:r?f.opts[r.value]:"",txt:document.getElementById("tx-"+id).value.trim(),t:new Date().toISOString()};save();document.getElementById("sv-"+id).textContent="সেভ হয়েছে ✓"}
+function ansText(){const who=document.getElementById("who").value.trim();const ks=Object.keys(ANS);let t=`ARD Promotion review — ${who||"(নাম নেই)"} — ${new Date().toLocaleString()}\n`;ks.forEach(k=>{const a=ANS[k];t+=`\n[${k}] ${a.name}\n  বিকল্প: ${a.optText||"—"}\n  মন্তব্য: ${a.txt||"—"}\n`});return t}
+function renderMine(){const t=ansText();document.getElementById("anspre").textContent=t;document.getElementById("ans-cnt").textContent=Object.keys(ANS).length+"টি উত্তর"}
+function shareWA(){window.open("https://wa.me/?text="+encodeURIComponent(ansText()),"_blank")}
+async function copyAns(){try{await navigator.clipboard.writeText(ansText());alert("কপি হয়েছে")}catch(e){alert("কপি করা গেল না — টেক্সট সিলেক্ট করে কপি করুন")}}
+function dlAns(){const b=new Blob([ansText()],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="ARD_review_answers.txt";a.click()}
+</script>
+</body></html>

@@ -2425,6 +2425,22 @@ def favicon_file():
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+@app.get("/data.json")
+def get_review_data():
+    data_file = os.path.join(STATIC_DIR, "data.json")
+    if os.path.exists(data_file):
+        return FileResponse(data_file, media_type="application/json")
+    raise HTTPException(status_code=404, detail="Review data not found")
+
+@app.get("/review", response_class=HTMLResponse)
+@app.get("/review-board", response_class=HTMLResponse)
+def review_page():
+    review_file = os.path.join(STATIC_DIR, "review.html")
+    if os.path.exists(review_file):
+        with open(review_file, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Review Board is loading... Please refresh.</h1>"
+
 @app.get("/", response_class=HTMLResponse)
 def index_page():
     index_file = os.path.join(STATIC_DIR, "index.html")
