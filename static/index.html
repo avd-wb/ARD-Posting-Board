@@ -2430,11 +2430,11 @@
             <!-- Footer Bottom Sub-bar with Invisible Dot Trigger -->
             <div class="pt-2 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 select-none">
                 <div>Government of West Bengal · Animal Resources Development Department</div>
-                <div class="flex items-center gap-1.5 text-[11px] text-slate-600">
+                <div id="containerFooterSecretTraffic" class="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition cursor-pointer group select-none" title="Live Access & Visitor Intelligence">
                     <span>Internal Decision Support System</span>
-                    <!-- Invisible dot: 100% invisible by default, appears only when hovered -->
-                    <button id="btnFooterSecretTraffic" type="button" class="w-4 h-4 inline-flex items-center justify-center cursor-pointer p-0.5 rounded-full group focus:outline-none" title="">
-                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 opacity-0 group-hover:opacity-100 group-hover:bg-emerald-400 group-hover:ring-4 group-hover:ring-emerald-500/20 transition-all duration-300 ease-out"></span>
+                    <!-- Green dot indicator & button trigger -->
+                    <button id="btnFooterSecretTraffic" type="button" class="w-4 h-4 inline-flex items-center justify-center cursor-pointer p-0.5 rounded-full focus:outline-none" title="Live Access & Visitor Intelligence">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:opacity-100 group-hover:bg-emerald-400 group-hover:ring-4 group-hover:ring-emerald-500/30 transition-all duration-300 ease-out"></span>
                     </button>
                 </div>
             </div>
@@ -3063,6 +3063,165 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VISITOR & ACCESS INTELLIGENCE MODAL ==================== -->
+    <div id="visitorAnalyticsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md hidden p-2 sm:p-4 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-slate-900 via-wbblue-950 to-indigo-950 text-white px-5 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 flex items-center justify-center shadow-xs">
+                        <i data-lucide="activity" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-extrabold tracking-tight">Access & Visitor Intelligence</h2>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>LIVE TELEMETRY</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">Real-time IP, Geolocation, Device Analytics & Session Time Tracking</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btnRefreshAnalytics" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition active:scale-95 touch-target flex items-center gap-1 text-xs font-semibold" title="Refresh Telemetry">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                    <button id="btnClearAnalytics" class="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 transition active:scale-95 touch-target flex items-center gap-1 text-xs font-semibold" title="Clear Analytics History">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Clear</span>
+                    </button>
+                    <button id="btnCloseVisitorAnalytics" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition active:scale-95 touch-target flex items-center justify-center">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-50/50">
+                <!-- 1. Top 4 Live KPI Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- Unique IPs -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
+                        <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+                            <span>Unique Visitors (IPs)</span>
+                            <i data-lucide="globe" class="w-4 h-4 text-wbblue-600"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="analyticsTotalIPs">0</div>
+                        <div class="text-[11px] text-slate-500">Distinct public IP addresses</div>
+                    </div>
+
+                    <!-- Active Online Now -->
+                    <div class="p-4 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-1 relative overflow-hidden">
+                        <div class="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-emerald-50 pointer-events-none"></div>
+                        <div class="flex items-center justify-between text-emerald-800 text-xs font-bold">
+                            <span>Active Online Now</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-emerald-600" id="analyticsActiveNow">0</div>
+                        <div class="text-[11px] text-emerald-700">Active in last 3 minutes</div>
+                    </div>
+
+                    <!-- Avg Time Spent -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
+                        <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+                            <span>Avg Session Time</span>
+                            <i data-lucide="clock" class="w-4 h-4 text-purple-600"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="analyticsAvgTime">0s</div>
+                        <div class="text-[11px] text-slate-500" id="analyticsTotalTime">Total: 0m across sessions</div>
+                    </div>
+
+                    <!-- Total Interactions -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-1">
+                        <div class="flex items-center justify-between text-slate-500 text-xs font-medium">
+                            <span>Total Interactions</span>
+                            <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-amber-600"></i>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="analyticsTotalInteractions">0</div>
+                        <div class="text-[11px] text-slate-500">Page views & tab switches</div>
+                    </div>
+                </div>
+
+                <!-- 2. Breakdown Panels (Locations, Devices, Modules) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Top Locations -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                        <div class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-wbblue-600"></i>
+                            <span>Top Locations</span>
+                        </div>
+                        <div id="analyticsTopCitiesList" class="space-y-2 text-xs">
+                            <div class="text-slate-400 text-center py-4">No location data yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- Devices & Operating Systems -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                        <div class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-purple-600"></i>
+                            <span>Devices & Platforms</span>
+                        </div>
+                        <div id="analyticsDevicesList" class="space-y-2 text-xs">
+                            <div class="text-slate-400 text-center py-4">No device data yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- Popular Sections -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+                        <div class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">
+                            <i data-lucide="compass" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Popular Modules Visited</span>
+                        </div>
+                        <div id="analyticsPopularPagesList" class="space-y-2 text-xs">
+                            <div class="text-slate-400 text-center py-4">No pageview data yet.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Real-Time Access Log Table -->
+                <div class="rounded-2xl bg-white border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50/50">
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-900">Live Access & Session Stream</h3>
+                            <p class="text-xs text-slate-500">Every connected IP address with duration, location, device and pageflow</p>
+                        </div>
+                        <div class="w-full sm:w-72">
+                            <div class="relative">
+                                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="analyticsSearchInput" placeholder="Filter IP, City, Device..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-wbblue-500 bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desktop / Tablet Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100/70 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3">IP Address</th>
+                                    <th class="py-2.5 px-4">Location (Geo)</th>
+                                    <th class="py-2.5 px-3">Device & OS</th>
+                                    <th class="py-2.5 px-3">Time Spent</th>
+                                    <th class="py-2.5 px-4">Pages & Modules Visited</th>
+                                    <th class="py-2.5 px-3 text-right">Last Active</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsSessionsTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-400">Loading access sessions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

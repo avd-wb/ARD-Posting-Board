@@ -92,10 +92,11 @@ class VercelPathRestoreMiddleware(BaseHTTPMiddleware):
 class AuthCheckMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        # Allow static files, root landing page, docs, and authentication endpoints
+        # Allow static files, root landing page, docs, authentication, and analytics endpoints
         if (
             not path.startswith("/api/")
             or path in ("/api/auth/login", "/api/auth/verify", "/api/auth/logout")
+            or path.startswith("/api/analytics/")
             or path.startswith("/docs")
             or path.startswith("/openapi.json")
         ):
@@ -185,8 +186,79 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# Dedicated analytics database to preserve read-only integrity of Master SOT
+ANALYTICS_DB_PATH = "/tmp/ard_analytics.db" if is_vercel else os.path.join(BASE_DIR, "ard_analytics.db")
+
+def get_analytics_db():
+    conn = sqlite3.connect(ANALYTICS_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_analytics_db():
+    try:
+        conn = get_analytics_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS visitor_sessions (
+                session_id TEXT PRIMARY KEY,
+                ip_address TEXT NOT NULL,
+                city TEXT,
+                region TEXT,
+                country TEXT,
+                latitude REAL,
+                longitude REAL,
+                timezone TEXT,
+                device_type TEXT,
+                os TEXT,
+                browser TEXT,
+                screen_resolution TEXT,
+                user_agent TEXT,
+                first_seen TEXT NOT NULL,
+                last_seen TEXT NOT NULL,
+                total_time_seconds INTEGER DEFAULT 0,
+                page_count INTEGER DEFAULT 1,
+                current_page TEXT,
+                pages_visited TEXT
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS visitor_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                ip_address TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                page_or_tab TEXT NOT NULL,
+                time_spent_delta INTEGER DEFAULT 0,
+                timestamp TEXT NOT NULL,
+                city TEXT,
+                region TEXT,
+                country TEXT,
+                device_type TEXT,
+                browser TEXT,
+                os TEXT
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_sessions_ip ON visitor_sessions(ip_address)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_sessions_last_seen ON visitor_sessions(last_seen)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_v_events_time ON visitor_events(timestamp)")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error initializing analytics tables: {e}")
+
+init_analytics_db()
+
 
 # --- DATA MODELS ---
+
+class TrackEventRequest(BaseModel):
+    session_id: str
+    event_type: str = "pageview"  # "pageview", "tab_switch", "heartbeat", "dossier_view"
+    page: str = "Cadre Directory"
+    time_spent_delta: Optional[int] = 0
+    screen_resolution: Optional[str] = None
+    client_geo: Optional[Dict[str, Any]] = None
+    user_agent: Optional[str] = None
 
 class AllotRequest(BaseModel):
     session_id: str = "CURRENT_SESSION"
@@ -2016,7 +2088,332 @@ def download_authoritative_master_ag():
 def download_live_synced_datasheet():
     raise HTTPException(status_code=403, detail="File downloads have been administratively disabled.")
 
-# --- VISITOR ANALYTICS PERMANENTLY REMOVED ---
+# --- VISITOR ANALYTICS & ACCESS TRACKING HELPERS & ENDPOINTS ---
+
+def extract_client_ip(request: Request) -> str:
+    x_forwarded_for = request.headers.get("x-forwarded-for")
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    x_real_ip = request.headers.get("x-real-ip")
+    if x_real_ip:
+        return x_real_ip.strip()
+    cf_connecting_ip = request.headers.get("cf-connecting-ip")
+    if cf_connecting_ip:
+        return cf_connecting_ip.strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "127.0.0.1"
+
+def extract_geo_location(request: Request, client_ip: str, client_geo: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    country = request.headers.get("x-vercel-ip-country")
+    region = request.headers.get("x-vercel-ip-country-region")
+    city = request.headers.get("x-vercel-ip-city")
+    lat_str = request.headers.get("x-vercel-ip-latitude")
+    lon_str = request.headers.get("x-vercel-ip-longitude")
+    timezone = request.headers.get("x-vercel-ip-timezone")
+
+    latitude = float(lat_str) if lat_str else None
+    longitude = float(lon_str) if lon_str else None
+
+    if not city and client_geo:
+        city = client_geo.get("city")
+        region = client_geo.get("region") or client_geo.get("regionName")
+        country = client_geo.get("country") or client_geo.get("countryCode")
+        latitude = client_geo.get("latitude") or client_geo.get("lat")
+        longitude = client_geo.get("longitude") or client_geo.get("lon")
+        timezone = client_geo.get("timezone")
+
+    if not country and (client_ip == "127.0.0.1" or client_ip == "::1" or client_ip.startswith("192.168.") or client_ip.startswith("10.")):
+        country = "India (Dev)"
+        region = "West Bengal"
+        city = "Kolkata (Local)"
+
+    return {
+        "country": country or "India",
+        "region": region or "West Bengal",
+        "city": city or "Kolkata",
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": timezone or "Asia/Kolkata"
+    }
+
+def parse_user_agent(ua_str: str) -> Dict[str, str]:
+    if not ua_str:
+        return {"device_type": "Desktop", "os": "Unknown", "browser": "Unknown"}
+    ua = ua_str.lower()
+    
+    if "ipad" in ua or "tablet" in ua:
+        device_type = "Tablet"
+    elif "mobi" in ua or "iphone" in ua or "android" in ua:
+        device_type = "Mobile"
+    else:
+        device_type = "Desktop"
+        
+    if "iphone" in ua or "ipad" in ua or "ios" in ua:
+        os_name = "iOS"
+    elif "android" in ua:
+        os_name = "Android"
+    elif "macintosh" in ua or "mac os" in ua:
+        os_name = "macOS"
+    elif "windows" in ua:
+        os_name = "Windows"
+    elif "linux" in ua:
+        os_name = "Linux"
+    else:
+        os_name = "Other"
+        
+    if "edg/" in ua or "edge/" in ua:
+        browser = "Edge"
+    elif "chrome/" in ua or "crios/" in ua:
+        browser = "Chrome"
+    elif "safari/" in ua and "chrome" not in ua:
+        browser = "Safari"
+    elif "firefox/" in ua or "fxios/" in ua:
+        browser = "Firefox"
+    elif "opera" in ua or "opr/" in ua:
+        browser = "Opera"
+    else:
+        browser = "Browser"
+        
+    return {"device_type": device_type, "os": os_name, "browser": browser}
+
+@app.post("/api/analytics/track")
+async def track_analytics(req: TrackEventRequest, request: Request):
+    try:
+        ip = extract_client_ip(request)
+        ua_raw = req.user_agent or request.headers.get("user-agent") or ""
+        ua_parsed = parse_user_agent(ua_raw)
+        geo = extract_geo_location(request, ip, req.client_geo)
+        now_iso = datetime.datetime.now().isoformat()
+
+        conn = get_analytics_db()
+        cur = conn.cursor()
+
+        # Fetch existing session if any
+        cur.execute("SELECT session_id, total_time_seconds, page_count, pages_visited FROM visitor_sessions WHERE session_id = ?", (req.session_id,))
+        existing = cur.fetchone()
+
+        if existing:
+            prev_time = existing["total_time_seconds"] or 0
+            prev_pages_cnt = existing["page_count"] or 1
+            try:
+                pages_list = json.loads(existing["pages_visited"]) if existing["pages_visited"] else []
+            except Exception:
+                pages_list = []
+            
+            if req.page and (not pages_list or pages_list[-1] != req.page):
+                pages_list.append(req.page)
+                if len(pages_list) > 30:
+                    pages_list = pages_list[-30:]
+                prev_pages_cnt += 1
+
+            new_time = prev_time + max(0, req.time_spent_delta or 0)
+
+            cur.execute("""
+                UPDATE visitor_sessions
+                SET last_seen = ?,
+                    total_time_seconds = ?,
+                    page_count = ?,
+                    current_page = ?,
+                    pages_visited = ?,
+                    ip_address = ?,
+                    city = COALESCE(NULLIF(city, 'Unknown'), ?),
+                    region = COALESCE(NULLIF(region, 'Unknown'), ?),
+                    country = COALESCE(NULLIF(country, 'Unknown'), ?),
+                    screen_resolution = COALESCE(?, screen_resolution)
+                WHERE session_id = ?
+            """, (
+                now_iso, new_time, prev_pages_cnt, req.page,
+                json.dumps(pages_list), ip,
+                geo["city"], geo["region"], geo["country"],
+                req.screen_resolution, req.session_id
+            ))
+        else:
+            pages_list = [req.page] if req.page else ["Cadre Directory"]
+            cur.execute("""
+                INSERT INTO visitor_sessions (
+                    session_id, ip_address, city, region, country,
+                    latitude, longitude, timezone, device_type, os, browser,
+                    screen_resolution, user_agent, first_seen, last_seen,
+                    total_time_seconds, page_count, current_page, pages_visited
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                req.session_id, ip, geo["city"], geo["region"], geo["country"],
+                geo["latitude"], geo["longitude"], geo["timezone"],
+                ua_parsed["device_type"], ua_parsed["os"], ua_parsed["browser"],
+                req.screen_resolution or "Unknown", ua_raw, now_iso, now_iso,
+                max(0, req.time_spent_delta or 0), 1, req.page, json.dumps(pages_list)
+            ))
+
+        if req.event_type in ("pageview", "tab_switch", "dossier_view"):
+            cur.execute("""
+                INSERT INTO visitor_events (
+                    session_id, ip_address, event_type, page_or_tab,
+                    time_spent_delta, timestamp, city, region, country,
+                    device_type, browser, os
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                req.session_id, ip, req.event_type, req.page,
+                req.time_spent_delta or 0, now_iso, geo["city"], geo["region"], geo["country"],
+                ua_parsed["device_type"], ua_parsed["browser"], ua_parsed["os"]
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return {"status": "ok", "session_id": req.session_id, "ip": ip, "city": geo["city"], "country": geo["country"]}
+    except Exception as e:
+        logger.error(f"Error in track_analytics: {e}")
+        return {"status": "error", "error": str(e)}
+
+@app.get("/api/analytics/stats")
+async def get_analytics_stats():
+    try:
+        conn = get_analytics_db()
+        cur = conn.cursor()
+
+        # 1. Total unique IPs
+        cur.execute("SELECT COUNT(DISTINCT ip_address) FROM visitor_sessions")
+        total_unique_ips = cur.fetchone()[0] or 0
+
+        # 2. Total sessions
+        cur.execute("SELECT COUNT(*) FROM visitor_sessions")
+        total_sessions = cur.fetchone()[0] or 0
+
+        # 3. Active visitors right now (within last 3 minutes)
+        three_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=3)).isoformat()
+        cur.execute("SELECT COUNT(*) FROM visitor_sessions WHERE last_seen >= ?", (three_mins_ago,))
+        active_now = cur.fetchone()[0] or 0
+
+        # 4. Total Pageviews & Avg time spent
+        cur.execute("SELECT SUM(page_count), AVG(total_time_seconds), SUM(total_time_seconds) FROM visitor_sessions")
+        row = cur.fetchone()
+        total_pageviews = row[0] or 0
+        avg_time_seconds = round(row[1] or 0)
+        total_time_seconds = row[2] or 0
+
+        # 5. Top Cities
+        cur.execute("""
+            SELECT city, region, country, COUNT(*) as count 
+            FROM visitor_sessions 
+            WHERE city IS NOT NULL AND city != '' 
+            GROUP BY city, region 
+            ORDER BY count DESC 
+            LIMIT 8
+        """)
+        top_cities = [
+            {"city": r["city"], "region": r["region"], "country": r["country"], "count": r["count"]}
+            for r in cur.fetchall()
+        ]
+
+        # 6. Devices breakdown
+        cur.execute("SELECT device_type, COUNT(*) as count FROM visitor_sessions GROUP BY device_type ORDER BY count DESC")
+        devices = {r["device_type"] or "Desktop": r["count"] for r in cur.fetchall()}
+
+        # 7. OS breakdown
+        cur.execute("SELECT os, COUNT(*) as count FROM visitor_sessions GROUP BY os ORDER BY count DESC")
+        os_breakdown = {r["os"] or "Unknown": r["count"] for r in cur.fetchall()}
+
+        # 8. Browser breakdown
+        cur.execute("SELECT browser, COUNT(*) as count FROM visitor_sessions GROUP BY browser ORDER BY count DESC")
+        browsers = {r["browser"] or "Unknown": r["count"] for r in cur.fetchall()}
+
+        # 9. Popular Pages / Modules
+        cur.execute("""
+            SELECT page_or_tab, COUNT(*) as count 
+            FROM visitor_events 
+            WHERE page_or_tab IS NOT NULL AND page_or_tab != '' 
+            GROUP BY page_or_tab 
+            ORDER BY count DESC 
+            LIMIT 8
+        """)
+        popular_pages = [
+            {"page": r["page_or_tab"], "count": r["count"]}
+            for r in cur.fetchall()
+        ]
+
+        conn.close()
+
+        return {
+            "total_unique_ips": total_unique_ips,
+            "total_sessions": total_sessions,
+            "active_now": active_now,
+            "total_pageviews": total_pageviews,
+            "avg_time_seconds": avg_time_seconds,
+            "total_time_seconds": total_time_seconds,
+            "top_cities": top_cities,
+            "devices": devices,
+            "os_breakdown": os_breakdown,
+            "browsers": browsers,
+            "popular_pages": popular_pages
+        }
+    except Exception as e:
+        logger.error(f"Error in get_analytics_stats: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/analytics/sessions")
+async def get_analytics_sessions(limit: int = 50, search: Optional[str] = None):
+    try:
+        conn = get_analytics_db()
+        cur = conn.cursor()
+        query = "SELECT * FROM visitor_sessions"
+        params = []
+        if search:
+            query += " WHERE ip_address LIKE ? OR city LIKE ? OR region LIKE ? OR os LIKE ? OR browser LIKE ? OR device_type LIKE ?"
+            p = f"%{search}%"
+            params = [p, p, p, p, p, p]
+        query += " ORDER BY last_seen DESC LIMIT ?"
+        params.append(limit)
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        three_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=3)).isoformat()
+
+        sessions = []
+        for r in rows:
+            is_active = (r["last_seen"] or "") >= three_mins_ago
+            try:
+                pages = json.loads(r["pages_visited"]) if r["pages_visited"] else []
+            except Exception:
+                pages = [r["current_page"]] if r["current_page"] else []
+
+            sessions.append({
+                "session_id": r["session_id"],
+                "ip_address": r["ip_address"],
+                "city": r["city"] or "Unknown",
+                "region": r["region"] or "Unknown",
+                "country": r["country"] or "Unknown",
+                "device_type": r["device_type"] or "Desktop",
+                "os": r["os"] or "Unknown",
+                "browser": r["browser"] or "Unknown",
+                "screen_resolution": r["screen_resolution"] or "—",
+                "first_seen": r["first_seen"],
+                "last_seen": r["last_seen"],
+                "total_time_seconds": r["total_time_seconds"] or 0,
+                "page_count": r["page_count"] or 1,
+                "current_page": r["current_page"] or "—",
+                "pages_visited": pages,
+                "is_active": is_active
+            })
+
+        conn.close()
+        return {"sessions": sessions, "count": len(sessions)}
+    except Exception as e:
+        logger.error(f"Error in get_analytics_sessions: {e}")
+        return {"error": str(e), "sessions": []}
+
+@app.post("/api/analytics/clear")
+async def clear_analytics():
+    try:
+        conn = get_analytics_db()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM visitor_events")
+        cur.execute("DELETE FROM visitor_sessions")
+        conn.commit()
+        conn.close()
+        return {"status": "ok", "message": "Analytics database successfully reset"}
+    except Exception as e:
+        return {"error": str(e)}
 
 # --- SERVE FRONTEND ---
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
