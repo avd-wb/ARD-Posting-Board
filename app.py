@@ -43,6 +43,7 @@ ALLOWED_OFFICERS = {
     "1994001279": "Dr. Prabir Kumar Pathak",
     "2000000354": "Dr. Debi Prasad Nandi",
     "2014000243": "Dr. Nirmalya Ranjan Sarkar",
+    "2012002908": "Dr. Sukanta Roy",
 }
 
 def generate_auth_token(hrms_id: str) -> str:
