@@ -32,7 +32,7 @@ Before answering the five numbered questions, we address the 8 specific findings
 - **Forensic Origin of `1993000339`**:
   - In Dr. Sritanu Maiti's original member application / posting preference submission to AVD, the officer had written `1993000339`.
   - In `Promotion_242_Transfer_20290911.xlsx` (Sheet `AVD_WBAH&VS_Members`, Row 552, Col 42), the manual audit note recorded: `HRMS ID in the application (1993000339) corrected to 1994000339 | scancopy=Y`.
-  - However, in upstream spreadsheet `debi_da_final.xlsx` (Sheet `Excess_Unsanctioned_Deploy`, Row 71, Col 2 and Sheet `Master_Cadre_Directory`, Row 907, Col 2), the uncorrected ID `1993000339` remained as an active row.
+  - However, in upstream working spreadsheet `Comments` (Sheet `Excess_Unsanctioned_Deploy`, Row 71, Col 2 and Sheet `Master_Cadre_Directory`, Row 907, Col 2), the uncorrected ID `1993000339` remained as an active row.
   - When `ingest_master_employee_directory.py` merged these spreadsheets, it ingested both `1993000339` and `1994000339` as separate primary keys.
 - **Remediation**: The duplicate key `1993000339` and the 3 junk rows (an HRMS of `"Under verification"` and two string rows containing sentences) have been permanently deleted. `master_all_cadre_employees` is now strictly closed to the **1,617** unique officers of the SSOT `PERSONS` table.
 
@@ -192,7 +192,7 @@ A systematic audit across all local workspaces, backups, and historical dumps yi
 >    - Please note that the 50-point roster cycles modulo 50. In our table `roster_50_point_candidates`, **Dr. Rabindranath Kundu** (`1993001555`) was always at Sl No 37 (Cycle 1, Point 37), and **Dr. Chinmoy Mitra** (`1995000443`) was at Sl No 237 (Cycle 5, Point 37). There was never a disagreement with the 07.09.2026 Revised Roster; the apparent divergence was solely an artifact of an unindexed `WHERE roster_point = 37` query returning the last cycle match.
 >
 > 4. **Officer ID 1993000339 Resolved**:
->    - Dr. Sritanu Maiti's second ID (`1993000339`) was traced back to a handwritten error on his preference form that had persisted in `debi_da_final.xlsx`. It has been completely expunged; `1994000339` is confirmed as the unique HRMS ID.
+>    - Dr. Sritanu Maiti's second ID (`1993000339`) was traced back to a handwritten error on his preference form that had persisted in working spreadsheet `Comments`. It has been completely expunged; `1994000339` is confirmed as the unique HRMS ID.
 >
 > 5. **Next Step: Mounting the UI on the Master**:
 >    - We are ready to re-wire the web application to query `02_MASTER_SOURCE_OF_TRUTH/20260913_AVD_SOT_Master_Register.sqlite` directly in read-only mode, consuming `T1` through `T8` and the `EVIDENCE` ledger. This will provide the project owner with Antigravity's high-speed exploratory interface (omni-search, post visualizer, interactive organograms) while ensuring 100% mathematical and evidentiary parity with your master tables.
