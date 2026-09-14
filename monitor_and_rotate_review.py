@@ -135,6 +135,7 @@ def check_conditions(state: dict):
     current_ips = get_concurrent_ips_count()
     ip_threshold_breached = current_ips >= state.get("ip_threshold", IP_THRESHOLD)
     
+    auto_rotate_enabled = state.get("auto_rotate", False)
     return {
         "now": now.strftime("%Y-%m-%d %H:%M:%S"),
         "deadline": deadline.strftime("%Y-%m-%d %H:%M:%S"),
@@ -143,7 +144,8 @@ def check_conditions(state: dict):
         "concurrent_ips": current_ips,
         "ip_threshold": state.get("ip_threshold", IP_THRESHOLD),
         "ip_threshold_breached": ip_threshold_breached,
-        "should_rotate": (time_expired or ip_threshold_breached) and not state.get("is_rotated", False)
+        "auto_rotate_enabled": auto_rotate_enabled,
+        "should_rotate": auto_rotate_enabled and (time_expired or ip_threshold_breached) and not state.get("is_rotated", False)
     }
 
 def rotate_password(trigger_reason: str):
@@ -236,8 +238,9 @@ def main():
     print(f"Current Time:          {cond['now']}")
     print(f"48-Hour Deadline:      {cond['deadline']} ({cond['seconds_remaining'] // 3600}h {(cond['seconds_remaining'] % 3600) // 60}m remaining)")
     print(f"Concurrent Active IPs:  {cond['concurrent_ips']} / {cond['ip_threshold']} limit")
-    print(f"Current Password:      {state['current_password']}")
-    print(f"Already Rotated:       {state['is_rotated']}")
+    print(f"Current Password:      {state.get('current_password', 'lehalwa')}")
+    print(f"Policy:                {state.get('policy', 'static_persistent')}")
+    print(f"Auto-Rotate:           {state.get('auto_rotate', False)}")
     
     if cond["should_rotate"]:
         reason = ""

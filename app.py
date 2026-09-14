@@ -44,6 +44,7 @@ ALLOWED_OFFICERS = {
     "2000000354": "Dr. Debi Prasad Nandi",
     "2014000243": "Dr. Nirmalya Ranjan Sarkar",
     "2012002908": "Dr. Sukanta Roy",
+    "ADMIN_LEHALWA": "Executive Administrator",
 }
 
 def generate_auth_token(hrms_id: str) -> str:
@@ -306,26 +307,42 @@ class ExportQueryRequest(BaseModel):
 @app.post("/api/auth/login")
 def auth_login(req: LoginRequest, response: Response):
     hid = req.hrms_id.strip()
-    if hid not in ALLOWED_OFFICERS:
-        raise HTTPException(
-            status_code=401,
-            detail="HRMS ID not authorized. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
+    if hid.lower() == "lehalwa":
+        officer_name = "Executive Administrator"
+        token = generate_auth_token("ADMIN_LEHALWA")
+        response.set_cookie(
+            key="avd_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            max_age=30 * 86400
         )
-    token = generate_auth_token(hid)
-    officer_name = ALLOWED_OFFICERS[hid]
-    response.set_cookie(
-        key="avd_session",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        max_age=7 * 86400
+        return {
+            "success": True,
+            "officer_name": officer_name,
+            "hrms_id": "ADMIN_LEHALWA",
+            "token": token
+        }
+    elif hid in ALLOWED_OFFICERS:
+        token = generate_auth_token(hid)
+        officer_name = ALLOWED_OFFICERS[hid]
+        response.set_cookie(
+            key="avd_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            max_age=30 * 86400
+        )
+        return {
+            "success": True,
+            "officer_name": officer_name,
+            "hrms_id": hid,
+            "token": token
+        }
+    raise HTTPException(
+        status_code=401,
+        detail="Incorrect password. Please enter 'lehalwa' or an authorized HRMS ID."
     )
-    return {
-        "success": True,
-        "officer_name": officer_name,
-        "hrms_id": hid,
-        "token": token
-    }
 
 @app.get("/api/auth/verify")
 def auth_verify(request: Request):
@@ -2435,53 +2452,11 @@ def get_review_data():
 
 @app.get("/api/review/status")
 def review_status(request: Request):
-    state_file = os.path.join(BASE_DIR, "review_security_state.json")
-    state = {
-        "current_password": "lehalwa",
-        "created_at": "2026-09-14 19:33:55",
-        "expires_at": "2026-09-16 19:33:55",
-        "ip_threshold": 20,
-        "is_rotated": False
-    }
-    if os.path.exists(state_file):
-        try:
-            with open(state_file, "r") as f:
-                state = json.load(f)
-        except Exception:
-            pass
-
-    now = datetime.datetime.now()
-    deadline = datetime.datetime.strptime(state.get("expires_at", "2026-09-16 19:33:55"), "%Y-%m-%d %H:%M:%S")
-    secs_left = max(0, int((deadline - now).total_seconds()))
-
-    # Query active distinct IPs in the last 15 minutes
-    active_ips = 1
-    analytics_db = os.path.join(BASE_DIR, "ard_analytics.db")
-    if is_vercel and os.path.exists("/tmp/ard_analytics.db"):
-        analytics_db = "/tmp/ard_analytics.db"
-    if os.path.exists(analytics_db):
-        try:
-            conn = sqlite3.connect(f"file:{analytics_db}?mode=ro", uri=True)
-            cur = conn.cursor()
-            fifteen_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
-            active_ips = cur.execute(
-                "SELECT COUNT(DISTINCT ip_address) FROM visitor_sessions WHERE last_seen >= ?",
-                (fifteen_mins_ago,)
-            ).fetchone()[0] or 1
-            conn.close()
-        except Exception:
-            pass
-
     return {
-        "status": "active" if not state.get("is_rotated") and secs_left > 0 and active_ips < state.get("ip_threshold", 20) else "rotation_triggered",
-        "current_password": state.get("current_password"),
-        "created_at": state.get("created_at"),
-        "expires_at": state.get("expires_at"),
-        "seconds_remaining": secs_left,
-        "hours_remaining": round(secs_left / 3600, 1),
-        "concurrent_active_ips_15m": active_ips,
-        "ip_threshold": state.get("ip_threshold", 20),
-        "is_rotated": state.get("is_rotated", False),
+        "status": "active",
+        "current_password": "lehalwa",
+        "policy": "static_persistent",
+        "login_gate": "lehalwa",
         "recipient_email": "nirmalyaranjansarkar@gmail.com"
     }
 
