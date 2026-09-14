@@ -51,6 +51,15 @@ conn = sqlite3.connect(DB_PATH)
 conn.row_factory = sqlite3.Row
 cur = conn.cursor()
 
+# Ensure category column exists
+db_cols = [r[1] for r in cur.execute('PRAGMA table_info(master_final_order_schedule)').fetchall()]
+if 'category' not in db_cols:
+    cur.execute('ALTER TABLE master_final_order_schedule ADD COLUMN category TEXT')
+    cur.execute("UPDATE master_final_order_schedule SET category = 'SC' WHERE officer_name LIKE '%(SC)%'")
+    cur.execute("UPDATE master_final_order_schedule SET category = 'ST' WHERE officer_name LIKE '%(ST)%'")
+    cur.execute("UPDATE master_final_order_schedule SET category = 'GENERAL' WHERE category IS NULL")
+    conn.commit()
+
 # Ensure Kalimpong office codes
 cur.execute("UPDATE master_final_order_schedule SET office_code = '4ADHO00623' WHERE hrms_id IN ('1996011362', '2000010253')")
 
@@ -184,7 +193,87 @@ cur.execute("""
     WHERE hrms_id = '1994000296'
 """)
 
-# Harmonize available_dd_posts
+# 14. Birbhum: Dr. Subhasish Pal [HRMS 1994002430, Roster 176]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Birbhum',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Birbhum',
+        comments_directive = 'DDARD, Birbhum'
+    WHERE hrms_id = '1994002430'
+""")
+
+# 15. Coochbehar: Dr. Manoj Kumar Golder (SC) [HRMS 1995001176, Roster 38]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Coochbehar',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Coochbehar',
+        comments_directive = 'DDARD, Coochbehar'
+    WHERE hrms_id = '1995001176'
+""")
+
+# 16. Dakshin Dinajpur: Dr. Sandip Das (SC) [HRMS 2001001954, Roster 203]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Dakshin Dinajpur',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Dakshin Dinajpur',
+        comments_directive = 'DDARD, Dakshin Dinajpur'
+    WHERE hrms_id = '2001001954'
+""")
+
+# 17. Murshidabad: Dr. Masur Ali Sk. [HRMS 1994000979, Roster 206]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Murshidabad',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Murshidabad',
+        comments_directive = 'DDARD, Murshidabad'
+    WHERE hrms_id = '1994000979'
+""")
+
+# 18. Paschim Bardhaman: Dr. Ashok Kumar Patra (SC) [HRMS 1994000313, Roster 68]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Paschim Bardhaman',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Paschim Bardhaman',
+        comments_directive = 'DDARD, Paschim Bardhaman'
+    WHERE hrms_id = '1994000313'
+""")
+
+# 19. Paschim Medinipur: Dr. Lakshman Chandra Maiti [HRMS 1994001199, Roster 72]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Paschim Medinipur',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Paschim Medinipur',
+        comments_directive = 'DDARD, Paschim Medinipur'
+    WHERE hrms_id = '1994001199'
+""")
+
+# 20. Purba Bardhaman: Dr. Madhusudan Tudu (ST) [HRMS 1994000502, Roster 21]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Purba Bardhaman',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Substantive DDARD, Purba Bardhaman',
+        comments_directive = 'DDARD, Purba Bardhaman'
+    WHERE hrms_id = '1994000502'
+""")
+
+# 21. Uttar Dinajpur: Dr. Saumindranath Basak [HRMS 2016000125, Roster 150]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Uttar Dinajpur',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Uttar Dinajpur',
+        comments_directive = 'DDARD, Uttar Dinajpur'
+    WHERE hrms_id = '2016000125'
+""")
+
+# Harmonize available_dd_posts and cadre_1794_posts
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000000755', allotted_name = 'Dr. Tapan Kumar Sur (SC)' WHERE dd_sl = 94")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994005981', allotted_name = 'Dr. Debasish Dutta' WHERE dd_sl = 97")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998007220', allotted_name = 'Dr. Rabindra Nath Hansda (ST)' WHERE dd_sl = 232")
@@ -193,6 +282,15 @@ cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2001000684', allotte
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998006066', allotted_name = 'Dr. Sudhangsu Sekhar Das (SC)' WHERE dd_sl = 151")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000010253', allotted_name = 'Dr. Kesang Bomzon (ST)' WHERE dd_sl = 83")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994000296', allotted_name = 'Dr. Samir Kumar Mahapatra' WHERE dd_sl = 217")
+cur.execute("UPDATE available_dd_posts SET office = 'District Office, Birbhum', allotted_hrms = '1994002430', allotted_name = 'Dr. Subhasish Pal' WHERE dd_sl = 208")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1995001176', allotted_name = 'Dr. Manoj Kumar Golder (SC)' WHERE dd_sl = 110")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2001001954', allotted_name = 'Dr. Sandip Das (SC)' WHERE dd_sl = 129")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994000979', allotted_name = 'Dr. Masur Ali Sk.' WHERE dd_sl = 144")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994000313', allotted_name = 'Dr. Ashok Kumar Patra (SC)' WHERE dd_sl = 194")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994001199', allotted_name = 'Dr. Lakshman Chandra Maiti' WHERE dd_sl = 230")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994000502', allotted_name = 'Dr. Madhusudan Tudu (ST)' WHERE dd_sl = 185")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2016000125', allotted_name = 'Dr. Saumindranath Basak' WHERE dd_sl = 117")
+cur.execute("UPDATE cadre_1794_posts SET incumbent_name = 'Dr. Tuhin Chakraborty', incumbent_hrms = '1997002584', occupancy_status = 'FILLED' WHERE post_sl = 1176")
 conn.commit()
 
 # Load all 326 clean records
@@ -227,20 +325,29 @@ assert len(all_dd_posts) == 244, f"Expected 244 available DD posts, got {len(all
 
 # Authoritative Designated DDARD & In-Charge Joint Directors
 DESIGNATED_INCHARGE_JD = {
-    "Siliguri": "2000000755",      # Dr. Tapan Kumar Sur (SC)
-    "Jalpaiguri": "1994005981",    # Dr. Debasish Dutta
-    "Jhargram": "1998007220",      # Dr. Rabindra Nath Hansda (ST)
-    "Malda": "1997000337",         # Dr. Raju Das (SC)
-    "Alipurduar": "2001000684",    # Dr. Swapan Kumar Dass (SC)
-    "North 24 Parganas": "1994000104",  # Dr. Rajkumar Maity
-    "Nadia": "1998006066",              # Dr. Sudhangsu Sekhar Das (SC)
-    "South 24 Parganas": "1996001878",  # Dr. Nisith Kr. Panda
-    "Bankura": "1992000335",            # Dr. Ganesh Chandra Maji
-    "Darjeeling": "1994009135",         # Dr. La Tshering Bhutia (ST)
-    "Kalimpong": "2000010253",          # Dr. Kesang Bomzon (ST)
-    "Purulia": "1994000296",            # Dr. Samir Kumar Mahapatra (per explicit user directive)
-    "Hooghly": "2013001674",            # Dr. Rupam Barua (substantive DDARD&PO, SU as Jt Director)
+    "Alipurduar": "2001000684",         # Dr. Swapan Kumar Dass (SC) [Roster Sl 228]
+    "Bankura": "1992000335",            # Dr. Ganesh Chandra Maji [Roster Sl 19]
+    "Birbhum": "1994002430",            # Dr. Subhasish Pal [Roster Sl 176]
+    "Coochbehar": "1995001176",         # Dr. Manoj Kumar Golder (SC) [Roster Sl 38]
+    "Dakshin Dinajpur": "2001001954",   # Dr. Sandip Das (SC) [Roster Sl 203]
+    "Darjeeling": "1994009135",         # Dr. La Tshering Bhutia (ST) [Roster Sl 10]
+    "Hooghly": "2013001674",            # Dr. Rupam Barua (ST) (substantive DDARD&PO, SU as Jt Director)
     "Howrah": "2008007232",             # Dr. Swarup Bakshi (original Joint Director continues)
+    "Jalpaiguri": "1994005981",         # Dr. Debasish Dutta [Roster Sl 239]
+    "Jhargram": "1998007220",           # Dr. Rabindra Nath Hansda (ST) [Roster Sl 60]
+    "Kalimpong": "2000010253",          # Dr. Kesang Bomzon (ST) [Roster Sl 71]
+    "Malda": "1997000337",              # Dr. Raju Das (SC) [Roster Sl 138]
+    "Murshidabad": "1994000979",        # Dr. Masur Ali Sk. [Roster Sl 206]
+    "Nadia": "1998006066",              # Dr. Sudhangsu Sekhar Das (SC) [Roster Sl 114]
+    "North 24 Parganas": "1994000104",  # Dr. Rajkumar Maity [Roster Sl 61]
+    "Paschim Bardhaman": "1994000313",  # Dr. Ashok Kumar Patra (SC) [Roster Sl 68]
+    "Paschim Medinipur": "1994001199",  # Dr. Lakshman Chandra Maiti [Roster Sl 72]
+    "Purba Bardhaman": "1994000502",    # Dr. Madhusudan Tudu (ST) [Roster Sl 21, DDARD] (with Dr. Tuhin Chakraborty as substantive JD)
+    "Purba Medinipur": "1995000991",    # Dr. Sajal Kumar Bhunia (original Substantive Joint Director in position)
+    "Purulia": "1994000296",            # Dr. Samir Kumar Mahapatra [Roster Sl 109]
+    "Siliguri": "2000000755",           # Dr. Tapan Kumar Sur (SC) [Roster Sl 199]
+    "South 24 Parganas": "1996001878",  # Dr. Nisith Kr. Panda [Roster Sl 116]
+    "Uttar Dinajpur": "2016000125",     # Dr. Saumindranath Basak [Roster Sl 150]
 }
 
 def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
@@ -713,7 +820,7 @@ for idx, cfg in enumerate(DISTRICT_HQ_CONFIG, 1):
     non_count = len(allotted_dds) - avd_count
     avd_pct = f"{(avd_count / len(allotted_dds) * 100):.1f}%" if allotted_dds else "0%"
 
-    if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur']:
+    if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur', 'Purba Bardhaman']:
         r_label = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
         jd_str = f"In-Charge (SU): {senior_dd['allotted_name']} [{r_label}]"
         rem_str = f"Designated DDARD and In-Charge JD ({senior_dd['allotted_name']}, {r_label}) under Order 575."
@@ -1052,7 +1159,7 @@ for cfg in DISTRICT_HQ_CONFIG:
         inc_h = (j['incumbent_hrms'] or '').strip()
         is_sub = bool(inc_n and inc_n.lower() not in ['vacant', 'none', 'null', ''])
 
-        if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur'] and senior_dd and idx == 1:
+        if name in DESIGNATED_INCHARGE_JD and name not in ['Howrah', 'Purba Medinipur', 'Purba Bardhaman'] and senior_dd and idx == 1:
             o_name = f"In-Charge: {senior_dd['allotted_name']}"
             o_hrms = senior_dd['allotted_hrms'] or ''
             r_sl = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
@@ -1146,6 +1253,10 @@ for cfg in DISTRICT_HQ_CONFIG:
             dep_str = 'Substantive DD at HQ; Designated In-Charge Joint Director, ARD (on SU)'
             w_stat = estab
             rem_str = 'Designated DDARD and In-Charge Joint Director, ARD under Order No. 575-AR&AH'
+        elif senior_dd and d_hrms == senior_dd['allotted_hrms'] and sub_jds:
+            dep_str = 'Substantive DD at HQ; Designated DDARD & PO'
+            w_stat = estab
+            rem_str = f'Designated DDARD & PO, {name}'
         elif 'Basudev Sil' in d_name:
             dep_str = 'Substantive at District HQ (Full-time)'
             w_stat = estab
@@ -1763,7 +1874,9 @@ rectifications = [
     (12, "Executive Directives: Purulia, Howrah & Hooghly Affirmation", "Executive guidance clarified that Purulia is designated exclusively for Dr. Samir Kumar Mahapatra, Howrah continues with original JD Dr. Swarup Bakshi, and Hooghly is assigned to Dr. Rupam Barua.",
      "Confirmed Dr. Samir Kumar Mahapatra as DDARD & In-Charge Joint Director, Purulia. Confirmed Dr. Swarup Bakshi continuing as original Joint Director, Howrah. Designated Dr. Rupam Barua (substantive DDARD&PO, Hooghly) on SU as Joint Director, Hooghly. All non-JD districts continue with active SU Joint Directors.", "Statewide Headquarters Setups", "100% RESOLVED"),
     (13, "Tenure & Retirement Metadata Integration", "Earlier drafts lacked explicit retirement dates, remaining service tenures, and length of service in current post.",
-     "Integrated 100% verified Date of Retirement (DOR), tenure left, and tenure in current post calculated as of 14.09.2026 across all 326 officers into Sheet 1, Sheet 2, Sheet 5, and Sheet 6.", "All 326 Officers", "100% RESOLVED")
+     "Integrated 100% verified Date of Retirement (DOR), tenure left, and tenure in current post calculated as of 14.09.2026 across all 326 officers into Sheet 1, Sheet 2, Sheet 5, and Sheet 6.", "All 326 Officers", "100% RESOLVED"),
+    (14, "Statewide 23-District DDARD & In-Charge JD Leadership Harmonization", "Comprehensive review of district headquarters leadership across all 23 districts of West Bengal.",
+     "Harmonized and designated DDARDs & In-Charge Joint Directors for Birbhum (Dr. Subhasish Pal), Coochbehar (Dr. Manoj Kumar Golder), Dakshin Dinajpur (Dr. Sandip Das), Murshidabad (Dr. Masur Ali Sk.), Paschim Bardhaman (Dr. Ashok Kumar Patra), Paschim Medinipur (Dr. Lakshman Chandra Maiti), Purba Bardhaman (Dr. Madhusudan Tudu / Dr. Tuhin Chakraborty), and Uttar Dinajpur (Dr. Saumindranath Basak), completing 100% statewide coverage across all 23 districts.", "All 23 Districts", "100% RESOLVED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):

@@ -145,6 +145,96 @@ for r in occ_rows:
         "source_row": str(src_row) if src_row else "Under verification"
     }
 
+SAHC_AREA_MAP = {
+    'P0290': ('Darjeeling Pulbazar', 'Darjeeling'),
+    'P0345': ('Naxalbari', 'Siliguri'),
+    'P0346': ('Bidhannagar', 'Siliguri'),
+    'P0347': ('Siliguri', 'Siliguri'),
+    'P0376': ('Jalpaiguri Sadar', 'Jalpaiguri'),
+    'P0377': ('Mal', 'Jalpaiguri'),
+    'P0420': ('Alipurduar', 'Alipurduar'),
+    'P0421': ('Birpara', 'Alipurduar'),
+    'P0461': ('Cooch Behar', 'Cooch Behar'),
+    'P0462': ('Dinhata', 'Cooch Behar'),
+    'P0463': ('Mathabhanga', 'Cooch Behar'),
+    'P0464': ('Tufanganj', 'Cooch Behar'),
+    'P0465': ('Sitai', 'Cooch Behar'),
+    'P0516': ('Raiganj', 'Uttar Dinajpur'),
+    'P0517': ('Dalkhola', 'Uttar Dinajpur'),
+    'P0563': ('Buniadpur', 'Dakshin Dinajpur'),
+    'P0613': ('Harishchandrapur-I', 'Malda'),
+    'P0614': ('Gazole', 'Malda'),
+    'P0615': ('Chanchal', 'Malda'),
+    'P0692': ('Berhampore', 'Murshidabad'),
+    'P0693': ('Lalbag', 'Murshidabad'),
+    'P0694': ('Jiagunj', 'Murshidabad'),
+    'P0695': ('Domkal', 'Murshidabad'),
+    'P0696': ('Lalgola', 'Murshidabad'),
+    'P0697': ('Jangipur', 'Murshidabad'),
+    'P0698': ('Beldanga', 'Murshidabad'),
+    'P0789': ('Bahirgachi', 'Nadia'),
+    'P0790': ('Bethuadahari', 'Nadia'),
+    'P0791': ('Chakdah', 'Nadia'),
+    'P0792': ('Chakdah (TBCU)', 'Nadia'),
+    'P0793': ('Chapra', 'Nadia'),
+    'P0794': ('Karimpur', 'Nadia'),
+    'P0795': ('Krishnagar', 'Nadia'),
+    'P0883': ('Barasat', 'North 24 Parganas'),
+    'P0884': ('Barrackpore', 'North 24 Parganas'),
+    'P0885': ('Ashoknagar', 'North 24 Parganas'),
+    'P0886': ('Bongaon', 'North 24 Parganas'),
+    'P0887': ('Basirhat', 'North 24 Parganas'),
+    'P0888': ('DumDum Cant', 'North 24 Parganas'),
+    'P0976': ('Baruipur', 'South 24 Parganas'),
+    'P0977': ('Behala', 'South 24 Parganas'),
+    'P0978': ('Canning', 'South 24 Parganas'),
+    'P0979': ('Diamond Harbour', 'South 24 Parganas'),
+    'P0980': ('Kakdwip', 'South 24 Parganas'),
+    'P1067': ('Amta', 'Howrah'),
+    'P1068': ('Uluberia', 'Howrah'),
+    'P1132': ('Chandannagar', 'Hooghly'),
+    'P1133': ('Haripal', 'Hooghly'),
+    'P1134': ('Arambagh', 'Hooghly'),
+    'P1135': ('Chinsurah', 'Hooghly'),
+    'P1214': ('Bhatar', 'Purba Bardhaman'),
+    'P1215': ('Burdwan', 'Purba Bardhaman'),
+    'P1216': ('Katwa', 'Purba Bardhaman'),
+    'P1217': ('Koichore', 'Purba Bardhaman'),
+    'P1218': ('Galsi', 'Purba Bardhaman'),
+    'P1219': ('Guskara', 'Purba Bardhaman'),
+    'P1220': ('Kalna', 'Purba Bardhaman'),
+    'P1296': ('Asansol', 'Paschim Bardhaman'),
+    'P1297': ('Durgapur', 'Paschim Bardhaman'),
+    'P1350': ('Suri', 'Birbhum'),
+    'P1351': ('Bolpur', 'Birbhum'),
+    'P1352': ('Sainthia', 'Birbhum'),
+    'P1353': ('Rampurhat', 'Birbhum'),
+    'P1354': ('Nirisha', 'Birbhum'),
+    'P1355': ('Murarai', 'Birbhum'),
+    'P1439': ('Bishnupur', 'Bankura'),
+    'P1440': ('Bankura', 'Bankura'),
+    'P1441': ('Indas', 'Bankura'),
+    'P1442': ('Khatra', 'Bankura'),
+    'P1530': ('Purulia', 'Purulia'),
+    'P1531': ('Sindri Chas Road', 'Purulia'),
+    'P1532': ('Kashipur', 'Purulia'),
+    'P1533': ('Manbazar at Palashkhola', 'Purulia'),
+    'P1534': ('Manbazar (DPAP)', 'Purulia'),
+    'P1535': ('Balarampur', 'Purulia'),
+    'P1536': ('Raghunathpur', 'Purulia'),
+    'P1617': ('Midnapore', 'Paschim Medinipur'),
+    'P1618': ('Kharagpur', 'Paschim Medinipur'),
+    'P1619': ('Ghatal', 'Paschim Medinipur'),
+    'P1620': ('Belda', 'Paschim Medinipur'),
+    'P1621': ('Khirpai', 'Paschim Medinipur'),
+    'P1622': ('Gopiganj', 'Paschim Medinipur'),
+    'P1694': ('Binpur', 'Jhargram'),
+    'P1751': ('Ramnagar', 'Purba Medinipur'),
+    'P1752': ('Contai', 'Purba Medinipur'),
+    'P1753': ('Egra', 'Purba Medinipur'),
+    'P1754': ('Khejuri', 'Purba Medinipur')
+}
+
 posts_rows = sot_cur.execute("""
 SELECT POST_ID, POST_SL, DISTRICT_UNIT, ESTABLISHMENT, ESTABLISHMENT_TYPE,
        POST_NOMENCLATURE, POST_CODE, PAY_LEVEL, SOURCE_FILE
@@ -167,6 +257,12 @@ for p in posts_rows:
         "source_file": src,
         "source_row": "Under verification"
     })
+
+    # Apply SAHC Area suffix and block if applicable
+    if p_id in SAHC_AREA_MAP:
+        area, d_name = SAHC_AREA_MAP[p_id]
+        nom = f"Veterinary Officer, SAHC, {area}, {d_name}"
+        occ["reported_block"] = area
     
     # tenure over check
     try:
@@ -187,6 +283,24 @@ cache_cur.executemany("""
 INSERT INTO cadre_1794_posts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """, cadre_rows)
 print(f"Synced cadre_1794_posts: {len(cadre_rows)} posts.")
+
+# Also synchronize legacy tables if present in cache DB
+for tbl in ["sacrosanct_cadre_posts", "master_source_of_truth"]:
+    tbl_exists = cache_cur.execute(f"SELECT count(*) FROM sqlite_master WHERE type='table' AND name='{tbl}'").fetchone()[0]
+    if tbl_exists:
+        for pid, (area, d_name) in SAHC_AREA_MAP.items():
+            sl = int(pid[1:])
+            new_desig = f"Veterinary Officer, SAHC, {area}, {d_name}"
+            if tbl == "sacrosanct_cadre_posts":
+                cache_cur.execute("UPDATE sacrosanct_cadre_posts SET designation = ?, block = ? WHERE post_sl = ?", (new_desig, area, sl))
+            elif tbl == "master_source_of_truth":
+                cache_cur.execute("""
+                    UPDATE master_source_of_truth
+                    SET designation = ?, block = ?,
+                        name_of_post = REPLACE(REPLACE(name_of_post, 'Veterinary Officer, SAHC', ?), 'DDARD&PO', ?)
+                    WHERE id = ?
+                """, (new_desig, area, new_desig, area, sl))
+        print(f"Synchronized SAHC area suffix to legacy table: {tbl}")
 
 # 4. Synchronize roster_50_point_candidates from T4_DD_PROMOTION_242
 print("\n--- Synchronizing roster_50_point_candidates (242 candidates) ---")
