@@ -12,6 +12,142 @@
  * - Local Network & Online Public Sharing
  */
 
+// --- AUTHENTICATION INTERCEPTOR & GATE CONTROLLER ---
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    let [resource, config] = args;
+    config = config || {};
+    config.headers = config.headers || {};
+    const token = sessionStorage.getItem('avd_auth_token');
+    if (token) {
+        if (config.headers instanceof Headers) {
+            if (!config.headers.has('Authorization')) config.headers.set('Authorization', `Bearer ${token}`);
+        } else if (Array.isArray(config.headers)) {
+            config.headers.push(['Authorization', `Bearer ${token}`]);
+        } else {
+            if (!config.headers['Authorization']) config.headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    const response = await originalFetch(resource, config);
+    if (response.status === 401 && !resource.toString().includes('/api/auth/')) {
+        showAuthModal();
+    }
+    return response;
+};
+
+function showAuthModal() {
+    const overlay = document.getElementById('authGateOverlay');
+    const badge = document.getElementById('authHeaderUserBadge');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+    if (badge) {
+        badge.classList.add('hidden');
+        badge.classList.remove('inline-flex');
+    }
+    const input = document.getElementById('authHrmsInput');
+    if (input) {
+        input.focus();
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function hideAuthModal(officerName) {
+    const overlay = document.getElementById('authGateOverlay');
+    const badge = document.getElementById('authHeaderUserBadge');
+    const nameEl = document.getElementById('authHeaderUserName');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+    if (badge) {
+        badge.classList.remove('hidden');
+        badge.classList.add('inline-flex');
+    }
+    if (nameEl && officerName) {
+        nameEl.textContent = officerName;
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+async function checkAuthStatus() {
+    try {
+        const res = await fetch('/api/auth/verify');
+        if (res.ok) {
+            const data = await res.json();
+            hideAuthModal(data.officer_name);
+            return true;
+        }
+    } catch (e) {
+        console.warn('Auth check error:', e);
+    }
+    showAuthModal();
+    return false;
+}
+
+window.handleAuthLogin = async function(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('authHrmsInput');
+    const btn = document.getElementById('authSubmitBtn');
+    const btnText = document.getElementById('authBtnText');
+    const alert = document.getElementById('authErrorAlert');
+    const errMsg = document.getElementById('authErrorMessage');
+
+    const hrmsId = (input ? input.value : '').trim();
+    if (!hrmsId) return;
+
+    if (alert) alert.classList.add('hidden');
+    if (btn) btn.disabled = true;
+    if (btnText) btnText.textContent = 'Verifying...';
+
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hrms_id: hrmsId })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            sessionStorage.setItem('avd_auth_token', data.token);
+            sessionStorage.setItem('avd_officer_name', data.officer_name);
+            hideAuthModal(data.officer_name);
+            if (alert) alert.classList.add('hidden');
+            if (typeof window.startAppLoading === 'function') {
+                window.startAppLoading();
+            }
+        } else {
+            if (alert) alert.classList.remove('hidden');
+            if (errMsg) {
+                errMsg.innerHTML = data.detail || 'Unauthorized HRMS ID. If you are allowed then type your HRMS ID. Otherwise send an email for approval to <a href="mailto:contact@avdwb.com" class="underline text-white font-semibold">contact@avdwb.com</a>.';
+            }
+            if (input) {
+                input.classList.add('border-rose-500');
+                input.focus();
+            }
+            if (window.lucide) window.lucide.createIcons();
+        }
+    } catch (err) {
+        if (alert) alert.classList.remove('hidden');
+        if (errMsg) errMsg.textContent = 'Connection error. Please try again.';
+    } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Verify & Continue';
+    }
+};
+
+window.handleAuthLogout = async function() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
+    sessionStorage.removeItem('avd_auth_token');
+    sessionStorage.removeItem('avd_officer_name');
+    const input = document.getElementById('authHrmsInput');
+    if (input) input.value = '';
+    showAuthModal();
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // State management
     const state = {
@@ -33,21 +169,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- INITIALIZATION ---
-    initTabs();
-    initOverview();
-    initFilters();
-    loadRoster();
-    loadMasterOrders();
-    loadObliterated();
-    loadCadre();
-    loadOrders();
-    loadDisplacedPool();
-    initSimulationControls();
-    initBetaSyncCountdown();
-    initKPICardClickHandlers();
-    initSpotlightSearch();
-    initPolicyGuideModal();
-    initLivePolicyEvaluator();
+    let appInitialized = false;
+    window.startAppLoading = function() {
+        if (appInitialized) return;
+        appInitialized = true;
+        initTabs();
+        initOverview();
+        initFilters();
+        loadRoster();
+        loadMasterOrders();
+        loadObliterated();
+        loadCadre();
+        loadOrders();
+        loadDisplacedPool();
+        initSimulationControls();
+        initBetaSyncCountdown();
+        initKPICardClickHandlers();
+        initSpotlightSearch();
+        initPolicyGuideModal();
+        initLivePolicyEvaluator();
+    };
+
+    // Check authentication first
+    checkAuthStatus().then(isAuthenticated => {
+        if (isAuthenticated) {
+            window.startAppLoading();
+        }
+    });
 
     // Debounce helper
     function debounce(func, wait) {

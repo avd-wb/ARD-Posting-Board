@@ -17,6 +17,9 @@ import json
 import sqlite3
 import datetime
 import logging
+import hmac
+import hashlib
+import time
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Query, HTTPException, Response, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -30,6 +33,43 @@ from order_generator import generate_excel_order, generate_docx_order, generate_
 from data_exporter import data_exporter
 
 logger = logging.getLogger("analytics")
+
+AUTH_SECRET_KEY = os.environ.get("AVD_AUTH_SECRET", "avd-executive-posting-board-secret-2026")
+
+ALLOWED_OFFICERS = {
+    "2000004209": "Dr. Pradip Pati",
+    "2001001103": "Dr. Prasanta Kumar Bera",
+    "1994001279": "Dr. Prabir Kumar Pathak",
+    "2000000354": "Dr. Debi Prasad Nandi",
+    "2014000243": "Dr. Nirmalya Ranjan Sarkar",
+}
+
+def generate_auth_token(hrms_id: str) -> str:
+    ts = str(int(time.time()))
+    payload = f"{hrms_id}:{ts}"
+    sig = hmac.new(AUTH_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{hrms_id}.{ts}.{sig}"
+
+def verify_auth_token(token: Optional[str]) -> Optional[Dict[str, str]]:
+    if not token or "." not in token:
+        return None
+    parts = token.split(".")
+    if len(parts) != 3:
+        return None
+    hrms_id, ts, sig = parts
+    if hrms_id not in ALLOWED_OFFICERS:
+        return None
+    payload = f"{hrms_id}:{ts}"
+    expected_sig = hmac.new(AUTH_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, expected_sig):
+        return None
+    try:
+        # Token valid for 7 days
+        if int(time.time()) - int(ts) > 7 * 86400:
+            return None
+    except ValueError:
+        return None
+    return {"hrms_id": hrms_id, "officer_name": ALLOWED_OFFICERS[hrms_id]}
 
 app = FastAPI(
     title="WB ARD Department - Smart Posting Decision Board & AI Cadre System",
@@ -47,6 +87,38 @@ class VercelPathRestoreMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
+class AuthCheckMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Allow static files, root landing page, docs, and authentication endpoints
+        if (
+            not path.startswith("/api/")
+            or path in ("/api/auth/login", "/api/auth/verify", "/api/auth/logout")
+            or path.startswith("/docs")
+            or path.startswith("/openapi.json")
+        ):
+            return await call_next(request)
+
+        auth_header = request.headers.get("Authorization", "")
+        token = None
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+        elif "avd_session" in request.cookies:
+            token = request.cookies.get("avd_session")
+
+        user = verify_auth_token(token)
+        if not user:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "Authentication required. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
+                }
+            )
+
+        request.state.user = user
+        return await call_next(request)
+
+app.add_middleware(AuthCheckMiddleware)
 app.add_middleware(VercelPathRestoreMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -111,6 +183,9 @@ class PolicyEvaluateRequest(BaseModel):
     su_post_id: Optional[int] = None
     officer_type: Optional[str] = "roster"
 
+class LoginRequest(BaseModel):
+    hrms_id: str
+
 class ExportQueryRequest(BaseModel):
     dataset: str = "cadre_posts"
     filters: Optional[Dict[str, Any]] = None
@@ -118,6 +193,59 @@ class ExportQueryRequest(BaseModel):
     sort_order: Optional[str] = "asc"
     selected_columns: Optional[List[str]] = None
     limit: Optional[int] = None
+
+
+# --- AUTHENTICATION ENDPOINTS ---
+
+@app.post("/api/auth/login")
+def auth_login(req: LoginRequest, response: Response):
+    hid = req.hrms_id.strip()
+    if hid not in ALLOWED_OFFICERS:
+        raise HTTPException(
+            status_code=401,
+            detail="HRMS ID not authorized. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
+        )
+    token = generate_auth_token(hid)
+    officer_name = ALLOWED_OFFICERS[hid]
+    response.set_cookie(
+        key="avd_session",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 86400
+    )
+    return {
+        "success": True,
+        "officer_name": officer_name,
+        "hrms_id": hid,
+        "token": token
+    }
+
+@app.get("/api/auth/verify")
+def auth_verify(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    elif "avd_session" in request.cookies:
+        token = request.cookies.get("avd_session")
+
+    user = verify_auth_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
+        )
+    return {
+        "authenticated": True,
+        "officer_name": user["officer_name"],
+        "hrms_id": user["hrms_id"]
+    }
+
+@app.post("/api/auth/logout")
+def auth_logout(response: Response):
+    response.delete_cookie("avd_session")
+    return {"success": True}
 
 
 # --- API ENDPOINTS ---

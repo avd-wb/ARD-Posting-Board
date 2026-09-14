@@ -21,3 +21,9 @@ Promotion_242_Final_List_*.xlsx
 Promotion_242_Final_List_*.AG.xlsx
 *.docx
 latest_gdrive_download/
+*.xlsx
+*.csv
+google_sheets_sync_queue.json
+column_n_comments.json
+remarks_baseline.json
+Master_Decisions_Ledger.*
