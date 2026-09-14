@@ -1,7 +1,7 @@
 import sqlite3
 import openpyxl
 
-wb_orig = openpyxl.load_workbook('/Users/nirmalyaranjansarkar/Projects/AVD_AG/debi_da_final.xlsx', data_only=True)
+wb_orig = openpyxl.load_workbook('/Users/nirmalyaranjansarkar/Projects/AVD_AG/comments_final.xlsx', data_only=True)
 ws_orig = wb_orig['11_Column_Master_Posting_Order']
 
 conn = sqlite3.connect('ard_master_truth.db')
@@ -17,7 +17,7 @@ c.execute('''
 corrected_rows = {r[0]: r for r in c.fetchall()}
 
 comparison = []
-# Rows 2 to 311 in debi_da_final
+# Rows 2 to 311 in comments_final
 for r_idx in range(2, 312):
     orig_sl = ws_orig.cell(r_idx, 1).value
     orig_rsl = ws_orig.cell(r_idx, 2).value
@@ -61,4 +61,4 @@ for r_idx in range(2, 312):
             'flaws': flaws
         })
 
-print(f"Total officers with discrepancies between original debi_da_final and ground truth: {len(comparison)}")
+print(f"Total officers with discrepancies between original comments_final and ground truth: {len(comparison)}")

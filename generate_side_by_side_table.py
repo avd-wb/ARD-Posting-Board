@@ -1,7 +1,7 @@
 import sqlite3
 import openpyxl
 
-wb_orig = openpyxl.load_workbook('/Users/nirmalyaranjansarkar/Projects/AVD_AG/debi_da_final.xlsx', data_only=True)
+wb_orig = openpyxl.load_workbook('/Users/nirmalyaranjansarkar/Projects/AVD_AG/comments_final.xlsx', data_only=True)
 ws_orig = wb_orig['11_Column_Master_Posting_Order']
 
 conn = sqlite3.connect('ard_master_truth.db')

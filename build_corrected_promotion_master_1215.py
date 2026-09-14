@@ -155,13 +155,13 @@ def build_corrected_master(ts=None):
         if not su_val or su_val.lower() in ["none", ""]:
             su_val = "Nil"
 
-        debi_val = ""
+        comments_val = ""
         rem_str = clean(rem)
         if "Stay" in rem_str:
-            debi_val = "Stay"
+            comments_val = "Stay"
         elif "Review note" in rem_str:
             m = re.search(r'Review note.*?: (.*)', rem_str)
-            if m: debi_val = m.group(1)
+            if m: comments_val = m.group(1)
 
         row_data = [
             sl_val,
@@ -177,7 +177,7 @@ def build_corrected_master(ts=None):
             clean_designation(subst),
             clean_designation(su_val),
             clean(rem_str),
-            debi_val
+            comments_val
         ]
         raw_rows.append(row_data)
 

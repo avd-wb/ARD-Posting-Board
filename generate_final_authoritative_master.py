@@ -22,7 +22,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-SOURCE_EXCEL = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/debi_da_final.xlsx"
+SOURCE_EXCEL = "/Users/nirmalyaranjansarkar/Projects/AVD_AG/comments_final.xlsx"
 OUTPUT_TIMESTAMP = "20260913_1515"
 
 OUTPUT_EXCEL_1 = f"/Users/nirmalyaranjansarkar/Projects/AVD_AG/Promotion_242_Final_List_{OUTPUT_TIMESTAMP}_AG.xlsx"
@@ -347,7 +347,7 @@ def build_master():
     master_records = []
     seen_names = set()
 
-    # Pass 1: Read rows 2 to 311 from debi_da_final.xlsx
+    # Pass 1: Read rows 2 to 311 from comments_final.xlsx
     for r in range(2, 312):
         sl = src_ws.cell(r, 1).value
         rsl = src_ws.cell(r, 2).value
@@ -644,7 +644,7 @@ def build_master():
         master_records.append(record)
         seen_names.add(c_name)
 
-    # Pass 2: Append missing TPV 17 officers (those who were not in rows 2-311 of debi_da_final.xlsx)
+    # Pass 2: Append missing TPV 17 officers (those who were not in rows 2-311 of comments_final.xlsx)
     for k, v in tpv_17_records.items():
         if k not in processed_tpv_keys:
             c_k = clean_name(v['name'])

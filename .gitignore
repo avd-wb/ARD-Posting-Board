@@ -10,7 +10,7 @@ backups/
 file_manifest.json
 *.tmp
 .vercel
-debi_da_final.xlsx
+comments_final.xlsx
 scratch/
 ard_posting_master.db
 avd_database.db

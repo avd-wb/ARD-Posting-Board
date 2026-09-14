@@ -60,7 +60,7 @@ def create_hq_accommodation_workbooks(ts=None):
         subst = ws_full.cell(r, 11).value
         su = ws_full.cell(r, 12).value
         rem = ws_full.cell(r, 13).value
-        debi = ws_full.cell(r, 14).value
+        comments = ws_full.cell(r, 14).value
 
         subst_str = str(subst) if subst else ""
         su_str = str(su) if su else ""
@@ -88,13 +88,13 @@ def create_hq_accommodation_workbooks(ts=None):
             hq_subst.append({
                 "sl": sl, "p242": p242 or "-", "name": name, "pres_desig": pres_desig, "pres_block": pres_block or "-",
                 "pres_dist": pres_dist, "basis": basis, "subst": subst_str, "su": su_str, "su_dist": found_dist,
-                "debi": debi or "-", "rationale": rationale
+                "comments": comments or "-", "rationale": rationale
             })
 
         if is_hq_su:
             hq_su.append({
                 "sl": sl, "p242": p242 or "-", "name": name, "pres_desig": pres_desig, "pres_dist": pres_dist,
-                "subst": subst_str, "su": su_str, "debi": debi or "-"
+                "subst": subst_str, "su": su_str, "comments": comments or "-"
             })
 
     print(f"Loaded {len(hq_subst)} HQ substantive officers and {len(hq_su)} SU at HQ officers.")
@@ -316,7 +316,7 @@ def create_hq_accommodation_workbooks(ts=None):
 
         row_vals = [
             item["sl"], item["p242"], item["name"], item["pres_desig"], item["pres_dist"],
-            item["basis"], item["subst"], item["su_dist"], item["su"], item["debi"], item["rationale"]
+            item["basis"], item["subst"], item["su_dist"], item["su"], item["comments"], item["rationale"]
         ]
         ws_roster.append(row_vals)
         curr_r = ws_roster.max_row
@@ -504,7 +504,7 @@ def create_hq_accommodation_workbooks(ts=None):
 
         row_vals = [
             item["sl"], item["p242"], item["name"], item["pres_desig"], item["pres_dist"],
-            item["basis"], item["subst"], item["su_dist"], item["su"], item["debi"], item["rationale"]
+            item["basis"], item["subst"], item["su_dist"], item["su"], item["comments"], item["rationale"]
         ]
         ws_m_hq.append(row_vals)
         curr_r = ws_m_hq.max_row
