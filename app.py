@@ -23,7 +23,7 @@ import hashlib
 import time
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, Query, HTTPException, Response, Request
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -2416,6 +2416,13 @@ async def clear_analytics():
         return {"error": str(e)}
 
 # --- SERVE FRONTEND ---
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_file():
+    icon_path = os.path.join(STATIC_DIR, "icon-192.png")
+    if os.path.exists(icon_path):
+        return FileResponse(icon_path, media_type="image/png")
+    return Response(status_code=204)
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/", response_class=HTMLResponse)

@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="ARD Posting Board">
     <meta name="theme-color" content="#0c4a6e">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/static/icon-192.png">
     <link rel="manifest" href="/static/manifest.json">
     <!-- Leaflet GIS Map Assets -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -2430,10 +2431,10 @@
             <!-- Footer Bottom Sub-bar with Invisible Dot Trigger -->
             <div class="pt-2 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 select-none">
                 <div>Government of West Bengal · Animal Resources Development Department</div>
-                <div id="containerFooterSecretTraffic" class="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition cursor-pointer group select-none" title="Live Access & Visitor Intelligence">
+                <div id="containerFooterSecretTraffic" onclick="if(window.openVisitorAnalyticsModal)window.openVisitorAnalyticsModal()" class="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition cursor-pointer group select-none" title="Live Access & Visitor Intelligence">
                     <span>Internal Decision Support System</span>
                     <!-- Green dot indicator & button trigger -->
-                    <button id="btnFooterSecretTraffic" type="button" class="w-4 h-4 inline-flex items-center justify-center cursor-pointer p-0.5 rounded-full focus:outline-none" title="Live Access & Visitor Intelligence">
+                    <button id="btnFooterSecretTraffic" onclick="event.stopPropagation();if(window.openVisitorAnalyticsModal)window.openVisitorAnalyticsModal()" type="button" class="w-4 h-4 inline-flex items-center justify-center cursor-pointer p-0.5 rounded-full focus:outline-none" title="Live Access & Visitor Intelligence">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:opacity-100 group-hover:bg-emerald-400 group-hover:ring-4 group-hover:ring-emerald-500/30 transition-all duration-300 ease-out"></span>
                     </button>
                 </div>
@@ -3068,7 +3069,7 @@
     </div>
 
     <!-- ==================== VISITOR & ACCESS INTELLIGENCE MODAL ==================== -->
-    <div id="visitorAnalyticsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-md hidden p-2 sm:p-4 transition-opacity duration-200">
+    <div id="visitorAnalyticsModal" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 backdrop-blur-md hidden p-2 sm:p-4 transition-opacity duration-200">
         <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden animate-slide-up">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-slate-900 via-wbblue-950 to-indigo-950 text-white px-5 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
@@ -3226,10 +3227,22 @@
         </div>
     </div>
 
-    <!-- Script file -->
-    <script src="/static/app.js"></script>
+    <!-- Script file with cache buster -->
+    <script src="/static/app.js?v=20260914_telemetry_debug_v4"></script>
     <script>
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
+        window.openVisitorAnalyticsModal = window.openVisitorAnalyticsModal || function() {
+            var modal = document.getElementById('visitorAnalyticsModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (window.loadVisitorAnalytics) window.loadVisitorAnalytics();
+                if (window.lucide) window.lucide.createIcons();
+            }
+        };
+        window.closeVisitorAnalyticsModal = window.closeVisitorAnalyticsModal || function() {
+            var modal = document.getElementById('visitorAnalyticsModal');
+            if (modal) modal.classList.add('hidden');
+        };
     </script>
 </body>
 </html>
