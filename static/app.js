@@ -1424,12 +1424,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = json.data.map(p => {
-                const isVacant = p.occupancy_status === 'Vacant';
+                const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
+                const isVacant = statusUpper === 'VACANT' || statusUpper === 'CLEAR VACANCY' || statusUpper === 'AVAILABLE';
+                const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
+                const isNotEstablished = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
                 const isTenureOver = p.tenure_over_flag === 'Yes';
 
-                let occBadge = isVacant
-                    ? `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>`
-                    : `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+                let occBadge = '';
+                let occupantHtml = '';
+
+                if (isVacant) {
+                    occBadge = `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>`;
+                    occupantHtml = `<span class="text-emerald-700 font-semibold italic text-xs">Clear Vacancy</span>`;
+                } else if (isNoReturn) {
+                    occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">No Return</span>`;
+                    occupantHtml = `<span class="text-amber-700 font-medium italic text-xs">No Return Received</span>`;
+                } else if (isNotEstablished) {
+                    occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Not Established</span>`;
+                    occupantHtml = `<span class="text-rose-700 font-medium italic text-xs">Post Not Established</span>`;
+                } else {
+                    occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+                    occupantHtml = `
+                        <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">${p.incumbent_name || 'Serving Officer'}</div>
+                        <div class="text-[11px] font-mono text-slate-500">HRMS: ${p.incumbent_hrms || 'N/A'}</div>
+                    `;
+                }
 
                 let tenureBadge = isTenureOver
                     ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded text-[10px] font-bold ml-1">Over-Tenure</span>`
@@ -1445,16 +1464,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td class="py-2.5 px-3 font-medium text-slate-700">${p.block || 'HQ'}</td>
                         <td class="py-2.5 px-3 font-medium text-slate-700">${p.district || '-'}</td>
                         <td class="py-2.5 px-3">${occBadge}</td>
-                        <td class="py-2.5 px-4">
-                            ${isVacant ? '<span class="text-emerald-700 font-semibold italic text-xs">Clear Vacancy</span>' : `
-                                <div class="font-bold text-wbblue-900 hover:text-wbblue-600 hover:underline cursor-pointer" onclick="openOfficerDossier('${p.incumbent_hrms}')" title="Click to view officer personnel dossier">${p.incumbent_name}</div>
-                                <div class="text-[11px] font-mono text-slate-500">HRMS: ${p.incumbent_hrms || 'N/A'}</div>
-                            `}
-                        </td>
-                        <td class="py-2.5 px-3 text-slate-700">${p.incumbent_tenure || '-'} ${tenureBadge}</td>
-                        <td class="py-2.5 px-3 font-mono text-xs text-slate-600">${p.incumbent_dor || '-'}</td>
+                        <td class="py-2.5 px-4">${occupantHtml}</td>
+                        <td class="py-2.5 px-3 text-slate-700">${isVacant || isNoReturn || isNotEstablished ? '-' : (p.incumbent_tenure || '-')} ${tenureBadge}</td>
+                        <td class="py-2.5 px-3 font-mono text-xs text-slate-600">${isVacant || isNoReturn || isNotEstablished ? '-' : (p.incumbent_dor || '-')}</td>
                         <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                            ${!isVacant ? (
+                            ${(!isVacant && !isNoReturn && !isNotEstablished && p.incumbent_hrms) ? (
                                 (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah'))) ? `
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded bg-slate-100 text-slate-500 border border-slate-300 shadow-sm" title="Apex Cadre Post: Protected from transfer / displacement">
                                         <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
@@ -1471,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </button>
                                 </div>
                                 `
-                            ) : '-'}
+                            ) : (isVacant ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">Clear Vacancy</span>` : '-')}
                         </td>
                     </tr>
                 `;
@@ -1480,26 +1494,36 @@ document.addEventListener('DOMContentLoaded', () => {
             // Render Mobile Cards Feed (<md Screens)
             if (cardsEl) {
                 cardsEl.innerHTML = json.data.map(p => {
-                    const isVacant = p.occupancy_status === 'Vacant';
+                    const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
+                    const isVacant = statusUpper === 'VACANT' || statusUpper === 'CLEAR VACANCY' || statusUpper === 'AVAILABLE';
+                    const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
+                    const isNotEstablished = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
                     const isTenureOver = p.tenure_over_flag === 'Yes';
 
-                    let occBadge = isVacant
-                        ? `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Clear Vacancy</span>`
-                        : `<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+                    let occBadge = '';
+                    if (isVacant) {
+                        occBadge = `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Clear Vacancy</span>`;
+                    } else if (isNoReturn) {
+                        occBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">No Return</span>`;
+                    } else if (isNotEstablished) {
+                        occBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Not Established</span>`;
+                    } else {
+                        occBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">Occupied</span>`;
+                    }
 
                     let tenureBadge = isTenureOver
                         ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">Over-Tenure</span>`
                         : '';
 
-                    const isApexLocked = !isVacant && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
-                    const initials = isVacant ? 'VAC' : getMonogram(p.incumbent_name);
+                    const isApexLocked = !isVacant && !isNoReturn && !isNotEstablished && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
+                    const initials = isVacant ? 'VAC' : (isNoReturn ? 'N/R' : (isNotEstablished ? 'N/E' : getMonogram(p.incumbent_name)));
 
                     return `
                         <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive ${isVacant ? 'border-l-4 border-emerald-400 pl-3.5' : ''}">
                             <!-- Header: Designation & Post Info -->
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex items-center gap-2.5 min-w-0">
-                                    <div class="w-10 h-10 rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : 'bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white'} font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                    <div class="w-10 h-10 rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : (isNoReturn ? 'bg-amber-100 text-amber-800' : (isNotEstablished ? 'bg-rose-100 text-rose-800' : 'bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white'))} font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
                                         ${isVacant ? '<i data-lucide="check" class="w-4 h-4"></i>' : initials}
                                     </div>
                                     <div class="min-w-0">
@@ -1517,18 +1541,26 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
 
                             <!-- Incumbent or Vacancy Box -->
-                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-slate-50/90 border border-slate-200/80'} text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : 'text-slate-400'} flex items-center gap-1">
-                                    <i data-lucide="${isVacant ? 'check-circle' : 'user'}" class="w-3 h-3 ${isVacant ? 'text-emerald-600' : 'text-slate-400'}"></i>
-                                    <span>${isVacant ? 'Vacancy Information' : 'Serving Incumbent'}</span>
+                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : (isNoReturn ? 'bg-amber-50/80 border border-amber-200' : (isNotEstablished ? 'bg-rose-50/80 border border-rose-200' : 'bg-slate-50/90 border border-slate-200/80'))} text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : (isNoReturn ? 'text-amber-800' : (isNotEstablished ? 'text-rose-800' : 'text-slate-400'))} flex items-center gap-1">
+                                    <i data-lucide="${isVacant ? 'check-circle' : (isNoReturn ? 'help-circle' : (isNotEstablished ? 'alert-octagon' : 'user'))}" class="w-3 h-3 ${isVacant ? 'text-emerald-600' : (isNoReturn ? 'text-amber-600' : (isNotEstablished ? 'text-rose-600' : 'text-slate-400'))}"></i>
+                                    <span>${isVacant ? 'Vacancy Information' : (isNoReturn ? 'No Return Status' : (isNotEstablished ? 'Establishment Status' : 'Serving Incumbent'))}</span>
                                 </div>
                                 ${isVacant ? `
                                     <div class="text-emerald-900 font-bold text-xs flex items-center gap-1.5">
                                         <span>Available for Substantive / SU Cadre Absorption</span>
                                     </div>
+                                ` : (isNoReturn ? `
+                                    <div class="text-amber-900 font-medium text-xs">
+                                        Official field returns have not yet reported an incumbent for this sanctioned post.
+                                    </div>
+                                ` : (isNotEstablished ? `
+                                    <div class="text-rose-900 font-medium text-xs">
+                                        Sanctioned post not physically established or operational.
+                                    </div>
                                 ` : `
                                     <div class="font-bold text-wbblue-900 text-xs cursor-pointer hover:underline" onclick="openOfficerDossier('${p.incumbent_hrms}')">
-                                        ${p.incumbent_name}
+                                        ${p.incumbent_name || 'Serving Officer'}
                                     </div>
                                     <div class="text-[11px] font-mono text-slate-500 flex flex-wrap items-center gap-2">
                                         <span>HRMS: <strong>${p.incumbent_hrms || 'N/A'}</strong></span>
@@ -1537,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span>•</span>
                                         <span>DOR: ${p.incumbent_dor || '-'}</span>
                                     </div>
-                                `}
+                                `))}
                             </div>
 
                             <!-- Action Buttons -->
@@ -1547,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>
                                         <span>Apex Cadre Post (Statutorily Protected)</span>
                                     </div>
-                                ` : (!isVacant ? `
+                                ` : (!isVacant && !isNoReturn && !isNotEstablished && p.incumbent_hrms ? `
                                     <div class="grid grid-cols-3 gap-2">
                                         <button onclick="openOfficerDossier('${p.incumbent_hrms}')" class="h-10 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center justify-center gap-1 transition active:scale-95 touch-target btn-touch">
                                             <i data-lucide="user" class="w-3.5 h-3.5"></i> Dossier
@@ -1561,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 ` : `
                                     <div class="text-[11px] text-slate-400 italic text-center py-1">
-                                        Clear vacancy selectable in 50-Point Roster and Lateral Absorption tools
+                                        ${isVacant ? '<span class="text-emerald-700 font-bold">Clear vacancy selectable in 50-Point Roster and Lateral Absorption tools</span>' : 'No Action Available'}
                                     </div>
                                 `)}
                             </div>
@@ -2023,7 +2055,8 @@ document.addEventListener('DOMContentLoaded', () => {
             collisionAlert.classList.add('hidden');
         } else {
             const selectedPost = state.suPosts.find(p => p.post_id === val);
-            if (selectedPost && selectedPost.occupancy_status !== 'Vacant' && selectedPost.incumbent_name) {
+            const isPostVacant = selectedPost && ((selectedPost.occupancy_status || '').trim().toUpperCase() === 'VACANT' || (selectedPost.occupancy_status || '').trim().toUpperCase() === 'CLEAR VACANCY');
+            if (selectedPost && !isPostVacant && selectedPost.incumbent_name) {
                 collisionAlert.classList.remove('hidden');
                 collisionText.innerHTML = `
                     <strong>COLLISION RISK DETECTED:</strong> This post is currently occupied by <strong>${selectedPost.incumbent_name}</strong> (HRMS: ${selectedPost.incumbent_hrms}).
@@ -2446,10 +2479,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pName = p.post_name || p.designation || 'Sanctioned Post';
                     const office = p.establishment || p.office || 'Office N/A';
                     const dist = p.district || 'District N/A';
-                    const isVacant = p.occupancy_status === 'Vacant' || p.occupancy_status === 'Available';
-                    const statusBadge = isVacant 
-                        ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Vacant</span>`
-                        : `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-300">Occupied: ${p.incumbent_name || 'Serving Officer'}</span>`;
+                    const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
+                    const isVacant = statusUpper === 'VACANT' || statusUpper === 'CLEAR VACANCY' || statusUpper === 'AVAILABLE';
+                    const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
+                    const isNotEstablished = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
+
+                    let statusBadge = '';
+                    if (isVacant) {
+                        statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Vacant</span>`;
+                    } else if (isNoReturn) {
+                        statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">🟡 No Return</span>`;
+                    } else if (isNotEstablished) {
+                        statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300">🔴 Not Established</span>`;
+                    } else {
+                        statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-300">Occupied: ${p.incumbent_name || 'Serving Officer'}</span>`;
+                    }
 
                     html += `
                         <div class="p-2.5 rounded-xl hover:bg-neutral-50 transition border border-transparent hover:border-neutral-200 flex items-center justify-between gap-3 group cursor-pointer" onclick="window.spotlightJumpPost('${p.district || ''}')">
@@ -5861,11 +5905,22 @@ ${r.statutory_justification}
         let labelText = 'P';
         let title = 'Occupied Post';
 
-        if (occupancyStatus === 'Clear Vacancy' || (occupancyStatus && occupancyStatus.includes('Vacant'))) {
+        const statusUpper = (occupancyStatus || '').trim().toUpperCase();
+        if (statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN')) {
             bgColor = '#10b981';
             borderCol = '#059669';
             labelText = 'V';
             title = 'Clear Vacancy';
+        } else if (statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN') {
+            bgColor = '#f59e0b';
+            borderCol = '#d97706';
+            labelText = '?';
+            title = 'No Return Received';
+        } else if (statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED') {
+            bgColor = '#f43f5e';
+            borderCol = '#e11d48';
+            labelText = '✕';
+            title = 'Post Not Established';
         } else if (postCode === 'DIR' || postCode === 'ADDL') {
             bgColor = '#8b5cf6';
             borderCol = '#6d28d9';
@@ -6037,7 +6092,8 @@ ${r.statutory_justification}
             if (distVal !== 'ALL' && p.district !== distVal) return false;
             if (desigVal !== 'ALL' && !p.designation.toLowerCase().includes(desigVal.toLowerCase())) return false;
             
-            const isVac = p.occupancy_status === 'Clear Vacancy' || (p.occupancy_status && p.occupancy_status.includes('Vacant'));
+            const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
+            const isVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN');
             if (statusVal === 'vacant' && !isVac) return false;
             if (statusVal === 'occupied' && isVac) return false;
 
@@ -6057,25 +6113,43 @@ ${r.statutory_justification}
             const icon = createGisPinIcon(p.occupancy_status, p.tenure_over_flag, p.post_code);
             const marker = L.marker([p.latitude, p.longitude], { icon });
 
-            const isVac = p.occupancy_status === 'Clear Vacancy' || (p.occupancy_status && p.occupancy_status.includes('Vacant'));
+            const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
+            const isVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN');
+            const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
+            const isNotEst = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
             const isApex = p.post_code === 'DIR' || p.post_code === 'ADDL';
             const isOverTenure = p.tenure_over_flag === 'Yes';
 
             let statusBadgeColor = '#dbeafe';
             let statusTextColor = '#1e40af';
             let statusBorderColor = '#bfdbfe';
+            let displayBadgeText = 'Occupied';
+
             if (isVac) {
                 statusBadgeColor = '#dcfce7';
                 statusTextColor = '#166534';
                 statusBorderColor = '#bbf7d0';
+                displayBadgeText = 'Clear Vacancy';
+            } else if (isNoReturn) {
+                statusBadgeColor = '#fef3c7';
+                statusTextColor = '#92400e';
+                statusBorderColor = '#fde68a';
+                displayBadgeText = 'No Return';
+            } else if (isNotEst) {
+                statusBadgeColor = '#ffe4e6';
+                statusTextColor = '#9f1239';
+                statusBorderColor = '#fecdd3';
+                displayBadgeText = 'Not Established';
             } else if (isOverTenure) {
                 statusBadgeColor = '#ffe4e6';
                 statusTextColor = '#9f1239';
                 statusBorderColor = '#fecdd3';
+                displayBadgeText = 'Over-Tenure';
             } else if (isApex) {
                 statusBadgeColor = '#f3e8ff';
                 statusTextColor = '#6b21a8';
                 statusBorderColor = '#e9d5ff';
+                displayBadgeText = 'Apex Post';
             }
 
             const escapedDesig = (p.designation || '').replace(/'/g, "\\'");
@@ -6089,7 +6163,7 @@ ${r.statutory_justification}
                     <!-- Post Header Bar -->
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px;">
                         <span style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.02em;">Post #${p.post_sl} · <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedDist}', 'district')" style="color:#0284c7;text-decoration:underline;" title="Filter Cadre by District">${p.district}</a></span>
-                        <span style="font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:9999px;background:${statusBadgeColor};color:${statusTextColor};border:1px solid ${statusBorderColor};white-space:nowrap;">${p.occupancy_status}</span>
+                        <span style="font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:9999px;background:${statusBadgeColor};color:${statusTextColor};border:1px solid ${statusBorderColor};white-space:nowrap;">${displayBadgeText}</span>
                     </div>
 
                     <!-- Designation with Cadre Backlink -->

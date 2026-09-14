@@ -1162,7 +1162,7 @@ def evaluate_policy_endpoint(req: PolicyEvaluateRequest):
         su_r = cur.fetchone()
         if su_r:
             su_p = dict(su_r)
-            if su_p.get("occupancy_status") == "Occupied" and str(su_p.get("incumbent_hrms") or "").strip() != str(req.officer_hrms).strip():
+            if su_p.get("occupancy_status") in ("FILLED", "Occupied") and str(su_p.get("incumbent_hrms") or "").strip() != str(req.officer_hrms).strip():
                 su_collision = {
                     "incumbent_name": su_p.get("incumbent_name"),
                     "incumbent_hrms": su_p.get("incumbent_hrms"),
@@ -1569,7 +1569,7 @@ Always provide authoritative, accurate, statutory answers with clear formatting 
         SELECT incumbent_name, incumbent_hrms, designation, district, 
                incumbent_dor
         FROM cadre_1794_posts
-        WHERE occupancy_status = 'Occupied' AND incumbent_dor <= '2027-06-30'
+        WHERE UPPER(occupancy_status) IN ('FILLED', 'OCCUPIED') AND incumbent_dor <= '2027-06-30'
         ORDER BY incumbent_dor ASC LIMIT 10
         """)
         retirees = cur.fetchall()
@@ -1603,7 +1603,7 @@ Always provide authoritative, accurate, statutory answers with clear formatting 
     elif "vacan" in q or "empty" in q or "seat" in q:
         cur.execute("""
         SELECT designation, district, count(*) FROM cadre_1794_posts
-        WHERE occupancy_status = 'Vacant'
+        WHERE UPPER(occupancy_status) = 'VACANT'
         GROUP BY designation, district ORDER BY count(*) DESC LIMIT 12
         """)
         vacs = cur.fetchall()

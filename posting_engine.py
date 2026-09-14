@@ -305,7 +305,7 @@ class PostingEngine:
                  (CASE WHEN block != '' AND block IS NOT NULL THEN ', ' || block ELSE '' END) || 
                  ', ' || district) AS display_label
             FROM cadre_1794_posts
-            WHERE occupancy_status = 'Vacant'
+            WHERE UPPER(occupancy_status) = 'VACANT'
               AND id != 1
               AND (pay_level IS NULL OR pay_level NOT IN ('Level-22', 'Level-21'))
               AND designation NOT LIKE '%Director of AH%'
@@ -346,7 +346,7 @@ class PostingEngine:
             ('[' || id || '] ' || designation || ' — ' || establishment || 
              (CASE WHEN block != '' AND block IS NOT NULL THEN ', ' || block ELSE '' END) || 
              ', ' || district || ' (' || 
-             (CASE WHEN occupancy_status = 'Vacant' THEN 'VACANT' ELSE 'Occupied by ' || incumbent_name END) || 
+             (CASE WHEN UPPER(occupancy_status) = 'VACANT' THEN 'VACANT' ELSE 'Occupied by ' || incumbent_name END) || 
              ')') AS display_label
         FROM cadre_1794_posts
         WHERE id NOT IN (
@@ -489,7 +489,8 @@ class PostingEngine:
                     }
 
                 su_name = f"[SU] {su_row['designation']}, {su_row['establishment']} ({su_row['district']})"
-                if su_row["occupancy_status"] not in ["Vacant", None, ""]:
+                su_occ = str(su_row.get("occupancy_status") or "").strip().upper()
+                if su_occ not in ["VACANT", ""]:
                     if su_row["incumbent_hrms"] and str(su_row["incumbent_hrms"]).strip() != str(officer_hrms).strip():
                         inc_hrms = str(su_row["incumbent_hrms"]).strip()
                         if inc_hrms != "1992005664" and "director of ah" not in su_desig:
@@ -724,7 +725,7 @@ class PostingEngine:
         cur.execute("""
         SELECT id, designation, establishment, block, district, detailed_presentation
         FROM cadre_1794_posts
-        WHERE designation LIKE '%Assistant Director%' AND occupancy_status = 'Vacant'
+        WHERE designation LIKE '%Assistant Director%' AND UPPER(occupancy_status) = 'VACANT'
         ORDER BY district, establishment
         """)
         vacant_ad_posts = [dict(r) for r in cur.fetchall()]
@@ -957,8 +958,8 @@ class PostingEngine:
             pay_level,
             designation,
             COUNT(*) as sanctioned,
-            SUM(CASE WHEN occupancy_status NOT IN ('Vacant', '', 'null', 'None') AND occupancy_status IS NOT NULL THEN 1 ELSE 0 END) as occupied,
-            SUM(CASE WHEN occupancy_status IN ('Vacant', '', 'null', 'None') OR occupancy_status IS NULL THEN 1 ELSE 0 END) as vacant
+            SUM(CASE WHEN UPPER(occupancy_status) = 'FILLED' THEN 1 ELSE 0 END) as occupied,
+            SUM(CASE WHEN UPPER(occupancy_status) = 'VACANT' THEN 1 ELSE 0 END) as vacant
         FROM cadre_1794_posts
         GROUP BY pay_level, designation
         ORDER BY 
@@ -1002,8 +1003,8 @@ class PostingEngine:
         SELECT 
             estab_type,
             COUNT(*) as sanctioned,
-            SUM(CASE WHEN occupancy_status NOT IN ('Vacant', '', 'null', 'None') AND occupancy_status IS NOT NULL THEN 1 ELSE 0 END) as occupied,
-            SUM(CASE WHEN occupancy_status IN ('Vacant', '', 'null', 'None') OR occupancy_status IS NULL THEN 1 ELSE 0 END) as vacant
+            SUM(CASE WHEN UPPER(occupancy_status) = 'FILLED' THEN 1 ELSE 0 END) as occupied,
+            SUM(CASE WHEN UPPER(occupancy_status) = 'VACANT' THEN 1 ELSE 0 END) as vacant
         FROM cadre_1794_posts
         GROUP BY estab_type
         ORDER BY sanctioned DESC
@@ -1013,8 +1014,8 @@ class PostingEngine:
         cur.execute("""
         SELECT 
             COUNT(*) as total_sanctioned,
-            SUM(CASE WHEN occupancy_status NOT IN ('Vacant', '', 'null', 'None') AND occupancy_status IS NOT NULL THEN 1 ELSE 0 END) as total_occupied,
-            SUM(CASE WHEN occupancy_status IN ('Vacant', '', 'null', 'None') OR occupancy_status IS NULL THEN 1 ELSE 0 END) as total_vacant
+            SUM(CASE WHEN UPPER(occupancy_status) = 'FILLED' THEN 1 ELSE 0 END) as total_occupied,
+            SUM(CASE WHEN UPPER(occupancy_status) = 'VACANT' THEN 1 ELSE 0 END) as total_vacant
         FROM cadre_1794_posts
         """)
         tot = dict(cur.fetchone())
@@ -1403,7 +1404,7 @@ class PostingEngine:
             block = cp["block"] or ""
             dist = cp["district"] or "HQ"
             inc_name = cp["incumbent_name"]
-            is_vacant = cp["occupancy_status"] == "Vacant" or not inc_name
+            is_vacant = (cp.get("occupancy_status") or "").strip().upper() == "VACANT" or not inc_name
 
             # Check obliteration
             post_key = (desig.strip().lower(), dist.strip().lower())
