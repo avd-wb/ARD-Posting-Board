@@ -114,12 +114,74 @@ cur.execute("""
     WHERE hrms_id = '1995004636'
 """)
 
+# 7. North 24 Parganas: Dr. Rajkumar Maity [HRMS 1994000104, Roster 61]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, North 24 Parganas',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, North 24 Parganas',
+        comments_directive = 'DDARD, North 24 Parganas'
+    WHERE hrms_id = '1994000104'
+""")
+
+# 8. Nadia: Dr. Sudhangsu Sekhar Das (SC) [HRMS 1998006066, Roster 114]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Nadia',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Nadia',
+        comments_directive = 'DDARD, Nadia'
+    WHERE hrms_id = '1998006066'
+""")
+
+# 9. South 24 Parganas: Dr. Nisith Kr. Panda [HRMS 1996001878, Roster 116]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, South 24 Parganas',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, South 24 Parganas',
+        comments_directive = 'DDARD, South 24 Parganas'
+    WHERE hrms_id = '1996001878'
+""")
+
+# 10. Bankura: Dr. Ganesh Chandra Maji [HRMS 1992000335, Roster 19]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Bankura',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Bankura',
+        comments_directive = 'DDARD, Bankura'
+    WHERE hrms_id = '1992000335'
+""")
+
+# 11. Darjeeling: Dr. La Tshering Bhutia (ST) [HRMS 1994009135, Roster 10]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Darjeeling',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Darjeeling',
+        comments_directive = 'DDARD, Darjeeling'
+    WHERE hrms_id = '1994009135'
+""")
+
+# 12. Kalimpong: Dr. Kesang Bomzon (ST) [HRMS 2000010253, Roster 71]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Kalimpong',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Kalimpong',
+        comments_directive = 'DDARD, Kalimpong'
+    WHERE hrms_id = '2000010253'
+""")
+
 # Harmonize available_dd_posts
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000000755', allotted_name = 'Dr. Tapan Kumar Sur (SC)' WHERE dd_sl = 94")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994005981', allotted_name = 'Dr. Debasish Dutta' WHERE dd_sl = 97")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998007220', allotted_name = 'Dr. Rabindra Nath Hansda (ST)' WHERE dd_sl = 232")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1997000337', allotted_name = 'Dr. Raju Das (SC)' WHERE dd_sl = 132")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2001000684', allotted_name = 'Dr. Swapan Kumar Dass (SC)' WHERE dd_sl = 104")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998006066', allotted_name = 'Dr. Sudhangsu Sekhar Das (SC)' WHERE dd_sl = 151")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000010253', allotted_name = 'Dr. Kesang Bomzon (ST)' WHERE dd_sl = 83")
 conn.commit()
 
 # Load all 326 clean records
@@ -158,6 +220,13 @@ DESIGNATED_INCHARGE_JD = {
     "Jhargram": "1998007220",      # Dr. Rabindra Nath Hansda (ST)
     "Malda": "1997000337",         # Dr. Raju Das (SC)
     "Alipurduar": "2001000684",    # Dr. Swapan Kumar Dass (SC)
+    "North 24 Parganas": "1994000104",  # Dr. Rajkumar Maity
+    "Nadia": "1998006066",              # Dr. Sudhangsu Sekhar Das (SC)
+    "South 24 Parganas": "1996001878",  # Dr. Nisith Kr. Panda
+    "Bankura": "1992000335",            # Dr. Ganesh Chandra Maji
+    "Darjeeling": "1994009135",         # Dr. La Tshering Bhutia (ST)
+    "Kalimpong": "2000010253",          # Dr. Kesang Bomzon (ST)
+    "Purulia": "1995000991",            # Dr. Sajal Kumar Bhunia
 }
 
 def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
@@ -180,6 +249,23 @@ def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
         row = cur.fetchone()
         if row:
             return dict(row)
+        # Dedicated fallback for existing cadre Joint Directors (e.g. Purulia: Dr. Sajal Kumar Bhunia)
+        if target_h == "1995000991":
+            return {
+                'dd_sl': '—',
+                'office': 'District Office, Purulia',
+                'post_name': 'Joint Director, ARD',
+                'allotted_hrms': '1995000991',
+                'allotted_name': 'Dr. Sajal Kumar Bhunia',
+                'roster_sl': 'Civil Gradation #2 (JD)',
+                'service_utilized_at': 'Nil',
+                'comments_directive': 'Designated DDARD & In-Charge Joint Director, Purulia',
+                'office_code': '4ADHO062',
+                'ddo_code': 'PUAARA001',
+                'transferred_substantive_post': 'Joint Director, ARD, Purulia',
+                'gender': 'Male',
+                'category': 'SC'
+            }
 
     # Priority 2: Filter allotted DDs with SU == Nil (stationed at District HQ)
     hq_dds = [d for d in allotted_dds if not d['service_utilized_at'] or d['service_utilized_at'].strip() in ['Nil', '—', '', 'None']]
@@ -609,8 +695,9 @@ for idx, cfg in enumerate(DISTRICT_HQ_CONFIG, 1):
             jd_str = f"{len(sub_jds)} Substantive JDs in position"
             rem_str = f"Directorate State HQ: {len(sub_jds)} Substantive JDs; {len(allotted_dds)} DD posts filled."
     elif senior_dd:
-        jd_str = f"In-Charge (SU): {senior_dd['allotted_name']} [Roster Sl {senior_dd['roster_sl']}]"
-        rem_str = f"Designated DDARD and In-Charge JD ({senior_dd['allotted_name']}, Sl {senior_dd['roster_sl']}) under Order 575."
+        r_label = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
+        jd_str = f"In-Charge (SU): {senior_dd['allotted_name']} [{r_label}]"
+        rem_str = f"Designated DDARD and In-Charge JD ({senior_dd['allotted_name']}, {r_label}) under Order 575."
     else:
         jd_str = "Vacant"
         rem_str = f"All {len(allotted_dds)} DD posts substantively filled."
@@ -948,7 +1035,7 @@ for cfg in DISTRICT_HQ_CONFIG:
         elif senior_dd and idx == 1:
             o_name = f"In-Charge: {senior_dd['allotted_name']}"
             o_hrms = senior_dd['allotted_hrms'] or ''
-            r_sl = f"Roster Sl {senior_dd['roster_sl']}"
+            r_sl = f"Roster Sl {senior_dd['roster_sl']}" if str(senior_dd.get('roster_sl', '')).isdigit() else str(senior_dd.get('roster_sl', '—'))
             dep = f"Held on Additional Charge / In-Charge Joint Director by DDARD ({senior_dd['allotted_name']})"
             status = 'Filled (In-Charge SU)'
             p_class = 'Additional Charge / In-Charge SU'
@@ -1613,7 +1700,9 @@ rectifications = [
     (9, "District HQ Postwise Hierarchy & Designated DDARDs", "Leadership requested explicit postwise representation of substantive vs SU posts organized by administrative hierarchy (JD -> DD -> AD) and designated In-Charge JDs.",
      "Designated Dr. Tapan Kumar Sur (Siliguri), Dr. Debasish Dutta (Jalpaiguri), Dr. Rabindra Nath Hansda (Jhargram), Dr. Raju Das (Malda), and Dr. Swapan Kumar Dass (Alipurduar) as DDARD & In-Charge Joint Directors.", "All 24 District Setups", "100% INTEGRATED"),
     (10, "Executive Directive: BLDO Joypur (Bankura) Deployment", "Dr. Shampa Dey (HRMS 1995004636, Roster Sl 136) was tentatively slotted on Service Utilization at BLDO Uttardinajpur.",
-     "Assigned Service Utilization (SU) as Block Livestock Development Officer, Joypur, Bankura per explicit executive instruction, filling the block post vacated by Dr. Srimanta Sarkar's promotion.", "Dr. Shampa Dey (Sl 136)", "100% RESOLVED")
+     "Assigned Service Utilization (SU) as Block Livestock Development Officer, Joypur, Bankura per explicit executive instruction, filling the block post vacated by Dr. Srimanta Sarkar's promotion.", "Dr. Shampa Dey (Sl 136)", "100% RESOLVED"),
+    (11, "Telephonic Executive Directives: Additional District DDARD Postings", "District leadership assignments for North 24 Parganas, Nadia, South 24 Parganas, Bankura, Darjeeling, Kalimpong, and Purulia were pending final authorization.",
+     "Designated Dr. Rajkumar Maity (N 24 Pgs), Dr. Sudhangsu Sekhar Das (Nadia), Dr. Nisith Kr. Panda (S 24 Pgs), Dr. Ganesh Chandra Maji (Bankura), Dr. La Tshering Bhutia (Darjeeling), Dr. Kesang Bomzon (Kalimpong), and Dr. Sajal Kumar Bhunia (Purulia) as DDARD & In-Charge Joint Directors per explicit executive directives.", "7 Districts (12 Total Assigned)", "100% RESOLVED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):
