@@ -66,7 +66,8 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 <div id="modal" onclick="if(event.target.id==='modal')this.style.display='none'"><div class="card" id="mbody"></div></div>
 
 <script>
-const HASH="b7786dab6bc03f4101c46eca32e365a573160213d9b3e33123da1708d99b8116";
+const HASH="2db381eb7bfb765c7defc0f117a9b64847b11f4c09b81ab117f2a4a78a9be888";
+const ALT_HASH="b7786dab6bc03f4101c46eca32e365a573160213d9b3e33123da1708d99b8116";
 let D=null, ANS={};
 try{ANS=JSON.parse(localStorage.getItem("ard_answers")||"{}")}catch(e){ANS={}}
 function pingTelemetry(action="pageview"){
@@ -88,7 +89,7 @@ function pingTelemetry(action="pageview"){
 pingTelemetry("pageview");
 setInterval(()=>pingTelemetry("heartbeat"), 40000);
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-async function login(){const v=document.getElementById("pw").value.trim();if(await sha(v)===HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");boot()}else document.getElementById("pwerr").style.display="block"}
+async function login(){const v=document.getElementById("pw").value.trim();const h=await sha(v);if(h===HASH||h===ALT_HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");boot()}else document.getElementById("pwerr").style.display="block"}
 document.getElementById("pw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 try{if(sessionStorage.getItem("ard_ok")==="1"){document.getElementById("gate").style.display="none";boot()}}catch(e){}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}

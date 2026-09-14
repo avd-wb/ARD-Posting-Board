@@ -45,6 +45,7 @@ ALLOWED_OFFICERS = {
     "2014000243": "Dr. Nirmalya Ranjan Sarkar",
     "2012002908": "Dr. Sukanta Roy",
     "ADMIN_LEHALWA": "Executive Administrator",
+    "ADMIN_SONARBANGLA": "Executive Administrator",
 }
 
 def generate_auth_token(hrms_id: str) -> str:
@@ -307,9 +308,9 @@ class ExportQueryRequest(BaseModel):
 @app.post("/api/auth/login")
 def auth_login(req: LoginRequest, response: Response):
     hid = req.hrms_id.strip()
-    if hid.lower() == "lehalwa":
+    if hid.lower() in ("sonarbangla", "lehalwa"):
         officer_name = "Executive Administrator"
-        token = generate_auth_token("ADMIN_LEHALWA")
+        token = generate_auth_token("ADMIN_SONARBANGLA")
         response.set_cookie(
             key="avd_session",
             value=token,
@@ -320,7 +321,7 @@ def auth_login(req: LoginRequest, response: Response):
         return {
             "success": True,
             "officer_name": officer_name,
-            "hrms_id": "ADMIN_LEHALWA",
+            "hrms_id": "ADMIN_SONARBANGLA",
             "token": token
         }
     elif hid in ALLOWED_OFFICERS:
@@ -341,7 +342,7 @@ def auth_login(req: LoginRequest, response: Response):
         }
     raise HTTPException(
         status_code=401,
-        detail="Incorrect password. Please enter 'lehalwa' or an authorized HRMS ID."
+        detail="Incorrect password. Please enter 'sonarbangla' or an authorized HRMS ID."
     )
 
 @app.get("/api/auth/verify")
@@ -2454,9 +2455,9 @@ def get_review_data():
 def review_status(request: Request):
     return {
         "status": "active",
-        "current_password": "lehalwa",
+        "current_password": "sonarbangla",
         "policy": "static_persistent",
-        "login_gate": "lehalwa",
+        "login_gate": "sonarbangla",
         "recipient_email": "nirmalyaranjansarkar@gmail.com"
     }
 
