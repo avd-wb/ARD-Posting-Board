@@ -53,6 +53,64 @@ cur = conn.cursor()
 
 # Ensure Kalimpong office codes
 cur.execute("UPDATE master_final_order_schedule SET office_code = '4ADHO00623' WHERE hrms_id IN ('1996011362', '2000010253')")
+
+# Explicit DDARD and In-Charge Joint Director Updates per leadership guidance:
+# 1. Siliguri: Dr. Tapan Kumar Sur (SC) [HRMS 2000000755, Roster 199]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Siliguri',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Siliguri',
+        comments_directive = 'DDARD, Siliguri'
+    WHERE hrms_id = '2000000755'
+""")
+
+# 2. Jalpaiguri: Dr. Debasish Dutta [HRMS 1994005981, Roster 239]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Jalpaiguri',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Jalpaiguri',
+        comments_directive = 'DDARD, Jalpaiguri'
+    WHERE hrms_id = '1994005981'
+""")
+
+# 3. Jhargram: Dr. Rabindra Nath Hansda (ST) [HRMS 1998007220, Roster 60]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Jhargram',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Jhargram',
+        comments_directive = 'DDARD, Jhargram'
+    WHERE hrms_id = '1998007220'
+""")
+
+# 4. Malda: Dr. Raju Das (SC) [HRMS 1997000337, Roster 138]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Malda',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Malda',
+        comments_directive = 'DDARD, Malda'
+    WHERE hrms_id = '1997000337'
+""")
+
+# 5. Alipurduar: Dr. Swapan Kumar Dass (SC) [HRMS 2001000684, Roster 228]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET transferred_substantive_post = 'Deputy Director, ARD, District Office, Alipurduar',
+        service_utilized_at = 'Nil',
+        administrative_remarks = 'Promoted to Deputy Director, ARD; Designated In-Charge Joint Director, ARD, Alipurduar',
+        comments_directive = 'DDARD, Alipurduar'
+    WHERE hrms_id = '2001000684'
+""")
+
+# Harmonize available_dd_posts
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000000755', allotted_name = 'Dr. Tapan Kumar Sur (SC)' WHERE dd_sl = 94")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994005981', allotted_name = 'Dr. Debasish Dutta' WHERE dd_sl = 97")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1998007220', allotted_name = 'Dr. Rabindra Nath Hansda (ST)' WHERE dd_sl = 232")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1997000337', allotted_name = 'Dr. Raju Das (SC)' WHERE dd_sl = 132")
+cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2001000684', allotted_name = 'Dr. Swapan Kumar Dass (SC)' WHERE dd_sl = 104")
 conn.commit()
 
 # Load all 326 clean records
@@ -83,6 +141,44 @@ cur.execute("""
 """)
 all_dd_posts = [dict(r) for r in cur.fetchall()]
 assert len(all_dd_posts) == 244, f"Expected 244 available DD posts, got {len(all_dd_posts)}"
+
+# Authoritative Designated DDARD & In-Charge Joint Directors
+DESIGNATED_INCHARGE_JD = {
+    "Siliguri": "2000000755",      # Dr. Tapan Kumar Sur (SC)
+    "Jalpaiguri": "1994005981",    # Dr. Debasish Dutta
+    "Jhargram": "1998007220",      # Dr. Rabindra Nath Hansda (ST)
+    "Malda": "1997000337",         # Dr. Raju Das (SC)
+    "Alipurduar": "2001000684",    # Dr. Swapan Kumar Dass (SC)
+}
+
+def get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur):
+    if name in DESIGNATED_INCHARGE_JD:
+        target_h = DESIGNATED_INCHARGE_JD[name]
+        for d in allotted_dds:
+            if d['allotted_hrms'] == target_h:
+                return d
+        for d in all_dd_posts:
+            if d['allotted_hrms'] == target_h:
+                return d
+        cur.execute("""
+            SELECT a.dd_sl, a.office, a.post_name, a.allotted_hrms, a.allotted_name,
+                   m.roster_sl, m.service_utilized_at, m.comments_directive, m.office_code, m.ddo_code,
+                   m.transferred_substantive_post, m.gender, m.category
+            FROM available_dd_posts a
+            LEFT JOIN master_final_order_schedule m ON a.allotted_hrms = m.hrms_id
+            WHERE a.allotted_hrms = ?
+        """, (target_h,))
+        row = cur.fetchone()
+        if row:
+            return dict(row)
+
+    # Priority 2: Filter allotted DDs with SU == Nil (stationed at District HQ)
+    hq_dds = [d for d in allotted_dds if not d['service_utilized_at'] or d['service_utilized_at'].strip() in ['Nil', '—', '', 'None']]
+    if hq_dds:
+        return sorted(hq_dds, key=lambda x: int(x['roster_sl']) if (x['roster_sl'] and str(x['roster_sl']).isdigit()) else 999)[0]
+    elif allotted_dds:
+        return sorted(allotted_dds, key=lambda x: int(x['roster_sl']) if (x['roster_sl'] and str(x['roster_sl']).isdigit()) else 999)[0]
+    return None
 
 # District Configurations
 DISTRICT_HQ_CONFIG = [
@@ -473,9 +569,7 @@ for idx, cfg in enumerate(DISTRICT_HQ_CONFIG, 1):
     allotted_dds = [dict(r) for r in cur.fetchall()]
 
     sub_jds = [p for p in jd_cadre if p['incumbent_name'] and p['incumbent_name'].strip() and p['incumbent_name'].lower() not in ['vacant', 'none', 'null', '']]
-    dds_with_rsl = [d for d in allotted_dds if d['roster_sl'] and d['roster_sl'].isdigit()]
-    dds_with_rsl_sorted = sorted(dds_with_rsl, key=lambda x: int(x['roster_sl']))
-    senior_dd = dds_with_rsl_sorted[0] if dds_with_rsl_sorted else None
+    senior_dd = get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur)
 
     # Counts
     dds_hq = []
@@ -507,7 +601,7 @@ for idx, cfg in enumerate(DISTRICT_HQ_CONFIG, 1):
             rem_str = f"Directorate State HQ: {len(sub_jds)} Substantive JDs; {len(allotted_dds)} DD posts filled."
     elif senior_dd:
         jd_str = f"In-Charge (SU): {senior_dd['allotted_name']} [Roster Sl {senior_dd['roster_sl']}]"
-        rem_str = f"In-Charge JD designated by senior-most DDARD ({senior_dd['allotted_name']}, Sl {senior_dd['roster_sl']}) under Order 575."
+        rem_str = f"Designated DDARD and In-Charge JD ({senior_dd['allotted_name']}, Sl {senior_dd['roster_sl']}) under Order 575."
     else:
         jd_str = "Vacant"
         rem_str = f"All {len(allotted_dds)} DD posts substantively filled."
@@ -614,11 +708,9 @@ for b_idx, scfg in enumerate(STATE_APEX_CONFIG, b_start_idx):
         if d['allotted_hrms']:
             text = f"{d['district']} {d['establishment']} {d['office']}".lower()
             if any(k in text for k in kws):
-                # Ensure not already counted in Part A
                 if not any(dc['dd_office'].lower() in text for dc in DISTRICT_HQ_CONFIG if not dc.get('is_hq')):
                     matched_dds.append(d)
 
-    # De-duplicate
     matched_dds_unique = []
     seen_dd_sl = set()
     for d in matched_dds:
@@ -805,9 +897,7 @@ for cfg in DISTRICT_HQ_CONFIG:
     allotted_dds = [dict(r) for r in cur.fetchall()]
 
     sub_jds = [p for p in jd_cadre if p['incumbent_name'] and p['incumbent_name'].strip() and p['incumbent_name'].lower() not in ['vacant', 'none', 'null', '']]
-    dds_with_rsl = [d for d in allotted_dds if d['roster_sl'] and d['roster_sl'].isdigit()]
-    dds_with_rsl_sorted = sorted(dds_with_rsl, key=lambda x: int(x['roster_sl']))
-    senior_dd = dds_with_rsl_sorted[0] if dds_with_rsl_sorted else None
+    senior_dd = get_designated_ddard(name, alias, dd_off, allotted_dds, all_dd_posts, cur)
 
     avd_count_dist = sum(1 for d in allotted_dds if roll.is_member(d['allotted_hrms'], d['allotted_name'])[0])
 
@@ -850,12 +940,12 @@ for cfg in DISTRICT_HQ_CONFIG:
             o_name = f"In-Charge: {senior_dd['allotted_name']}"
             o_hrms = senior_dd['allotted_hrms'] or ''
             r_sl = f"Roster Sl {senior_dd['roster_sl']}"
-            dep = f"Held on Additional Charge / In-Charge Joint Director by Senior-most DDARD ({senior_dd['allotted_name']})"
+            dep = f"Held on Additional Charge / In-Charge Joint Director by DDARD ({senior_dd['allotted_name']})"
             status = 'Filled (In-Charge SU)'
             p_class = 'Additional Charge / In-Charge SU'
             w_stat = estab
             is_m, _ = roll.is_member(o_hrms, senior_dd['allotted_name'])
-            rem = f"DDO & Administrative charge assigned under Order No. 575-AR&AH dt. 24.02.2023"
+            rem = f"Designated DDARD and In-Charge Joint Director, ARD under Order No. 575-AR&AH dt. 24.02.2023"
         else:
             o_name = 'Vacant'
             o_hrms = '—'
@@ -916,14 +1006,14 @@ for cfg in DISTRICT_HQ_CONFIG:
 
         is_m, _ = roll.is_member(d_hrms, d_name)
 
-        if 'Basudev Sil' in d_name:
+        if senior_dd and d_hrms == senior_dd['allotted_hrms'] and not sub_jds:
+            dep_str = 'Substantive DD at HQ; Designated In-Charge Joint Director, ARD (on SU)'
+            w_stat = estab
+            rem_str = 'Designated DDARD and In-Charge Joint Director, ARD under Order No. 575-AR&AH'
+        elif 'Basudev Sil' in d_name:
             dep_str = 'Substantive at District HQ (Full-time)'
             w_stat = estab
             rem_str = 'Promoted to Deputy Director, ARD; full-time posting at District HQ (SU: Nil)'
-        elif senior_dd and d['roster_sl'] == senior_dd['roster_sl'] and not sub_jds:
-            dep_str = 'Substantive DD at HQ; Designated In-Charge Joint Director (on SU)'
-            w_stat = estab
-            rem_str = 'Senior-most DD at District HQ; holds charge of In-Charge Joint Director under Order 575'
         elif su_txt and su_txt.strip().lower() not in ['nil', 'none', 'null', '', '—']:
             dep_str = f'Substantive at District HQ; Service Utilized (SU) in Field Unit'
             w_stat = su_txt
@@ -931,7 +1021,7 @@ for cfg in DISTRICT_HQ_CONFIG:
         else:
             dep_str = 'Substantive at District HQ (Full-time)'
             w_stat = estab
-            rem_str = 'Promoted to Deputy Director, ARD; posting at District HQ'
+            rem_str = f'Promoted to Deputy Director, ARD; posting at {name}'
 
         ws4.row_dimensions[curr_h_row].height = 22
         row_fill = fill_zebra if curr_h_row % 2 == 0 else fill_white
@@ -1511,8 +1601,8 @@ rectifications = [
      "Constructed dedicated 'District_Wise_Postings', 'District_HQ_Cadre_Summary', and 'District_HQ_Hierarchy' tabs with postwise substantive vs SU classification.", "All 242 Promotees", "100% INTEGRATED"),
     (8, "Preservation of 17 TPV Displacement Orders", "Notification 1112 PDF displaced 17 officers due to post abolition.",
      "100% preserved all 17 TPV displaced officers with dedicated highlighted formatting and administrative remarks matching PDF.", "17 Officers", "100% PRESERVED"),
-    (9, "District HQ Postwise Hierarchy Tabs", "Leadership requested explicit postwise representation of substantive vs SU posts organized by administrative hierarchy (JD -> DD -> AD).",
-     "Built District_HQ_Cadre_Summary (Executive matrix across 24 setups) and District_HQ_Hierarchy (detailed post-by-post ledger with JD, DD, AD, SU stations, and AVD membership).", "All 24 District Setups", "100% INTEGRATED")
+    (9, "District HQ Postwise Hierarchy & Designated DDARDs", "Leadership requested explicit postwise representation of substantive vs SU posts organized by administrative hierarchy (JD -> DD -> AD) and designated In-Charge JDs.",
+     "Designated Dr. Tapan Kumar Sur (Siliguri), Dr. Debasish Dutta (Jalpaiguri), Dr. Rabindra Nath Hansda (Jhargram), Dr. Raju Das (Malda), and Dr. Swapan Kumar Dass (Alipurduar) as DDARD & In-Charge Joint Directors.", "All 24 District Setups", "100% INTEGRATED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):
