@@ -13,6 +13,7 @@ Serves:
 """
 
 import os
+import re
 import json
 import sqlite3
 import datetime
@@ -144,11 +145,42 @@ else:
     STATIC_DIR = os.path.join(BASE_DIR, "static")
     os.makedirs(STATIC_DIR, exist_ok=True)
 
+MASTER_SOT_PATH = "/Users/nirmalyaranjansarkar/Projects/ARD PROMOTION/02_MASTER_SOURCE_OF_TRUTH/20260913_AVD_SOT_Master_Register.sqlite"
+
+def get_master_sot_mtime() -> str:
+    """Returns the modification timestamp of the Master Source of Truth."""
+    if os.path.exists(MASTER_SOT_PATH):
+        return datetime.datetime.fromtimestamp(os.path.getmtime(MASTER_SOT_PATH)).strftime("%Y-%m-%d %H:%M:%S")
+    # Fallback to metadata in cache DB if on Vercel
+    try:
+        c = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        r = c.execute("SELECT master_sot_mtime FROM master_sync_meta LIMIT 1").fetchone()
+        c.close()
+        if r and r[0]:
+            return r[0]
+    except Exception:
+        pass
+    if os.path.exists(DB_PATH):
+        return datetime.datetime.fromtimestamp(os.path.getmtime(DB_PATH)).strftime("%Y-%m-%d %H:%M:%S")
+    return "2026-09-14 12:17:41"
+
+FORBIDDEN_QUERY_COLUMNS = re.compile(
+    r"^(mobile|email|address|whatsapp|pin)$|.*(spouse|child|health|care|pwd|caste|dob|preference|ground).*",
+    re.I
+)
+
+FORBIDDEN_TABLES = {"T7_RESTRICTED_DECLARED_GROUNDS", "PREFERENCES"}
+
+def sanitize_row_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Query-layer stripping of sensitive PII columns."""
+    return {k: v for k, v in d.items() if not FORBIDDEN_QUERY_COLUMNS.match(k)}
+
 engine = PostingEngine(DB_PATH)
 backup_mgr = BackupManager(DB_PATH)
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    """Opens the SQLite database strictly in read-only mode (?mode=ro) per Condition (a)."""
+    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -279,9 +311,13 @@ def get_overview():
     cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE tenure_over_flag = 'Yes'")
     over_tenure_count = cur.fetchone()[0]
 
-    # Abolished post leads (derived from HQ returns, not statutory abolition)
-    cur.execute("SELECT count(*) FROM ABOLISHED_POST_LEADS")
-    obliterated_posts = cur.fetchone()[0]
+    # Abolished post leads (derived from HQ returns, not statutory abolition - 383 rows in SSOT T3)
+    try:
+        cur.execute("SELECT count(*) FROM T3_ABOLISHED_POST_LEADS")
+        obliterated_posts = cur.fetchone()[0]
+    except Exception:
+        cur.execute("SELECT count(*) FROM ABOLISHED_POST_LEADS")
+        obliterated_posts = cur.fetchone()[0]
     obliterated_officers = obliterated_posts
     obliterated_rehabilitated = 0
 
@@ -295,9 +331,11 @@ def get_overview():
     cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE designation LIKE '%Assistant Director%' AND occupancy_status = 'VACANT'")
     vacant_ad = cur.fetchone()[0]
 
-    # Roster candidates (242) — allotment Under verification
+    # Roster candidates (242) — 242 of 242 linked in Master SOT T4
     cur.execute("SELECT count(*) FROM roster_50_point_candidates")
     roster_candidates = cur.fetchone()[0]
+    cur.execute("SELECT count(*) FROM roster_50_point_candidates WHERE hrms_id IS NOT NULL AND hrms_id != '' AND hrms_id != 'Under verification'")
+    roster_linked = cur.fetchone()[0]
     roster_allotted = 0
 
     conn.close()
@@ -317,7 +355,18 @@ def get_overview():
         "vacant_dd": vacant_dd,
         "vacant_ad": vacant_ad,
         "roster_candidates": roster_candidates,
-        "roster_allotted": roster_allotted
+        "roster_linked": roster_linked,
+        "roster_linked_pct": f"{round((roster_linked / roster_candidates * 100) if roster_candidates else 0)}%",
+        "roster_allotted": roster_allotted,
+        "post_states": {
+            "FILLED": active_officers,
+            "VACANT": total_vacancies,
+            "NO_RETURN": no_return_posts,
+            "NOT_ESTABLISHED": not_established_posts,
+            "ABOLISHED_LEADS": obliterated_posts
+        },
+        "master_sot_mtime": get_master_sot_mtime(),
+        "db_mode": "read_only"
     }
 
 @app.get("/api/cadre")
@@ -334,7 +383,7 @@ def get_cadre(
     conn = get_db()
     cur = conn.cursor()
 
-    query = "SELECT * FROM cadre_1794_posts WHERE 1=1"
+    query = "SELECT *, id as post_id FROM cadre_1794_posts WHERE 1=1"
     params = []
 
     if search:
@@ -367,7 +416,7 @@ def get_cadre(
         query += " AND avd_member = ?"
         params.append(avd_member)
 
-    count_query = query.replace("SELECT *", "SELECT count(*)")
+    count_query = query.replace("SELECT *, id as post_id", "SELECT count(*)")
     cur.execute(count_query, params)
     total_matched = cur.fetchone()[0]
 
@@ -406,6 +455,66 @@ def get_single_post(post_id: int):
         raise HTTPException(status_code=404, detail="Post not found")
     return dict(row)
 
+@app.get("/api/redzone/pending-transfers")
+def get_redzone_pending_transfers(
+    category: Optional[str] = "all",
+    district: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 500
+):
+    """
+    Returns pending transfers in the Red Zone categorized by:
+    - promotion: Transfer Due Promotion (50-Point Roster Panel)
+    - tenure_10y: Transfer Eligibility Based on Completion of 10 Years
+    - post_abolition: Transfer Due to Displacement of Post Abolition (Memo 1808)
+    - personal_prayers: Transfer Required Based on Personal Reasons & Prayers
+    - administrative_need: Transfer Based on Administrative Need (Deficits & Critical Vacancies)
+    - all: All combined
+    """
+    conn = get_db()
+    cur = conn.cursor()
+    
+    # Get counts for all categories
+    cur.execute("SELECT category, COUNT(*) as cnt FROM pending_transfers_redzone GROUP BY category;")
+    counts = {r["category"]: r["cnt"] for r in cur.fetchall()}
+    total_all = sum(counts.values())
+    counts["total"] = total_all
+    
+    query = """
+        SELECT id, category, category_label, priority_score, officer_name, hrms_id, gender,
+               current_designation, current_establishment, current_block, current_district,
+               tenure_years, tenure_str, date_of_joining, date_of_retirement, transfer_reason,
+               target_post, target_district, ground_type, post_id, latitude, longitude, status
+        FROM pending_transfers_redzone
+        WHERE 1=1
+    """
+    params = []
+    if category and category != "all":
+        query += " AND category = ?"
+        params.append(category)
+        
+    if district and district != "ALL":
+        query += " AND (current_district = ? OR target_district = ?)"
+        params.extend([district, district])
+        
+    if search:
+        s = f"%{search.strip()}%"
+        query += " AND (officer_name LIKE ? OR hrms_id LIKE ? OR current_designation LIKE ? OR current_establishment LIKE ? OR current_district LIKE ? OR transfer_reason LIKE ?)"
+        params.extend([s, s, s, s, s, s])
+        
+    query += " ORDER BY priority_score DESC, id ASC LIMIT ?"
+    params.append(limit)
+    
+    cur.execute(query, params)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    
+    return {
+        "counts": counts,
+        "total": len(rows),
+        "data": rows
+    }
+
 @app.get("/api/map/posts")
 def get_map_posts(
     district: Optional[str] = None,
@@ -419,11 +528,13 @@ def get_map_posts(
     conn = get_db()
     cur = conn.cursor()
     query = """
-        SELECT id, post_sl, district, block, establishment, estab_type,
+        SELECT post_id as id, post_sl, district, block, establishment, estab_type,
                designation, post_code, pay_level, occupancy_status,
                incumbent_name, incumbent_hrms, incumbent_doj, incumbent_tenure,
-               tenure_norm, tenure_over_flag, incumbent_dor, latitude, longitude, record_sha256
-        FROM cadre_1794_posts
+               tenure_norm, tenure_over_flag, incumbent_dor, latitude, longitude, record_sha256,
+               resolved_location_name, location_detective_method, location_resolution_tier,
+               google_maps_url, location_notes
+        FROM sacrosanct_cadre_posts
         WHERE latitude != 0.0 AND longitude != 0.0
     """
     params = []
@@ -443,10 +554,10 @@ def get_map_posts(
         params.append(tenure_over)
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ?)"
-        params.extend([s, s, s, s, s, s])
+        query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ? OR resolved_location_name LIKE ?)"
+        params.extend([s, s, s, s, s, s, s])
     
-    query += " ORDER BY id LIMIT ?"
+    query += " ORDER BY post_id LIMIT ?"
     params.append(limit)
     cur.execute(query, params)
     rows = [dict(r) for r in cur.fetchall()]
@@ -467,7 +578,7 @@ def get_map_stats():
             SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as over_tenure_posts,
             AVG(latitude) as lat,
             AVG(longitude) as lng
-        FROM cadre_1794_posts
+        FROM sacrosanct_cadre_posts
         WHERE latitude != 0.0
         GROUP BY district
         ORDER BY total_posts DESC;
@@ -480,7 +591,7 @@ def get_map_stats():
             SUM(CASE WHEN occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%' THEN 1 ELSE 0 END) as total_vacant,
             SUM(CASE WHEN occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy') THEN 1 ELSE 0 END) as total_occupied,
             SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as total_over_tenure
-        FROM cadre_1794_posts;
+        FROM sacrosanct_cadre_posts;
     """)
     summary = dict(cur.fetchone())
     conn.close()

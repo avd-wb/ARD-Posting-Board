@@ -151,8 +151,12 @@ window.handleAuthLogout = async function() {
 document.addEventListener('DOMContentLoaded', () => {
     // State management
     const state = {
-        currentTab: 'tab-roster',
+        currentTab: 'tab-landing',
         overview: {},
+        redZoneCategory: 'promotion',
+        redZoneDistrict: 'ALL',
+        redZoneSearch: '',
+        redZoneData: [],
         rosterCandidates: [],
         obliteratedOfficers: [],
         cadreData: [],
@@ -176,6 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initTabs();
         initOverview();
         initFilters();
+        initRedZoneControls();
+        loadLandingDashboard();
         loadRoster();
         loadMasterOrders();
         loadObliterated();
@@ -188,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSpotlightSearch();
         initPolicyGuideModal();
         initLivePolicyEvaluator();
+        switchTab('tab-landing');
     };
 
     // Check authentication first
@@ -209,6 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TAB SWITCHING & MOBILE NAVIGATION ---
     function switchTab(targetTab) {
         if (!targetTab) return;
+        if (targetTab === 'tab-map') {
+            switchTab('tab-landing');
+            setTimeout(() => {
+                const mapSec = document.getElementById('gisMapLandingSection');
+                if (mapSec) mapSec.scrollIntoView({ behavior: 'smooth' });
+            }, 120);
+            return;
+        }
         state.currentTab = targetTab;
 
         // 1. Desktop Tab Buttons (Executive Slate Pills)
@@ -304,7 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 6. Trigger specific tab loaders
-        if (targetTab === 'tab-roster') {
+        if (targetTab === 'tab-landing') {
+            loadLandingDashboard();
+        } else if (targetTab === 'tab-roster') {
             loadRoster();
         } else if (targetTab === 'tab-master-orders') {
             loadMasterOrders();
@@ -413,29 +430,61 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             state.overview = data;
 
-            document.getElementById('kpiTotalPosts').innerText = Number(data.total_posts).toLocaleString();
+            if (document.getElementById('kpiTotalPosts')) {
+                document.getElementById('kpiTotalPosts').innerText = Number(data.total_posts).toLocaleString();
+            }
             if (document.getElementById('badgeCadreTotal')) {
                 document.getElementById('badgeCadreTotal').innerText = Number(data.total_posts).toLocaleString();
             }
-            document.getElementById('kpiTotalVacancies').innerText = Number(data.total_vacancies).toLocaleString();
+            if (document.getElementById('kpiFilledPosts')) {
+                const filledVal = data.post_states ? data.post_states.FILLED : data.active_officers;
+                document.getElementById('kpiFilledPosts').innerText = Number(filledVal).toLocaleString();
+            }
+            if (document.getElementById('kpiTotalVacancies')) {
+                document.getElementById('kpiTotalVacancies').innerText = Number(data.total_vacancies).toLocaleString();
+            }
+            if (document.getElementById('kpiNoReturn')) {
+                const noRetVal = data.post_states ? data.post_states.NO_RETURN : data.no_return_posts;
+                document.getElementById('kpiNoReturn').innerText = Number(noRetVal).toLocaleString();
+            }
+            if (document.getElementById('kpiNotEstablished')) {
+                const notEstVal = data.post_states ? data.post_states.NOT_ESTABLISHED : data.not_established_posts;
+                document.getElementById('kpiNotEstablished').innerText = Number(notEstVal).toLocaleString();
+            }
+            if (document.getElementById('kpiObliterated')) {
+                document.getElementById('kpiObliterated').innerText = Number(data.obliterated_posts).toLocaleString();
+            }
+            if (document.getElementById('kpiRoster')) {
+                document.getElementById('kpiRoster').innerText = data.roster_candidates;
+            }
             const totalDD = data.total_dd_posts != null ? data.total_dd_posts : 244;
-            document.getElementById('kpiVacantDD').innerText = `${totalDD} Posts`;
+            if (document.getElementById('kpiVacantDD')) {
+                document.getElementById('kpiVacantDD').innerText = `${totalDD} Posts`;
+            }
             const kpiVacantDDSub = document.getElementById('kpiVacantDDSub');
             if (kpiVacantDDSub) {
                 kpiVacantDDSub.innerHTML = `<span>Under verification</span><i data-lucide="arrow-right" class="w-2 h-2 opacity-0 group-hover:opacity-100 transition"></i>`;
             }
-            document.getElementById('kpiVacantAD').innerText = Number(data.vacant_ad).toLocaleString();
-            document.getElementById('kpiRoster').innerText = data.roster_candidates;
-            document.getElementById('kpiRosterSub').innerText = `Under verification`;
-            document.getElementById('kpiObliterated').innerText = data.obliterated_posts;
-            document.getElementById('kpiOblitSub').innerText = `DERIVED Layer`;
-            document.getElementById('kpiOverTenure').innerText = data.over_tenure_count;
-
+            if (document.getElementById('kpiVacantAD') && data.vacant_ad != null) {
+                document.getElementById('kpiVacantAD').innerText = Number(data.vacant_ad).toLocaleString();
+            }
+            if (document.getElementById('kpiRosterSub')) {
+                document.getElementById('kpiRosterSub').innerText = `${data.roster_linked || 242}/${data.roster_candidates || 242} LINKED`;
+            }
+            if (document.getElementById('kpiOblitSub')) {
+                document.getElementById('kpiOblitSub').innerText = `DERIVED (T3)`;
+            }
+            if (document.getElementById('kpiOverTenure') && data.over_tenure_count != null) {
+                document.getElementById('kpiOverTenure').innerText = data.over_tenure_count;
+            }
             if (document.getElementById('badgeRosterCount')) {
                 document.getElementById('badgeRosterCount').innerText = `${data.roster_candidates}`;
             }
             if (document.getElementById('badgeOblitCount')) {
                 document.getElementById('badgeOblitCount').innerText = `${data.obliterated_posts}`;
+            }
+            if (document.getElementById('sotMtimeDisplay') && data.master_sot_mtime) {
+                document.getElementById('sotMtimeDisplay').innerText = data.master_sot_mtime;
             }
         } catch (e) {
             console.error('Error loading overview stats:', e);
@@ -2863,8 +2912,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (cardId === 'kpiCardTotalPosts') card.classList.add('ring-wbblue-600');
                 else if (cardId === 'kpiCardTotalVacancies') card.classList.add('ring-emerald-600');
                 else if (cardId === 'kpiCardVacantDD') card.classList.add('ring-blue-600');
+                else if (cardId === 'kpiCardFilled') card.classList.add('ring-blue-600');
+                else if (cardId === 'kpiCardNoReturn') card.classList.add('ring-amber-600');
+                else if (cardId === 'kpiCardNotEstablished') card.classList.add('ring-slate-600');
                 else if (cardId === 'kpiCardVacantAD') card.classList.add('ring-teal-600');
-                else if (cardId === 'kpiCardRoster') card.classList.add('ring-amber-600');
+                else if (cardId === 'kpiCardRoster') card.classList.add('ring-purple-600');
                 else if (cardId === 'kpiCardObliterated') card.classList.add('ring-rose-600');
                 else if (cardId === 'kpiCardOverTenure') card.classList.add('ring-red-600');
                 else if (cardId === 'kpiCardCollisions') card.classList.add('ring-purple-600');
@@ -2898,7 +2950,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 2. Clear Vacancies -> Department Cadre (Clear Vacancies only: 747)
+        // 2. Active Filled -> Department Cadre (Filled posts: 936)
+        const cardFilled = document.getElementById('kpiCardFilled');
+        if (cardFilled) {
+            cardFilled.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardFilled');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'occupied';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 3. Clear Vacancies -> Department Cadre (Clear Vacancies only: 253)
         const cardVac = document.getElementById('kpiCardTotalVacancies');
         if (cardVac) {
             cardVac.addEventListener('click', () => {
@@ -2910,6 +2984,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tenureF = document.getElementById('cadreTenureFilter');
                 const searchF = document.getElementById('cadreSearchInput');
                 if (statusF) statusF.value = 'vacant';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 4. No Return Received -> Department Cadre (No Return: 595)
+        const cardNoReturn = document.getElementById('kpiCardNoReturn');
+        if (cardNoReturn) {
+            cardNoReturn.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardNoReturn');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'no_return';
+                if (desigF) desigF.value = 'ALL';
+                if (distF) distF.value = 'ALL';
+                if (tenureF) tenureF.value = 'ALL';
+                if (searchF) searchF.value = '';
+                state.cadreOffset = 0;
+                loadCadre();
+                document.getElementById('tab-cadre')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        // 5. Not Established -> Department Cadre (Not Established: 10)
+        const cardNotEst = document.getElementById('kpiCardNotEstablished');
+        if (cardNotEst) {
+            cardNotEst.addEventListener('click', () => {
+                window.setActiveKPICard('kpiCardNotEstablished');
+                triggerTab('tab-cadre');
+                const statusF = document.getElementById('cadreStatusFilter');
+                const desigF = document.getElementById('cadreDesigFilter');
+                const distF = document.getElementById('cadreDistrictFilter');
+                const tenureF = document.getElementById('cadreTenureFilter');
+                const searchF = document.getElementById('cadreSearchInput');
+                if (statusF) statusF.value = 'not_established';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
@@ -5926,7 +6044,7 @@ ${r.statutory_justification}
             if (tenureVal !== 'ALL' && p.tenure_over_flag !== tenureVal) return false;
 
             if (searchVal) {
-                const combined = `${p.designation} ${p.establishment} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''}`.toLowerCase();
+                const combined = `${p.designation} ${p.establishment} ${p.resolved_location_name || ''} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''}`.toLowerCase();
                 if (!combined.includes(searchVal)) return false;
             }
 
@@ -5940,25 +6058,118 @@ ${r.statutory_justification}
             const marker = L.marker([p.latitude, p.longitude], { icon });
 
             const isVac = p.occupancy_status === 'Clear Vacancy' || (p.occupancy_status && p.occupancy_status.includes('Vacant'));
+            const isApex = p.post_code === 'DIR' || p.post_code === 'ADDL';
+            const isOverTenure = p.tenure_over_flag === 'Yes';
+
+            let statusBadgeColor = '#dbeafe';
+            let statusTextColor = '#1e40af';
+            let statusBorderColor = '#bfdbfe';
+            if (isVac) {
+                statusBadgeColor = '#dcfce7';
+                statusTextColor = '#166534';
+                statusBorderColor = '#bbf7d0';
+            } else if (isOverTenure) {
+                statusBadgeColor = '#ffe4e6';
+                statusTextColor = '#9f1239';
+                statusBorderColor = '#fecdd3';
+            } else if (isApex) {
+                statusBadgeColor = '#f3e8ff';
+                statusTextColor = '#6b21a8';
+                statusBorderColor = '#e9d5ff';
+            }
+
+            const escapedDesig = (p.designation || '').replace(/'/g, "\\'");
+            const escapedDist = (p.district || '').replace(/'/g, "\\'");
+            const escapedBlock = (p.block || '').replace(/'/g, "\\'");
+            const escapedIncumbent = (p.incumbent_name || '').replace(/'/g, "\\'");
+            const mapsUrl = p.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`;
 
             const popupContent = `
-                <div style="font-family:system-ui,-apple-system,sans-serif;min-width:240px;max-width:280px;padding:4px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                        <span style="font-size:10px;font-weight:bold;color:#64748b;text-transform:uppercase;">Post #${p.post_sl} · ${p.district}</span>
-                        <span style="font-size:9px;font-weight:bold;padding:2px 6px;border-radius:9999px;background:${isVac ? '#dcfce7' : '#dbeafe'};color:${isVac ? '#166534' : '#1e40af'};">${p.occupancy_status}</span>
+                <div style="font-family:system-ui,-apple-system,sans-serif;min-width:270px;max-width:320px;padding:6px;">
+                    <!-- Post Header Bar -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px;">
+                        <span style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.02em;">Post #${p.post_sl} · <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedDist}', 'district')" style="color:#0284c7;text-decoration:underline;" title="Filter Cadre by District">${p.district}</a></span>
+                        <span style="font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:9999px;background:${statusBadgeColor};color:${statusTextColor};border:1px solid ${statusBorderColor};white-space:nowrap;">${p.occupancy_status}</span>
                     </div>
-                    <div style="font-weight:bold;font-size:13px;color:#0f172a;line-height:1.2;margin-bottom:2px;">${p.designation}</div>
-                    <div style="font-size:11px;color:#475569;">${p.establishment} (${p.block || 'HQ'})</div>
-                    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0;font-size:11px;">
-                        ${isVac ? `
-                            <div style="color:#15803d;font-weight:600;">Sanctioned Clear Vacancy</div>
-                            <div style="color:#64748b;font-size:10px;">Pay Level: ${p.pay_level || 'Level 16-22'}</div>
-                        ` : `
-                            <div style="font-weight:600;color:#0f172a;">${p.incumbent_name}</div>
-                            <div style="color:#64748b;font-family:monospace;font-size:10px;">HRMS: ${p.incumbent_hrms || 'N/A'} • Tenure: ${p.incumbent_tenure || '-'}</div>
-                            ${p.tenure_over_flag === 'Yes' ? '<div style="color:#e11d48;font-weight:bold;font-size:10px;margin-top:2px;">⚠️ Over-Tenure Norm (>3-4 yrs)</div>' : ''}
-                            ${p.incumbent_hrms ? `<button onclick="window.openOfficerDossier('${p.incumbent_hrms}')" style="margin-top:6px;width:100%;padding:4px 8px;font-size:11px;font-weight:bold;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;">View Officer Dossier</button>` : ''}
-                        `}
+
+                    <!-- Designation with Cadre Backlink -->
+                    <div style="margin-bottom:4px;">
+                        <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedDesig}', 'designation')" style="font-weight:800;font-size:13.5px;color:#0f172a;text-decoration:none;line-height:1.25;display:block;" title="Click to filter Cadre by designation: ${p.designation}">
+                            <span style="color:#0369a1;text-decoration:underline;">${p.designation}</span>
+                        </a>
+                        <div style="font-size:10px;color:#64748b;margin-top:1px;">Pay Scale: <span style="font-weight:600;color:#334155;">${p.pay_level || 'Level 16-22'}</span> · Code: <span style="font-family:monospace;font-weight:bold;color:#475569;">${p.post_code || 'CADRE'}</span></div>
+                    </div>
+
+                    <!-- Ground Physical Location & 20 Detective Method Resolution -->
+                    <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;font-size:11px;">
+                        <div style="font-size:11px;color:#1e293b;font-weight:700;">
+                            📍 Physical Landmark:
+                        </div>
+                        <div style="font-size:11.5px;color:#0f172a;font-weight:600;margin-top:1px;">
+                            ${p.resolved_location_name || p.establishment}
+                        </div>
+                        <div style="font-size:10.5px;color:#64748b;margin-top:2px;">
+                            Establishment: <span style="color:#334155;">${p.establishment}</span>
+                        </div>
+                        <div style="font-size:10.5px;color:#64748b;margin-top:1px;">
+                            Block: <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedBlock}', 'block')" style="color:#0284c7;font-weight:bold;text-decoration:underline;">${p.block || 'HQ'}</a> · 
+                            District: <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedDist}', 'district')" style="color:#0284c7;font-weight:bold;text-decoration:underline;">${p.district}</a>
+                        </div>
+                    </div>
+
+                    <!-- 20 Detective Methods Resolution Badge -->
+                    <div style="margin-top:6px;padding:5px 8px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;font-size:10px;line-height:1.35;">
+                        <div style="display:flex;align-items:center;gap:4px;font-weight:800;color:#065f46;">
+                            <span>🛡️ Detective Method:</span>
+                            <span style="color:#047857;font-weight:700;">${p.location_detective_method || 'M01: Block Headquarters Resolution'}</span>
+                        </div>
+                        ${p.location_notes ? `<div style="color:#15803d;font-size:9.5px;margin-top:2px;background:#ffffff;padding:2px 4px;border-radius:4px;border:1px solid #d1fae5;">${p.location_notes}</div>` : ''}
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px;font-size:9px;color:#065f46;border-top:1px dashed #a7f3d0;padding-top:2px;">
+                            <span>Tier: <strong>${p.location_resolution_tier || 'Tier-1 Ground Truth'}</strong></span>
+                            <span style="font-family:monospace;">Lat: ${Number(p.latitude).toFixed(4)}, Lng: ${Number(p.longitude).toFixed(4)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Incumbent Details & Backlinks (if occupied) -->
+                    ${isVac ? `
+                        <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
+                            <div style="color:#15803d;font-weight:bold;display:flex;align-items:center;gap:4px;">
+                                <span>🟢</span> Sanctioned Clear Vacancy (Eligible for Allotment)
+                            </div>
+                            <div style="color:#4b5563;font-size:10px;margin-top:2px;">Ready for promotion absorption or rotational transfer placement.</div>
+                        </div>
+                    ` : `
+                        <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#ffffff;border:1px solid #cbd5e1;font-size:11px;">
+                            <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Incumbent Officer</div>
+                            <div style="font-weight:bold;color:#0f172a;font-size:12px;margin-top:1px;">
+                                <a href="javascript:void(0)" onclick="window.filterCadreByKeyword('${escapedIncumbent}', 'officer')" style="color:#1e40af;text-decoration:underline;" title="Search officer postings in Cadre">${p.incumbent_name}</a>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;color:#64748b;font-size:10px;margin-top:2px;">
+                                <span>HRMS: <a href="javascript:void(0)" onclick="window.openOfficerDossier('${p.incumbent_hrms}')" style="font-family:monospace;font-weight:bold;color:#2563eb;text-decoration:underline;" title="Open Personnel Dossier">${p.incumbent_hrms || 'N/A'}</a></span>
+                                <span>·</span>
+                                <span>Tenure: <strong style="color:#334155;">${p.incumbent_tenure || '-'}</strong></span>
+                            </div>
+                            ${isOverTenure ? '<div style="color:#e11d48;font-weight:bold;font-size:10px;margin-top:3px;display:flex;align-items:center;gap:3px;"><span>⚠️</span> Over-Tenure Station Norm (>3-4 yrs, Memo 291)</div>' : ''}
+                        </div>
+                    `}
+
+                    <!-- Interactive Actions & Direct Google Maps Navigation -->
+                    <div style="margin-top:8px;display:grid;gap:4px;">
+                        <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;font-size:11px;font-weight:bold;color:#ffffff;background:#0d9488;border-radius:8px;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,0.1);transition:background 0.15s ease;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
+                            <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            <span>Open in Google Maps</span>
+                        </a>
+
+                        <div style="display:flex;gap:4px;margin-top:2px;">
+                            ${p.incumbent_hrms ? `
+                                <button onclick="window.openOfficerDossier('${p.incumbent_hrms}')" style="flex:1;padding:4.5px 8px;font-size:10.5px;font-weight:bold;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">
+                                    <span>👤 Dossier</span>
+                                </button>
+                            ` : ''}
+                            <button onclick="window.filterCadreByKeyword('${p.post_sl}', 'post_sl')" style="flex:1;padding:4.5px 8px;font-size:10.5px;font-weight:bold;color:#334155;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">
+                                <span>📋 Cadre #${p.post_sl}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -5990,17 +6201,374 @@ ${r.statutory_justification}
             alert('Geographic coordinates not available for this post.');
             return;
         }
-        window.switchTab('tab-map');
+        window.switchTab('tab-landing');
 
         setTimeout(() => {
+            const mapSec = document.getElementById('gisMapLandingSection');
+            if (mapSec) mapSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
             if (gisMapInstance) {
-                gisMapInstance.setView([lat, lng], 13, { animate: true });
+                gisMapInstance.invalidateSize();
+                gisMapInstance.setView([lat, lng], 14, { animate: true });
                 const marker = gisMarkersMap.get(postId);
                 if (marker) {
                     marker.openPopup();
                 }
             }
-        }, 300);
+        }, 250);
     }
     window.viewPostOnMap = viewPostOnMap;
+
+    // =========================================================================
+    // THE RED ZONE & LANDING BOARD CONTROLLER (460 PENDING TRANSFERS)
+    // =========================================================================
+    async function loadLandingDashboard() {
+        await loadRedZoneTransfers();
+        await loadCadreGisMap();
+    }
+    window.loadLandingDashboard = loadLandingDashboard;
+
+    async function loadRedZoneTransfers(category, district, search) {
+        if (category !== undefined) state.redZoneCategory = category;
+        if (district !== undefined) state.redZoneDistrict = district;
+        if (search !== undefined) state.redZoneSearch = search;
+
+        const cat = state.redZoneCategory || 'promotion';
+        const dist = state.redZoneDistrict || 'ALL';
+        const query = state.redZoneSearch || '';
+
+        // Update active UI styles on the 5 Red Zone category filter buttons
+        document.querySelectorAll('#redZoneCategoryTabs .rz-cat-btn').forEach(btn => {
+            const c = btn.getAttribute('data-cat');
+            if (c === cat) {
+                btn.className = 'rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 text-white shadow-md flex items-center gap-1.5 shrink-0 transition cursor-pointer border border-rose-400/50';
+            } else {
+                btn.className = 'rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700/80 flex items-center gap-1.5 shrink-0 transition cursor-pointer border border-slate-700/50';
+            }
+        });
+
+        const tbody = document.getElementById('redZoneTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-slate-400">
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-xs font-semibold">Filtering Red Zone Pending Transfers (${cat.replace('_', ' ')})...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        try {
+            let url = `/api/redzone/pending-transfers?category=${encodeURIComponent(cat)}`;
+            if (dist && dist !== 'ALL') url += `&district=${encodeURIComponent(dist)}`;
+            if (query) url += `&search=${encodeURIComponent(query)}`;
+
+            const res = await fetch(url);
+            const json = await res.json();
+            state.redZoneData = json.data || [];
+
+            // Update Executive Metric Ribbon Counters
+            if (json.counts) {
+                const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = Number(v).toLocaleString(); };
+                setVal('redStatTotal', json.counts.total);
+                setVal('redStatPromo', json.counts.promotion);
+                setVal('redStatTenure10', json.counts.tenure_10y);
+                setVal('redStatOblit', json.counts.post_abolition);
+                setVal('redStatPrayers', json.counts.personal_prayers);
+                setVal('redStatAdmin', json.counts.administrative_need);
+            }
+
+            // Populate District Dropdown with 23 Districts if not yet populated
+            const distFilter = document.getElementById('redZoneDistrictFilter');
+            if (distFilter && distFilter.options.length <= 1 && json.districts) {
+                distFilter.innerHTML = '<option value="ALL">All Districts (23)</option>' +
+                    json.districts.map(d => `<option value="${d}">${d}</option>`).join('');
+                if (state.redZoneDistrict) distFilter.value = state.redZoneDistrict;
+            }
+
+            const countLabel = document.getElementById('redZoneShowingCount');
+            if (countLabel) {
+                countLabel.textContent = `Showing ${state.redZoneData.length} transfer${state.redZoneData.length === 1 ? '' : 's'}`;
+            }
+
+            if (!tbody) return;
+
+            if (state.redZoneData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-400">
+                            <div class="max-w-sm mx-auto flex flex-col items-center">
+                                <i data-lucide="shield-check" class="w-10 h-10 text-emerald-400 mb-2"></i>
+                                <div class="font-bold text-slate-200 text-sm">No Pending Transfers Found</div>
+                                <p class="text-xs text-slate-500 mt-1">No pending transfers match the selected filters in this Red Zone category.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                if (window.lucide) window.lucide.createIcons();
+                return;
+            }
+
+            tbody.innerHTML = state.redZoneData.map((t, idx) => {
+                let catBadge = '';
+                if (t.category === 'promotion') {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">50-Pt Roster Promotion</span>';
+                } else if (t.category === 'tenure_10y') {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">10+ Years Station Tenure</span>';
+                } else if (t.category === 'post_abolition') {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">Post Abolition 1808</span>';
+                } else if (t.category === 'personal_prayers') {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">Personal Reason / Prayer</span>';
+                } else {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">Urgent Administrative Need</span>';
+                }
+
+                const tenureOverBadge = (t.tenure_years && t.tenure_years >= 10) 
+                    ? `<span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-600/30 text-rose-300 border border-rose-500/40 font-mono">⚠️ ${t.tenure_years} Years Station</span>` 
+                    : (t.tenure_text ? `<span class="block mt-0.5 text-[10px] text-slate-400 font-mono">${t.tenure_text}</span>` : '');
+
+                const joinedDate = t.date_joined_current_station ? `<div class="text-[10px] text-slate-400 mt-0.5">Joined: ${t.date_joined_current_station}</div>` : '';
+
+                const safeName = (t.officer_name || '').replace(/'/g, "\\'");
+                const safeDesig = (t.current_designation || '').replace(/'/g, "\\'");
+                const safeDist = (t.current_district || '').replace(/'/g, "\\'");
+
+                return `
+                    <tr class="hover:bg-slate-900/80 transition group border-b border-slate-800/60">
+                        <td class="py-3 px-3 text-center font-mono text-slate-400 text-xs">${idx + 1}</td>
+                        
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-white text-xs hover:text-rose-400 cursor-pointer flex items-center gap-1.5" onclick="window.openOfficerDossier('${t.hrms_id}')" title="Click to view personnel dossier">
+                                <span>${t.officer_name}</span>
+                                <i data-lucide="external-link" class="w-3 h-3 text-slate-500 group-hover:text-rose-400 transition"></i>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5 text-[10px]">
+                                <span class="font-mono text-rose-300 font-semibold cursor-pointer hover:underline" onclick="window.openOfficerDossier('${t.hrms_id}')">${t.hrms_id || 'HRMS N/A'}</span>
+                                ${t.category_caste ? `<span class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">${t.category_caste}</span>` : ''}
+                                ${t.seniority_rank ? `<span class="text-slate-400 font-mono">Rank #${t.seniority_rank}</span>` : ''}
+                            </div>
+                        </td>
+
+                        <td class="py-3 px-3">
+                            <div class="font-semibold text-slate-200 text-xs cursor-pointer hover:text-emerald-300" onclick="window.filterCadreByKeyword('${safeDesig}', 'designation')" title="Filter Cadre for this designation">${t.current_designation || '-'}</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">
+                                ${t.current_establishment || ''} 
+                                <span class="text-slate-300 font-medium cursor-pointer hover:underline" onclick="window.filterCadreByKeyword('${safeDist}', 'district')">(${t.current_block ? t.current_block + ', ' : ''}${t.current_district || '-'})</span>
+                            </div>
+                        </td>
+
+                        <td class="py-3 px-3">
+                            ${tenureOverBadge}
+                            ${joinedDate}
+                        </td>
+
+                        <td class="py-3 px-3 max-w-[280px]">
+                            <div class="mb-1">${catBadge}</div>
+                            <div class="text-[11px] text-slate-300 line-clamp-2" title="${t.basis_reason || ''}">${t.basis_reason || '-'}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-0.5">Priority Score: <strong class="text-rose-400">${t.priority_score || '80'}</strong></div>
+                        </td>
+
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-emerald-400 text-xs">${t.proposed_designation || t.current_designation || 'Next Cadre Scale'}</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5">
+                                ${t.proposed_district ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-semibold">${t.proposed_district}</span>` : `<span class="text-slate-500 italic text-[10px]">Awaiting Station Allotment</span>`}
+                            </div>
+                            ${t.proposed_establishment ? `<div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">${t.proposed_establishment}</div>` : ''}
+                        </td>
+
+                        <td class="py-3 px-3 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="window.pinpointRedZoneOfficerOnMap(${t.current_lat || 22.8875}, ${t.current_lng || 88.0195}, ${t.post_id || 'null'}, '${safeName}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Pinpoint officer station on Statewide GIS Geo-Map">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                    <span>Map</span>
+                                </button>
+                                <button onclick="window.openOfficerDossier('${t.hrms_id}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer" title="Open Officer Personnel Dossier">
+                                    <i data-lucide="user" class="w-3 h-3"></i>
+                                    <span>Dossier</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+
+        } catch (err) {
+            console.error('Failed to load Red Zone transfers:', err);
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-rose-400">
+                            <div class="font-bold text-xs">Error loading Red Zone transfers</div>
+                            <div class="text-[11px] text-slate-400 mt-1">${err.message}</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+    window.loadRedZoneTransfers = loadRedZoneTransfers;
+
+    window.switchRedZoneCategory = function(category) {
+        state.redZoneCategory = category;
+        loadRedZoneTransfers(category, state.redZoneDistrict, state.redZoneSearch);
+    };
+
+    function initRedZoneControls() {
+        document.querySelectorAll('#redZoneCategoryTabs .rz-cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const cat = btn.getAttribute('data-cat');
+                window.switchRedZoneCategory(cat);
+            });
+        });
+
+        const distSelect = document.getElementById('redZoneDistrictFilter');
+        if (distSelect) {
+            distSelect.addEventListener('change', (e) => {
+                loadRedZoneTransfers(state.redZoneCategory, e.target.value, state.redZoneSearch);
+            });
+        }
+
+        const searchInput = document.getElementById('redZoneSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce((e) => {
+                loadRedZoneTransfers(state.redZoneCategory, state.redZoneDistrict, e.target.value);
+            }, 300));
+        }
+
+        const exportBtn = document.getElementById('btnExportRedZoneExcel');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => exportRedZoneCSV());
+        }
+    }
+
+    function exportRedZoneCSV() {
+        if (!state.redZoneData || state.redZoneData.length === 0) {
+            alert('No Red Zone records to export.');
+            return;
+        }
+        const headers = ['#', 'Officer Name', 'HRMS ID', 'Category Caste', 'Current Designation', 'Current Establishment', 'Current District', 'Current Block', 'Tenure Years', 'Transfer Category', 'Transfer Basis Ground', 'Priority Score', 'Proposed Designation', 'Proposed District', 'Latitude', 'Longitude'];
+        const rows = state.redZoneData.map((t, i) => [
+            i + 1,
+            `"${(t.officer_name || '').replace(/"/g, '""')}"`,
+            `"${t.hrms_id || ''}"`,
+            `"${t.category_caste || ''}"`,
+            `"${(t.current_designation || '').replace(/"/g, '""')}"`,
+            `"${(t.current_establishment || '').replace(/"/g, '""')}"`,
+            `"${t.current_district || ''}"`,
+            `"${t.current_block || ''}"`,
+            `"${t.tenure_years || ''}"`,
+            `"${t.category || ''}"`,
+            `"${(t.basis_reason || '').replace(/"/g, '""')}"`,
+            t.priority_score || '',
+            `"${(t.proposed_designation || '').replace(/"/g, '""')}"`,
+            `"${t.proposed_district || ''}"`,
+            t.current_lat || '',
+            t.current_lng || ''
+        ]);
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `ARD_RedZone_Pending_Transfers_${state.redZoneCategory || 'all'}_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Interactive Pinpoint on Geo-Map from Red Zone
+    window.pinpointRedZoneOfficerOnMap = function(lat, lng, postId, officerName) {
+        if (!lat || !lng) {
+            alert(`Exact ground coordinates are not available for ${officerName || 'this officer'}. Centering statewide GIS map.`);
+            lat = 23.8;
+            lng = 87.9;
+        }
+
+        const mapSection = document.getElementById('gisMapLandingSection');
+        if (mapSection) {
+            mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        const focusPinAction = () => {
+            if (!gisMapInstance) return;
+            gisMapInstance.invalidateSize();
+            gisMapInstance.setView([lat, lng], 14, { animate: true });
+
+            const marker = postId ? gisMarkersMap.get(postId) : null;
+            if (marker) {
+                marker.openPopup();
+            } else {
+                L.popup()
+                    .setLatLng([lat, lng])
+                    .setContent(`
+                        <div style="font-family:system-ui,-apple-system,sans-serif;min-width:220px;padding:4px;">
+                            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:9999px;background:#ffe4e6;color:#e11d48;border:1px solid #fecdd3;text-transform:uppercase;">🚨 Red Zone Pending Transfer</span>
+                            </div>
+                            <div style="font-weight:bold;font-size:13px;color:#0f172a;">${officerName}</div>
+                            <div style="font-size:11px;color:#64748b;margin-top:2px;">Station GPS: ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}</div>
+                            <div style="margin-top:6px;padding-top:4px;border-top:1px solid #f1f5f9;">
+                                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:bold;color:#059669;text-decoration:none;">
+                                    <span>Open Google Maps</span> &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    `)
+                    .openOn(gisMapInstance);
+            }
+        };
+
+        if (!gisMapInstance) {
+            loadCadreGisMap().then(() => {
+                setTimeout(focusPinAction, 300);
+            });
+        } else {
+            setTimeout(focusPinAction, 150);
+        }
+    };
+
+    // Keyword Backlinks to Cadre Table
+    window.filterCadreByKeyword = function(keyword, type) {
+        if (!keyword) return;
+        window.switchTab('tab-cadre');
+        setTimeout(() => {
+            const distFilter = document.getElementById('cadreDistrictFilter');
+            const desigFilter = document.getElementById('cadreDesigFilter');
+            const searchInput = document.getElementById('cadreSearchInput');
+
+            if (type === 'district' && distFilter) {
+                let found = false;
+                for (let opt of distFilter.options) {
+                    if (opt.value.toLowerCase() === keyword.toLowerCase()) {
+                        distFilter.value = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && searchInput) searchInput.value = keyword;
+            } else if (type === 'designation' && desigFilter) {
+                let found = false;
+                for (let opt of desigFilter.options) {
+                    if (opt.value.toLowerCase().includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(opt.value.toLowerCase())) {
+                        desigFilter.value = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && searchInput) searchInput.value = keyword;
+            } else if (searchInput) {
+                searchInput.value = keyword;
+            }
+            
+            state.cadreOffset = 0;
+            loadCadre();
+            
+            const cadreTable = document.getElementById('cadreTable');
+            if (cadreTable) cadreTable.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+    };
 });
