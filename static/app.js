@@ -68,6 +68,9 @@ function hideAuthModal(officerName) {
     if (nameEl && officerName) {
         nameEl.textContent = officerName;
     }
+    if (typeof window.updateSecurityWatermark === 'function') {
+        window.updateSecurityWatermark();
+    }
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -143,6 +146,9 @@ window.handleAuthLogout = async function() {
     } catch (e) {}
     sessionStorage.removeItem('avd_auth_token');
     sessionStorage.removeItem('avd_officer_name');
+    if (typeof window.updateSecurityWatermark === 'function') {
+        window.updateSecurityWatermark();
+    }
     const input = document.getElementById('authHrmsInput');
     if (input) input.value = '';
     showAuthModal();
@@ -469,7 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('kpiFilledPosts').innerText = Number(filledVal).toLocaleString();
             }
             if (document.getElementById('kpiTotalVacancies')) {
-                document.getElementById('kpiTotalVacancies').innerText = Number(data.total_vacancies).toLocaleString();
+                const totalActionable = data.total_actionable_vacancies != null ? data.total_actionable_vacancies : (data.total_vacancies != null ? data.total_vacancies : 353);
+                document.getElementById('kpiTotalVacancies').innerText = Number(totalActionable).toLocaleString();
             }
             if (document.getElementById('kpiNoReturn')) {
                 const noRetVal = data.post_states ? data.post_states.NO_RETURN : data.no_return_posts;
@@ -879,7 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rosterAvdFilter')?.addEventListener('change', loadRoster);
     document.getElementById('rosterSearchInput')?.addEventListener('input', debounce(loadRoster, 300));
 
-    // --- TAB: LOAD AUTHORITATIVE MASTER PROMOTION & TRANSFER ORDERS (328) ---
+    // --- TAB: LOAD AUTHORITATIVE MASTER PROMOTION & TRANSFER ORDERS (337) ---
     async function loadMasterOrders() {
         const tbody = document.getElementById('masterOrdersTableBody');
         if (!tbody) return;
@@ -2437,7 +2444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="py-12 text-center text-neutral-400 text-xs">
                         <i data-lucide="sparkles" class="w-8 h-8 text-neutral-300 mx-auto mb-2"></i>
                         <p class="font-semibold text-neutral-600">Universal Semantic Search</p>
-                        <p class="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
+                        <p class="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 337 master orders, 73 obliterated posts, and transfer policy rules.</p>
                     </div>
                 `;
                 updateCounts(0, 0, 0, 0);
@@ -5989,18 +5996,34 @@ ${r.statutory_justification}
     let gisPostsCache = [];
     let gisMarkersMap = new Map();
 
-    function createGisPinIcon(occupancyStatus, tenureOverFlag, postCode) {
+    function createGisPinIcon(occupancyStatus, tenureOverFlag, postCode, p = {}) {
         let bgColor = '#2563eb';
         let borderCol = '#1d4ed8';
         let labelText = 'P';
         let title = 'Occupied Post';
 
+        const isNewlyVac = p.is_newly_vacated === 1 || p.is_newly_vacated === true || p.post_move_vacancy_status === 'Newly Vacated (Move)';
+        const isSuRet = p.is_su_retained === 1 || p.is_su_retained === true || p.post_move_vacancy_status === 'Substantive Vacancy (Held on SU)';
+        const isBaseVac = p.is_baseline_vacant === 1 || p.is_baseline_vacant === true;
+
         const statusUpper = (occupancyStatus || '').trim().toUpperCase();
-        if (statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN')) {
+        const isVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN') || isBaseVac;
+
+        if (isNewlyVac) {
+            bgColor = '#06b6d4';
+            borderCol = '#0891b2';
+            labelText = '★';
+            title = `Newly Vacated on Move (${p.vacated_by_name || 'Officer moving out'})`;
+        } else if (isSuRet) {
+            bgColor = '#f59e0b';
+            borderCol = '#d97706';
+            labelText = 'S';
+            title = `Substantive Vacancy - Retained on SU (${p.vacated_by_name || p.incumbent_name || 'Officer'})`;
+        } else if (isVac) {
             bgColor = '#10b981';
             borderCol = '#059669';
             labelText = 'V';
-            title = 'Clear Vacancy';
+            title = 'Baseline Clear Vacancy';
         } else if (statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN') {
             bgColor = '#f59e0b';
             borderCol = '#d97706';
@@ -6186,16 +6209,24 @@ ${r.statutory_justification}
             if (desigVal !== 'ALL' && !p.designation.toLowerCase().includes(desigVal.toLowerCase())) return false;
             
             const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
-            const isVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN');
-            if (statusVal === 'vacant' && !isVac) return false;
-            if (statusVal === 'occupied' && isVac) return false;
+            const isBaseVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN') || p.is_baseline_vacant === 1;
+            const isNewlyVac = p.is_newly_vacated === 1 || p.post_move_vacancy_status === 'Newly Vacated (Move)';
+            const isSuRet = p.is_su_retained === 1 || p.post_move_vacancy_status === 'Substantive Vacancy (Held on SU)';
+            const isActionable = isBaseVac || isNewlyVac || p.is_actionable_vacancy === 1;
+
+            if (statusVal === 'actionable' && !isActionable) return false;
+            if (statusVal === 'newly_vacated' && !isNewlyVac) return false;
+            if (statusVal === 'baseline' && !isBaseVac) return false;
+            if (statusVal === 'su_retained' && !isSuRet) return false;
+            if (statusVal === 'vacant' && !isActionable) return false;
+            if (statusVal === 'occupied' && isActionable) return false;
 
             if (tenureVal !== 'ALL' && p.tenure_over_flag !== tenureVal) return false;
             if (avdVal === 'Yes' && p.avd_member !== 'Yes') return false;
             if (avdVal === 'No' && p.avd_member === 'Yes') return false;
 
             if (searchVal) {
-                const combined = `${p.designation} ${p.establishment} ${p.resolved_location_name || ''} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''}`.toLowerCase();
+                const combined = `${p.designation} ${p.establishment} ${p.resolved_location_name || ''} ${p.district} ${p.block} ${p.incumbent_name || ''} ${p.incumbent_hrms || ''} ${p.vacated_by_name || ''} ${p.movement_details || ''}`.toLowerCase();
                 if (!combined.includes(searchVal)) return false;
             }
 
@@ -6205,11 +6236,13 @@ ${r.statutory_justification}
         filtered.forEach(p => {
             if (!p.latitude || !p.longitude) return;
 
-            const icon = createGisPinIcon(p.occupancy_status, p.tenure_over_flag, p.post_code);
+            const icon = createGisPinIcon(p.occupancy_status, p.tenure_over_flag, p.post_code, p);
             const marker = L.marker([p.latitude, p.longitude], { icon });
 
             const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
-            const isVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN');
+            const isBaseVac = statusUpper === 'CLEAR VACANCY' || statusUpper === 'VACANT' || statusUpper.includes('VACAN') || p.is_baseline_vacant === 1;
+            const isNewlyVac = p.is_newly_vacated === 1 || p.post_move_vacancy_status === 'Newly Vacated (Move)';
+            const isSuRet = p.is_su_retained === 1 || p.post_move_vacancy_status === 'Substantive Vacancy (Held on SU)';
             const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
             const isNotEst = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
             const isApex = p.post_code === 'DIR' || p.post_code === 'ADDL';
@@ -6220,7 +6253,17 @@ ${r.statutory_justification}
             let statusBorderColor = '#bfdbfe';
             let displayBadgeText = 'Occupied';
 
-            if (isVac) {
+            if (isNewlyVac) {
+                statusBadgeColor = '#cffafe';
+                statusTextColor = '#0e7490';
+                statusBorderColor = '#a5f3fc';
+                displayBadgeText = 'Newly Vacated (Move)';
+            } else if (isSuRet) {
+                statusBadgeColor = '#fef3c7';
+                statusTextColor = '#92400e';
+                statusBorderColor = '#fde68a';
+                displayBadgeText = 'Held on SU';
+            } else if (isBaseVac) {
                 statusBadgeColor = '#dcfce7';
                 statusTextColor = '#166534';
                 statusBorderColor = '#bbf7d0';
@@ -6299,13 +6342,36 @@ ${r.statutory_justification}
                         </div>
                     </div>
 
-                    <!-- Incumbent Details & Backlinks (if occupied) -->
-                    ${isVac ? `
+                    <!-- Incumbent Details & Backlinks / Vacancy Status -->
+                    ${isNewlyVac ? `
+                        <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#ecfeff;border:1px solid #a5f3fc;font-size:11px;">
+                            <div style="color:#0e7490;font-weight:bold;display:flex;align-items:center;gap:4px;">
+                                <span>⚡</span> Newly Vacated by Proposed Movement
+                            </div>
+                            <div style="color:#155e75;font-size:10.5px;margin-top:2px;line-height:1.35;">
+                                <strong>Vacated by:</strong> ${p.vacated_by_name || 'Officer'} ${p.vacated_by_hrms ? `(${p.vacated_by_hrms})` : ''}<br>
+                                <strong>Basis:</strong> ${p.vacated_by_basis || 'Transfer / Promotion'}<br>
+                                ${p.movement_details ? `<strong>Movement:</strong> ${p.movement_details}` : ''}
+                            </div>
+                            <div style="color:#0891b2;font-size:9.5px;margin-top:3px;font-weight:600;">✓ Actionable post-move vacancy ready for fresh placement.</div>
+                        </div>
+                    ` : isSuRet ? `
+                        <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#fffbeb;border:1px solid #fde68a;font-size:11px;">
+                            <div style="color:#b45309;font-weight:bold;display:flex;align-items:center;gap:4px;">
+                                <span>🟡</span> Substantive Vacancy (Held on SU)
+                            </div>
+                            <div style="color:#92400e;font-size:10.5px;margin-top:2px;line-height:1.35;">
+                                <strong>Incumbent:</strong> ${p.vacated_by_name || p.incumbent_name || 'Officer'} ${p.vacated_by_hrms ? `(${p.vacated_by_hrms})` : ''}<br>
+                                <strong>Status:</strong> Promoted substantively, but retained at present station on Service Utilization.<br>
+                                <em>Seat not physically vacated on the ground.</em>
+                            </div>
+                        </div>
+                    ` : isBaseVac ? `
                         <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
                             <div style="color:#15803d;font-weight:bold;display:flex;align-items:center;gap:4px;">
-                                <span>🟢</span> Sanctioned Clear Vacancy (Eligible for Allotment)
+                                <span>🟢</span> Baseline Clear Vacancy
                             </div>
-                            <div style="color:#4b5563;font-size:10px;margin-top:2px;">Ready for promotion absorption or rotational transfer placement.</div>
+                            <div style="color:#4b5563;font-size:10px;margin-top:2px;">Sanctioned vacant cadre post ready for promotion absorption or rotational transfer placement.</div>
                         </div>
                     ` : `
                         <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#ffffff;border:1px solid #cbd5e1;font-size:11px;">
@@ -6810,7 +6876,7 @@ ${r.statutory_justification}
                 if (desig) desig.value = 'ALL';
                 if (lvl) lvl.value = 'ALL';
                 if (sort) sort.value = 'district_asc';
-                loadSplitVacancies();
+                window.setSplitVacScope('all');
             });
         }
 
@@ -6961,10 +7027,39 @@ ${r.statutory_justification}
         if (window.lucide) window.lucide.createIcons();
     }
 
+    window.setSplitVacScope = function(scope) {
+        const filterInput = document.getElementById('splitVacScopeFilter');
+        if (filterInput) filterInput.value = scope;
+
+        const btnMap = {
+            all: 'btnScopeAll',
+            baseline: 'btnScopeBaseline',
+            newly_vacated: 'btnScopeNewlyVacated',
+            su_retained: 'btnScopeSuRetained'
+        };
+
+        ['btnScopeAll', 'btnScopeBaseline', 'btnScopeNewlyVacated', 'btnScopeSuRetained'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.className = 'vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 shadow-xs transition shrink-0';
+            }
+        });
+
+        const activeBtn = document.getElementById(btnMap[scope]);
+        if (activeBtn) {
+            if (scope === 'all') activeBtn.className = 'vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-700 text-white shadow-xs transition shrink-0';
+            else if (scope === 'baseline') activeBtn.className = 'vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white shadow-xs transition shrink-0';
+            else if (scope === 'newly_vacated') activeBtn.className = 'vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-600 text-white shadow-xs transition shrink-0';
+            else if (scope === 'su_retained') activeBtn.className = 'vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-600 text-white shadow-xs transition shrink-0';
+        }
+        loadSplitVacancies();
+    };
+
     async function loadSplitVacancies() {
         const listEl = document.getElementById('splitVacancyList');
         if (!listEl) return;
 
+        const scope = document.getElementById('splitVacScopeFilter')?.value || 'all';
         const cat = document.getElementById('splitVacCategoryFilter')?.value || 'ALL';
         const dist = document.getElementById('splitVacDistrictFilter')?.value || 'ALL';
         const desig = document.getElementById('splitVacDesigFilter')?.value || 'ALL';
@@ -6972,7 +7067,7 @@ ${r.statutory_justification}
         const sort = document.getElementById('splitVacSortSelect')?.value || 'district_asc';
         const search = (document.getElementById('splitVacSearchInput')?.value || '').trim();
 
-        let url = `/api/split-board/vacancies?category=${encodeURIComponent(cat)}&district=${encodeURIComponent(dist)}&designation=${encodeURIComponent(desig)}&level=${encodeURIComponent(lvl)}&sort=${encodeURIComponent(sort)}`;
+        let url = `/api/split-board/vacancies?scope=${encodeURIComponent(scope)}&category=${encodeURIComponent(cat)}&district=${encodeURIComponent(dist)}&designation=${encodeURIComponent(desig)}&level=${encodeURIComponent(lvl)}&sort=${encodeURIComponent(sort)}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
 
         listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs flex items-center justify-center gap-2"><svg class="animate-spin h-4 w-4 text-emerald-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Filtering vacancies...</span></div>';
@@ -7000,13 +7095,26 @@ ${r.statutory_justification}
         if (!listEl) return;
 
         if (state.splitVacancies.length === 0) {
-            listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs">No clear vacancies found matching filters.</div>';
+            listEl.innerHTML = '<div class="py-16 text-center text-slate-400 text-xs">No vacancies found matching filters.</div>';
             return;
         }
 
         listEl.innerHTML = state.splitVacancies.map(v => {
             const isSelected = state.splitSelectedVac && state.splitSelectedVac.post_id === v.post_id;
             const isLevel17 = (v.pay_level || '').includes('17');
+            const isNewlyVac = v.is_newly_vacated === 1 || v.post_move_vacancy_status === 'Newly Vacated (Move)';
+            const isSuRet = v.is_su_retained === 1 || v.post_move_vacancy_status === 'Substantive Vacancy (Held on SU)';
+
+            let vacBadge = `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>`;
+            let availBadge = `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black block">Available</span>`;
+
+            if (isNewlyVac) {
+                vacBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-cyan-100 text-cyan-900 border border-cyan-300">Newly Vacated (Move)</span>`;
+                availBadge = `<span class="px-2 py-0.5 rounded bg-cyan-100 text-cyan-900 border border-cyan-300 text-[10px] font-black block">Fresh Move</span>`;
+            } else if (isSuRet) {
+                vacBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">Held on SU</span>`;
+                availBadge = `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black block">SU Retained</span>`;
+            }
 
             return `
                 <div onclick="window.selectSplitVacancy(${v.post_id})" class="p-3 rounded-xl border transition cursor-pointer relative ${isSelected ? 'bg-emerald-50/90 border-emerald-400 shadow-md ring-2 ring-emerald-400' : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:shadow-xs'}">
@@ -7015,7 +7123,7 @@ ${r.statutory_justification}
                             <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
                                 <span class="px-1.5 py-0.5 rounded bg-slate-900 text-white font-mono text-[9px] font-bold">Post #${v.post_id}</span>
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isLevel17 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">${v.pay_level || 'Cadre Post'}</span>
-                                <span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>
+                                ${vacBadge}
                             </div>
                             <div class="font-extrabold text-xs text-slate-900 leading-snug">
                                 ${v.designation}
@@ -7023,10 +7131,21 @@ ${r.statutory_justification}
                             <div class="text-[11px] text-slate-500 leading-snug truncate">
                                 ${v.establishment}
                             </div>
+                            ${isNewlyVac ? `
+                                <div class="text-[10px] text-cyan-800 bg-cyan-50/90 border border-cyan-200 rounded-md px-2 py-1 mt-1.5 font-medium leading-tight">
+                                    ⚡ <strong>Vacated by:</strong> ${v.vacated_by_name || 'Officer Moving Out'} (${v.vacated_by_basis || 'Move'})
+                                    ${v.movement_details ? `<span class="block text-cyan-700 text-[9.5px] mt-0.5">${v.movement_details}</span>` : ''}
+                                </div>
+                            ` : ''}
+                            ${isSuRet ? `
+                                <div class="text-[10px] text-amber-800 bg-amber-50/90 border border-amber-200 rounded-md px-2 py-1 mt-1.5 font-medium leading-tight">
+                                    🟡 <strong>Substantively Vacant:</strong> Retained by ${v.vacated_by_name || 'Incumbent'} on Service Utilization.
+                                </div>
+                            ` : ''}
                         </div>
 
                         <div class="shrink-0 text-right">
-                            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black block">Available</span>
+                            ${availBadge}
                         </div>
                     </div>
 

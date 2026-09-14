@@ -28,3 +28,5 @@ column_n_comments.json
 remarks_baseline.json
 Master_Decisions_Ledger.*
 ard_analytics.db
+ard_database.db
+04_LISTS_FROM_SOT/

@@ -3,9 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARD Promotion & Transfer — Review Board</title>
+<link rel="stylesheet" href="/static/security-shield.css?v=20260914_sec1">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1c1f24;--mut:#5b6472;--line:#dfe3e8;--acc:#1f4e78;--ok:#2e7d32;--warn:#b26a00;--bad:#b3261e;--chip:#eef2f7}
-*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,"Noto Sans Bengali","Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
+html{scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:border-box;-webkit-overflow-scrolling:touch;-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important}
+input,textarea,select{box-sizing:border-box;-webkit-touch-callout:default!important;-webkit-user-select:text!important;user-select:text!important}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Noto Sans Bengali","Segoe UI",sans-serif;color:var(--ink);background:var(--bg);-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important}
+@media print{html,body{background:#fff!important;color:#000!important;height:100vh!important;overflow:hidden!important;visibility:hidden!important}body>*:not(#ard-print-security-shield){display:none!important}}
 header{position:sticky;top:0;z-index:20;background:var(--acc);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 header h1{font-size:17px;margin:0 12px 0 0}header .tabs button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:18px;padding:5px 12px;margin-right:4px;cursor:pointer}
 header .tabs button.on{background:#fff;color:var(--acc);font-weight:600}
@@ -48,8 +53,8 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
  <div id="rows"></div>
 </section>
 <section id="t-vac" hidden>
- <div class="card small">Order 1809-এর ১,৭৯৪ পদ + রিটার্নে আসা বাড়তি পদ। অবস্থা: VACANT = জেলা খালি বলেছে · NO_RETURN_RECEIVED = জেলা কিছু জানায়নি (খালি ধরা যাবে না) · FILLED_ON_SU = কাগজে ভরা, লোক অন্যত্র · "প্রমোশনে খালি হবে" = হোল্ডার DD-রোস্টারে।</div>
- <div class="bar"><select id="vd"><option value="">সব জেলা</option></select><select id="vp"><option value="">সব পদ</option></select><select id="vs"><option value="">সব অবস্থা</option><option>VACANT</option><option>NO_RETURN_RECEIVED</option><option>FILLED_ON_SU</option><option>FILLED</option><option>NOT_ESTABLISHED</option><option value="promo">প্রমোশনে খালি হবে</option><option value="ret">২ বছরে অবসরে খালি হবে</option><option value="oblit">মুছে যাওয়া পদ (obliterated)</option></select><input id="vq" placeholder="ব্লক / প্রতিষ্ঠান খুঁজুন" style="flex:1;min-width:160px"><span class="small muted" id="vcnt" style="align-self:center"></span></div>
+ <div class="card small">Order 1809-এর ১,৭৯৪ পদ + রিটার্নে আসা বাড়তি পদ। অবস্থা: VACANT = জেলা খালি বলেছে · NO_RETURN_RECEIVED = জেলা কিছু জানায়নি (খালি ধরা যাবে না) · FILLED_ON_SU = কাগজে ভরা, লোক অন্যত্র · FILLED_PER_HRMS = জেলা return দেয়নি, কিন্তু HRMS-এ (08.09.2026) এই পদবি/অফিসে লোক আছেন · "প্রমোশনে খালি হবে" = হোল্ডার DD-রোস্টারে।</div>
+ <div class="bar"><select id="vd"><option value="">সব জেলা</option></select><select id="vp"><option value="">সব পদ</option></select><select id="vs"><option value="">সব অবস্থা</option><option>VACANT</option><option>NO_RETURN_RECEIVED</option><option>FILLED_ON_SU</option><option>FILLED_PER_HRMS</option><option>FILLED</option><option>NOT_ESTABLISHED</option><option value="promo">প্রমোশনে খালি হবে</option><option value="ret">২ বছরে অবসরে খালি হবে</option><option value="oblit">মুছে যাওয়া পদ (obliterated)</option></select><input id="vq" placeholder="ব্লক / প্রতিষ্ঠান খুঁজুন" style="flex:1;min-width:160px"><span class="small muted" id="vcnt" style="align-self:center"></span></div>
  <div class="card" style="overflow:auto"><table id="vt"><thead><tr><th>POST_ID</th><th>জেলা</th><th>ব্লক/এলাকা</th><th>প্রতিষ্ঠান (1809)</th><th>পদ (1809)</th><th>অবস্থা</th><th>হোল্ডার</th><th>অবসর</th><th>প্রমোশনে খালি?</th><th>মুছে যাওয়া?</th></tr></thead><tbody></tbody></table></div>
 </section>
 <section id="t-dd" hidden><div class="card"><h3 style="margin-top:0">DD লাইন: কাগজে কতজন / Order 1809-এ কটা লাইন</h3><table id="ddt"><thead><tr><th>জেলা</th><th>কাগজে DD</th><th>লাইন</th><th>খালি</th></tr></thead><tbody></tbody></table><p class="small muted">কলকাতার ২টি লাইন ভিজিল্যান্স সাপেক্ষে আটকে। নদীয়ার খালি লাইন = হরিণঘাটা ফার্ম / SLF কল্যাণী।</p></div></section>
@@ -89,8 +94,9 @@ function pingTelemetry(action="pageview"){
 pingTelemetry("pageview");
 setInterval(()=>pingTelemetry("heartbeat"), 40000);
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-async function login(){const v=document.getElementById("pw").value.trim();const h=await sha(v);if(h===HASH||h===ALT_HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");boot()}else document.getElementById("pwerr").style.display="block"}
+async function login(){const v=document.getElementById("pw").value.trim();const h=await sha(v);if(h===HASH||h===ALT_HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");if(window.updateSecurityWatermark)window.updateSecurityWatermark();boot()}else document.getElementById("pwerr").style.display="block"}
 document.getElementById("pw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+document.getElementById("who")?.addEventListener("input",()=>{if(window.updateSecurityWatermark)window.updateSecurityWatermark()});
 try{if(sessionStorage.getItem("ard_ok")==="1"){document.getElementById("gate").style.display="none";boot()}}catch(e){}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function save(){try{localStorage.setItem("ard_answers",JSON.stringify(ANS))}catch(e){}}
@@ -162,4 +168,5 @@ function shareWA(){window.open("https://wa.me/?text="+encodeURIComponent(ansText
 async function copyAns(){try{await navigator.clipboard.writeText(ansText());alert("কপি হয়েছে")}catch(e){alert("কপি করা গেল না — টেক্সট সিলেক্ট করে কপি করুন")}}
 function dlAns(){const b=new Blob([ansText()],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="ARD_review_answers.txt";a.click()}
 </script>
+<script src="/static/security-shield.js?v=20260914_sec1"></script>
 </body></html>

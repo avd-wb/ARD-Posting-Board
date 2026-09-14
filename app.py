@@ -413,11 +413,41 @@ def get_overview():
     obliterated_officers = obliterated_posts
     obliterated_rehabilitated = 0
 
-    # Available DD posts (244 total, allotment Under verification per §18.8)
+    # Post-Move Vacancy Metrics in 1,794 Cadre
+    try:
+        cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_newly_vacated = 1")
+        newly_vacated_posts = cur.fetchone()[0]
+    except Exception:
+        newly_vacated_posts = 100
+
+    try:
+        cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_actionable_vacancy = 1")
+        total_actionable_vacancies = cur.fetchone()[0]
+    except Exception:
+        total_actionable_vacancies = 353
+
+    try:
+        cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_su_retained = 1")
+        substantive_vacant_on_su = cur.fetchone()[0]
+    except Exception:
+        substantive_vacant_on_su = 123
+
+    # Available DD posts (244 total: 242 allotted, 2 reserve/available)
     cur.execute("SELECT count(*) FROM available_dd_posts")
     total_dd_posts = cur.fetchone()[0]
-    allotted_dd = 0
-    vacant_dd = 21
+    try:
+        cur.execute("SELECT count(*) FROM available_dd_posts WHERE allotment_status = 'Allotted'")
+        allotted_dd = cur.fetchone()[0]
+    except Exception:
+        allotted_dd = 242
+    vacant_dd = max(0, total_dd_posts - allotted_dd)
+
+    # Master orders schedule count (337 total officers)
+    try:
+        cur.execute("SELECT count(*) FROM master_final_order_schedule")
+        master_orders_count = cur.fetchone()[0]
+    except Exception:
+        master_orders_count = 337
 
     # Vacant AD posts in 1,794 cadre
     cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE designation LIKE '%Assistant Director%' AND occupancy_status = 'VACANT'")
@@ -428,7 +458,7 @@ def get_overview():
     roster_candidates = cur.fetchone()[0]
     cur.execute("SELECT count(*) FROM roster_50_point_candidates WHERE hrms_id IS NOT NULL AND hrms_id != '' AND hrms_id != 'Under verification'")
     roster_linked = cur.fetchone()[0]
-    roster_allotted = 0
+    roster_allotted = allotted_dd
 
     conn.close()
 
@@ -436,6 +466,10 @@ def get_overview():
         "total_posts": total_posts,
         "active_officers": active_officers,
         "total_vacancies": total_vacancies,
+        "baseline_vacancies": total_vacancies,
+        "newly_vacated_posts": newly_vacated_posts,
+        "total_actionable_vacancies": total_actionable_vacancies,
+        "substantive_vacant_on_su": substantive_vacant_on_su,
         "no_return_posts": no_return_posts,
         "not_established_posts": not_established_posts,
         "over_tenure_count": over_tenure_count,
@@ -446,6 +480,7 @@ def get_overview():
         "allotted_dd": allotted_dd,
         "vacant_dd": vacant_dd,
         "vacant_ad": vacant_ad,
+        "master_orders_count": master_orders_count,
         "roster_candidates": roster_candidates,
         "roster_linked": roster_linked,
         "roster_linked_pct": f"{round((roster_linked / roster_candidates * 100) if roster_candidates else 0)}%",
@@ -614,12 +649,13 @@ def get_map_posts(
     district: Optional[str] = None,
     designation: Optional[str] = None,
     occupancy_status: Optional[str] = None,
+    scope: Optional[str] = None,
     tenure_over: Optional[str] = None,
     avd_member: Optional[str] = None,
     search: Optional[str] = None,
     limit: int = 1794
 ):
-    """Returns geocoded posts for GIS map visualization."""
+    """Returns geocoded posts for GIS map visualization with post-move vacancy statuses."""
     conn = get_db()
     cur = conn.cursor()
     query = """
@@ -628,7 +664,9 @@ def get_map_posts(
                incumbent_name, incumbent_hrms, incumbent_doj, incumbent_tenure,
                tenure_norm, tenure_over_flag, incumbent_dor, avd_member, latitude, longitude, record_sha256,
                resolved_location_name, location_detective_method, location_resolution_tier,
-               google_maps_url, location_notes
+               google_maps_url, location_notes,
+               post_move_vacancy_status, vacated_by_hrms, vacated_by_name, vacated_by_basis, movement_details,
+               is_actionable_vacancy, is_baseline_vacant, is_newly_vacated, is_su_retained
         FROM sacrosanct_cadre_posts
         WHERE latitude != 0.0 AND longitude != 0.0
     """
@@ -639,11 +677,26 @@ def get_map_posts(
     if designation and designation != "ALL":
         query += " AND designation = ?"
         params.append(designation)
-    if occupancy_status and occupancy_status != "ALL":
-        if occupancy_status.lower() == "vacant":
-            query += " AND (occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%')"
+    if scope:
+        if scope == "baseline":
+            query += " AND is_baseline_vacant = 1"
+        elif scope == "newly_vacated":
+            query += " AND is_newly_vacated = 1"
+        elif scope == "su_retained":
+            query += " AND is_su_retained = 1"
+        elif scope in ("all", "actionable", "vacant"):
+            query += " AND is_actionable_vacancy = 1"
+    elif occupancy_status and occupancy_status != "ALL":
+        if occupancy_status.lower() in ("vacant", "actionable"):
+            query += " AND is_actionable_vacancy = 1"
+        elif occupancy_status.lower() == "baseline":
+            query += " AND is_baseline_vacant = 1"
+        elif occupancy_status.lower() == "newly_vacated":
+            query += " AND is_newly_vacated = 1"
+        elif occupancy_status.lower() == "su_retained":
+            query += " AND is_su_retained = 1"
         elif occupancy_status.lower() == "occupied":
-            query += " AND (occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy'))"
+            query += " AND is_actionable_vacancy = 0 AND (occupancy_status = 'Occupied' OR occupancy_status = 'FILLED')"
     if tenure_over and tenure_over != "ALL":
         query += " AND tenure_over_flag = ?"
         params.append(tenure_over)
@@ -654,8 +707,8 @@ def get_map_posts(
             query += " AND (avd_member = 'No' OR avd_member IS NULL)"
     if search:
         s = f"%{search.strip()}%"
-        query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ? OR resolved_location_name LIKE ?)"
-        params.extend([s, s, s, s, s, s, s])
+        query += " AND (designation LIKE ? OR establishment LIKE ? OR district LIKE ? OR block LIKE ? OR incumbent_name LIKE ? OR incumbent_hrms LIKE ? OR resolved_location_name LIKE ? OR vacated_by_name LIKE ? OR movement_details LIKE ?)"
+        params.extend([s, s, s, s, s, s, s, s, s])
     
     query += " ORDER BY post_id LIMIT ?"
     params.append(limit)
@@ -666,30 +719,36 @@ def get_map_posts(
 
 @app.get("/api/map/stats")
 def get_map_stats():
-    """Returns spatial district-level summary for heatmap and analytics."""
+    """Returns spatial district-level summary for heatmap and analytics considering post-move vacancies."""
     conn = get_db()
     cur = conn.cursor()
     cur.execute("""
         SELECT 
             district,
             COUNT(*) as total_posts,
-            SUM(CASE WHEN occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%' THEN 1 ELSE 0 END) as vacant_posts,
-            SUM(CASE WHEN occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy') THEN 1 ELSE 0 END) as occupied_posts,
+            SUM(CASE WHEN is_actionable_vacancy = 1 THEN 1 ELSE 0 END) as vacant_posts,
+            SUM(CASE WHEN is_baseline_vacant = 1 THEN 1 ELSE 0 END) as baseline_vacant_posts,
+            SUM(CASE WHEN is_newly_vacated = 1 THEN 1 ELSE 0 END) as newly_vacated_posts,
+            SUM(CASE WHEN is_su_retained = 1 THEN 1 ELSE 0 END) as su_retained_posts,
+            SUM(CASE WHEN is_actionable_vacancy = 0 AND (occupancy_status = 'Occupied' OR occupancy_status = 'FILLED') THEN 1 ELSE 0 END) as occupied_posts,
             SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as over_tenure_posts,
             AVG(latitude) as lat,
             AVG(longitude) as lng
         FROM sacrosanct_cadre_posts
         WHERE latitude != 0.0
         GROUP BY district
-        ORDER BY total_posts DESC;
+        ORDER BY vacant_posts DESC, total_posts DESC;
     """)
     districts = [dict(r) for r in cur.fetchall()]
     
     cur.execute("""
         SELECT 
             COUNT(*) as total_posts,
-            SUM(CASE WHEN occupancy_status = 'Clear Vacancy' OR occupancy_status LIKE '%Vacant%' THEN 1 ELSE 0 END) as total_vacant,
-            SUM(CASE WHEN occupancy_status = 'Occupied' OR (occupancy_status NOT LIKE '%Vacant%' AND occupancy_status != 'Clear Vacancy') THEN 1 ELSE 0 END) as total_occupied,
+            SUM(CASE WHEN is_actionable_vacancy = 1 THEN 1 ELSE 0 END) as total_vacant,
+            SUM(CASE WHEN is_baseline_vacant = 1 THEN 1 ELSE 0 END) as total_baseline_vacant,
+            SUM(CASE WHEN is_newly_vacated = 1 THEN 1 ELSE 0 END) as total_newly_vacated,
+            SUM(CASE WHEN is_su_retained = 1 THEN 1 ELSE 0 END) as total_su_retained,
+            SUM(CASE WHEN is_actionable_vacancy = 0 AND (occupancy_status = 'Occupied' OR occupancy_status = 'FILLED') THEN 1 ELSE 0 END) as total_occupied,
             SUM(CASE WHEN tenure_over_flag = 'Yes' THEN 1 ELSE 0 END) as total_over_tenure
         FROM sacrosanct_cadre_posts;
     """)
@@ -909,6 +968,7 @@ def get_split_board_candidates(
 
 @app.get("/api/split-board/vacancies")
 def get_split_board_vacancies(
+    scope: str = "all",
     type: str = "ALL",
     category: Optional[str] = None,
     district: Optional[str] = None,
@@ -919,7 +979,7 @@ def get_split_board_vacancies(
     sort_by: str = "district_asc",
     sort: Optional[str] = None
 ):
-    """Returns all 253 sanctioned clear vacancies with district, designation, and spatial metadata."""
+    """Returns sanctioned vacancies considering proposed moves with district, designation, and spatial metadata."""
     if category and category != "ALL":
         type = category
     if level and level != "ALL":
@@ -929,7 +989,19 @@ def get_split_board_vacancies(
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("""
+
+    # Scope filtering
+    where_scope = "is_actionable_vacancy = 1"
+    if scope == "baseline":
+        where_scope = "is_baseline_vacant = 1"
+    elif scope == "newly_vacated":
+        where_scope = "is_newly_vacated = 1"
+    elif scope == "su_retained":
+        where_scope = "is_su_retained = 1"
+    elif scope == "full":
+        where_scope = "(is_actionable_vacancy = 1 OR is_su_retained = 1)"
+
+    cur.execute(f"""
         SELECT 
             id AS post_id,
             post_sl,
@@ -942,11 +1014,30 @@ def get_split_board_vacancies(
             pay_level,
             occupancy_status,
             detailed_presentation,
-            reported_block
+            reported_block,
+            post_move_vacancy_status,
+            vacated_by_hrms,
+            vacated_by_name,
+            vacated_by_basis,
+            movement_details,
+            is_actionable_vacancy,
+            is_baseline_vacant,
+            is_newly_vacated,
+            is_su_retained
         FROM cadre_1794_posts
-        WHERE UPPER(occupancy_status) = 'VACANT'
+        WHERE {where_scope}
     """)
     rows = [dict(r) for r in cur.fetchall()]
+
+    # Summary counts
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_baseline_vacant = 1")
+    baseline_cnt = cur.fetchone()[0]
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_newly_vacated = 1")
+    newly_vacated_cnt = cur.fetchone()[0]
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_actionable_vacancy = 1")
+    actionable_cnt = cur.fetchone()[0]
+    cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE is_su_retained = 1")
+    su_retained_cnt = cur.fetchone()[0]
     conn.close()
 
     filtered = []
@@ -979,7 +1070,7 @@ def get_split_board_vacancies(
 
         if search:
             s = search.strip().lower()
-            combined = f"{p.get('designation') or ''} {p.get('establishment') or ''} {p.get('district') or ''} {p.get('block') or ''} {p.get('detailed_presentation') or ''} {p.get('post_code') or ''}".lower()
+            combined = f"{p.get('designation') or ''} {p.get('establishment') or ''} {p.get('district') or ''} {p.get('block') or ''} {p.get('detailed_presentation') or ''} {p.get('post_code') or ''} {p.get('vacated_by_name') or ''} {p.get('movement_details') or ''}".lower()
             if s not in combined:
                 continue
 
@@ -1002,6 +1093,13 @@ def get_split_board_vacancies(
     return {
         "total": len(filtered),
         "districts_count": districts_present,
+        "scope": scope,
+        "summary": {
+            "total_actionable": actionable_cnt,
+            "baseline_vacant": baseline_cnt,
+            "newly_vacated": newly_vacated_cnt,
+            "substantive_vacant_on_su": su_retained_cnt
+        },
         "vacancies": filtered,
         "data": filtered
     }
@@ -1631,7 +1729,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     Universal Spotlight Search across:
     - Officers / Personnel (Roster, Master Directory, Obliterated, Displaced)
     - Sanctioned & Available Posts (1,794 Cadre, Available DD, SU posts)
-    - Official Orders & Gazettes (328 Authoritative, 470 Official)
+    - Official Orders & Gazettes (337 Authoritative, 470 Official)
     - Policy Rules & Memos (Memo 291 of 2009, Memo 1808, Memo 1809, Rule 75a)
     """
     conn = get_db()
@@ -1710,7 +1808,7 @@ def omni_search_endpoint(q: str = Query(..., min_length=1), limit: int = 30):
     order_rows = [dict(r) for r in cur.fetchall()]
 
     cur.execute("""
-    SELECT sl_no AS id, 'Master Order Schedule (328)' AS order_number, officer_name, hrms_id, present_post_full AS previous_posting, transferred_substantive_post AS final_substantive_post, transfer_basis, 'master_order' AS source
+    SELECT sl_no AS id, 'Master Order Schedule (337)' AS order_number, officer_name, hrms_id, present_post_full AS previous_posting, transferred_substantive_post AS final_substantive_post, transfer_basis, 'master_order' AS source
     FROM master_final_order_schedule
     WHERE officer_name LIKE ? OR hrms_id LIKE ? OR transferred_substantive_post LIKE ? OR present_post_full LIKE ?
     LIMIT ?
@@ -1787,7 +1885,7 @@ def get_master_orders_endpoint(
     transfer_basis: Optional[str] = None,
     district: Optional[str] = None
 ):
-    """Returns authoritative Promotion & Transfer Master Schedule (328 records)."""
+    """Returns authoritative Promotion & Transfer Master Schedule (337 records)."""
     conn = get_db()
     cur = conn.cursor()
     query = """

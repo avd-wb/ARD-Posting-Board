@@ -13,6 +13,7 @@ Enforces:
 """
 
 import os
+import re
 import json
 import sqlite3
 import datetime
@@ -43,6 +44,72 @@ class PostingEngine:
         self.db_path = db_path
         workspace = os.path.dirname(self.db_path) or WORKSPACE_DIR
         self.logger = DecisionLogger(workspace)
+        self._ensure_schema()
+
+    def _ensure_schema(self):
+        """Self-heals and guarantees required columns and SU flags exist in cadre_1794_posts."""
+        try:
+            if not os.path.exists(self.db_path):
+                return
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='cadre_1794_posts'")
+            if not cur.fetchone():
+                conn.close()
+                return
+
+            cur.execute("PRAGMA table_info(cadre_1794_posts)")
+            existing_cols = set(r[1] for r in cur.fetchall())
+
+            needed = [
+                ("service_utilized_flag", "TEXT DEFAULT 'No'"),
+                ("is_substantive_blocked", "INTEGER DEFAULT 0"),
+                ("substantive_allotted_hrms", "TEXT DEFAULT NULL"),
+                ("substantive_allotted_name", "TEXT DEFAULT NULL"),
+                ("su_allotted_hrms", "TEXT DEFAULT NULL"),
+                ("su_allotted_name", "TEXT DEFAULT NULL"),
+                ("incumbent_dor", "TEXT DEFAULT NULL"),
+                ("incumbent_doj", "TEXT DEFAULT NULL"),
+                ("incumbent_tenure", "TEXT DEFAULT NULL"),
+                ("tenure_norm", "REAL DEFAULT 5.0"),
+            ]
+            added = False
+            for col_name, col_def in needed:
+                if col_name not in existing_cols:
+                    try:
+                        cur.execute(f"ALTER TABLE cadre_1794_posts ADD COLUMN {col_name} {col_def}")
+                        added = True
+                    except Exception:
+                        pass
+
+            # Ensure service_utilized_flag is properly populated if needed
+            cur.execute("SELECT count(*) FROM cadre_1794_posts WHERE service_utilized_flag = 'Service Utilized'")
+            su_count = cur.fetchone()[0]
+            if su_count == 0:
+                cur.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='master_source_of_truth'")
+                if cur.fetchone()[0]:
+                    cur.execute("""
+                    UPDATE cadre_1794_posts
+                    SET service_utilized_flag = 'Service Utilized'
+                    WHERE post_sl IN (
+                        SELECT id FROM master_source_of_truth WHERE service_utilization = 'Service Utilized'
+                    )
+                    """)
+                cur.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='T6_FILLED_ON_PAPER_SU'")
+                if cur.fetchone()[0]:
+                    cur.execute("""
+                    UPDATE cadre_1794_posts
+                    SET service_utilized_flag = 'Service Utilized'
+                    WHERE post_code IN (
+                        SELECT ALLOCATED_POST_ID FROM T6_FILLED_ON_PAPER_SU WHERE ALLOCATED_POST_ID IS NOT NULL AND ALLOCATED_POST_ID != ''
+                    ) OR incumbent_hrms IN (
+                        SELECT HRMS_ID FROM T6_FILLED_ON_PAPER_SU WHERE HRMS_ID IS NOT NULL AND HRMS_ID != ''
+                    )
+                    """)
+                conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
     def get_connection(self):
         conn = sqlite3.connect(self.db_path)
@@ -1274,7 +1341,7 @@ class PostingEngine:
 
         # 1. Fetch simulation assignments for active session
         cur.execute("""
-        SELECT substantive_post_id, su_post_id, officer_hrms_id, officer_name
+        SELECT substantive_post_id, su_post_id, substantive_post_name, su_post_name, officer_hrms_id, officer_name
         FROM simulation_assignments WHERE session_id = ?
         """, (session_id,))
         sim_assignments = cur.fetchall()
@@ -1284,35 +1351,71 @@ class PostingEngine:
         sub_to_officer = {}
         su_to_officer = {}
         for r in sim_assignments:
-            if r["substantive_post_id"]:
+            rd = dict(r)
+            if rd.get("substantive_post_id"):
                 try:
-                    sid = int(r["substantive_post_id"])
+                    sid = int(rd["substantive_post_id"])
                     board_sub_ids.add(sid)
-                    sub_to_officer[sid] = r["officer_name"]
+                    sub_to_officer[sid] = rd["officer_name"]
                 except Exception:
                     pass
-            if r["su_post_id"]:
+            if rd.get("su_post_id"):
                 try:
-                    suid = int(r["su_post_id"])
+                    suid = int(rd["su_post_id"])
                     board_su_ids.add(suid)
-                    su_to_officer[suid] = r["officer_name"]
+                    su_to_officer[suid] = rd["officer_name"]
                 except Exception:
                     pass
+            elif rd.get("su_post_name"):
+                m = re.search(r"\(Post\s+(\d+)\)", str(rd["su_post_name"]))
+                if m:
+                    try:
+                        suid = int(m.group(1))
+                        board_su_ids.add(suid)
+                        su_to_officer[suid] = rd["officer_name"]
+                    except Exception:
+                        pass
 
         # 2. Fetch officers currently on SU in baseline
-        cur.execute("SELECT incumbent_hrms, id FROM cadre_1794_posts WHERE service_utilized_flag = 1 AND incumbent_hrms IS NOT NULL")
-        su_baseline_posts = set(r["id"] for r in cur.fetchall())
+        try:
+            cur.execute("""
+            SELECT incumbent_hrms, id FROM cadre_1794_posts 
+            WHERE (service_utilized_flag = 1 OR service_utilized_flag IN ('1', 'Service Utilized', 'Yes', 'FILLED_ON_SU'))
+              AND incumbent_hrms IS NOT NULL AND incumbent_hrms != ''
+            """)
+            su_baseline_posts = set(r["id"] for r in cur.fetchall())
+        except Exception:
+            su_baseline_posts = set()
+
+        if not su_baseline_posts:
+            try:
+                cur.execute("SELECT id FROM master_source_of_truth WHERE service_utilization = 'Service Utilized'")
+                su_baseline_posts = set(r["id"] for r in cur.fetchall())
+            except Exception:
+                pass
 
         # 3. Fetch obliterated post IDs
-        cur.execute("SELECT post_name, district FROM ABOLISHED_POST_LEADS")
-        oblit_entries = set((str(r["post_name"] or "").strip().lower(), str(r["district"] or "").strip().lower()) for r in cur.fetchall())
+        try:
+            cur.execute("SELECT post_name, district FROM ABOLISHED_POST_LEADS")
+            oblit_entries = set((str(r["post_name"] or "").strip().lower(), str(r["district"] or "").strip().lower()) for r in cur.fetchall())
+        except Exception:
+            oblit_entries = set()
 
         # 4. Fetch DD posts
-        cur.execute("SELECT dd_sl, district, establishment, office, post_name, allotment_status, allotted_name FROM available_dd_posts ORDER BY district, office")
-        dd_rows = [dict(r) for r in cur.fetchall()]
+        try:
+            cur.execute("SELECT dd_sl, district, establishment, office, post_name, allotment_status, allotted_name FROM available_dd_posts ORDER BY district, office")
+            dd_rows = [dict(r) for r in cur.fetchall()]
+        except Exception:
+            dd_rows = []
 
-        # 5. Fetch 1,794 Cadre posts
-        cadre_query = "SELECT id, post_sl, district, block, establishment, designation, occupancy_status, incumbent_name, incumbent_hrms, is_substantive_blocked, su_allotted_name FROM cadre_1794_posts"
+        # 5. Fetch 1,794 Cadre posts safely
+        cur.execute("PRAGMA table_info(cadre_1794_posts)")
+        cadre_cols = set(r[1] for r in cur.fetchall())
+        is_sub_col = "is_substantive_blocked" if "is_substantive_blocked" in cadre_cols else "0 as is_substantive_blocked"
+        su_name_col = "su_allotted_name" if "su_allotted_name" in cadre_cols else "NULL as su_allotted_name"
+        sub_name_col = "substantive_allotted_name" if "substantive_allotted_name" in cadre_cols else "NULL as substantive_allotted_name"
+
+        cadre_query = f"SELECT id, post_sl, district, block, establishment, designation, occupancy_status, incumbent_name, incumbent_hrms, {is_sub_col}, {su_name_col}, {sub_name_col} FROM cadre_1794_posts"
         params = []
         if district_filter and district_filter != "ALL":
             cadre_query += " WHERE district = ?"
@@ -1404,16 +1507,16 @@ class PostingEngine:
             block = cp["block"] or ""
             dist = cp["district"] or "HQ"
             inc_name = cp["incumbent_name"]
-            is_vacant = (cp.get("occupancy_status") or "").strip().upper() == "VACANT" or not inc_name
+            is_vacant = (cp.get("occupancy_status") or "").strip().upper() in ("VACANT", "CLEAR VACANCY") or not inc_name
 
             # Check obliteration
             post_key = (desig.strip().lower(), dist.strip().lower())
             is_obliterated = post_key in oblit_entries
 
             # Check board selection
-            is_sub_selected = cid in board_sub_ids
+            is_sub_selected = cid in board_sub_ids or bool(cp.get("is_substantive_blocked"))
             is_su_selected = cid in board_su_ids
-            allotted_officer = su_to_officer.get(cid) or sub_to_officer.get(cid) or cp.get("su_allotted_name")
+            allotted_officer = su_to_officer.get(cid) or sub_to_officer.get(cid) or cp.get("su_allotted_name") or cp.get("substantive_allotted_name")
 
             # Check cascading replacement attention (e.g. Amta-II, Sankrail, Uluberia-I)
             is_cascading_flag = any(k in f"{desig} {est} {block}".lower() for k in ["amta 2", "amta ii", "sankrail", "uluberia 1", "uluberia i"]) and not is_vacant

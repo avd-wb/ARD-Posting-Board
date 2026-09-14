@@ -13,6 +13,8 @@
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="icon" type="image/png" href="/static/icon-192.png">
     <link rel="manifest" href="/static/manifest.json">
+    <!-- Security Shield: Print & PDF Blocking, Text Selection Prevention, Forensic Watermark -->
+    <link rel="stylesheet" href="/static/security-shield.css?v=20260914_sec1">
     <!-- Leaflet GIS Map Assets -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -76,14 +78,47 @@
         html {
             -webkit-text-size-adjust: 100%;
             scroll-behavior: smooth;
-            background-color: #f5f5f7;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background-color: #0b1120;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: contain;
+        }
+        * {
+            -webkit-overflow-scrolling: touch;
         }
         body {
-            padding-bottom: calc(4.5rem + var(--sab));
+            padding-top: var(--sat);
+            padding-bottom: calc(4.75rem + var(--sab));
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            background-color: #f5f5f7;
+            background-color: #f1f5f9;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
+        *, *::before, *::after {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        input, textarea, select, [contenteditable="true"] {
+            -webkit-touch-callout: default !important;
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+        @media print {
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+                visibility: hidden !important;
+            }
+            body > *:not(#ard-print-security-shield) {
+                display: none !important;
+                visibility: hidden !important;
+            }
         }
         @media (min-width: 768px) {
             body {
@@ -116,20 +151,20 @@
             color: #854d0e;
             border: 1px solid #facc15;
         }
-        /* Custom scrollbars */
+        /* Smooth, ultra-sleek modern scrollbars */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+            background: rgba(100, 116, 139, 0.35);
+            border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: rgba(100, 116, 139, 0.65);
         }
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -137,6 +172,15 @@
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+        /* Machine Learning Timer Pulse Animation */
+        @keyframes mlGlowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+            70% { box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        .ml-glow-pulse {
+            animation: mlGlowPulse 2.4s infinite cubic-bezier(0.66, 0, 0, 1);
         }
         @keyframes shimmerGlow {
             0% { background-position: -200% 0; }
@@ -198,8 +242,12 @@
             -webkit-tap-highlight-color: transparent;
         }
         .btn-touch:active {
-            transform: scale(0.95);
+            transform: scale(0.96);
             opacity: 0.92;
+        }
+        .smooth-momentum-scroll {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
         @media (max-width: 767px) {
             .mobile-scroll-fade {
@@ -209,7 +257,7 @@
         }
     </style>
 </head>
-<body class="bg-[#f5f5f7] text-[#1d1d1f] antialiased min-h-screen flex flex-col font-sans">
+<body class="bg-[#f1f5f9] text-[#1e293b] antialiased min-h-screen flex flex-col font-sans">
 
     <!-- Executive Authentication Gate Modal (50% Transparent Background of Landing Page) -->
     <div id="authGateOverlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm transition-all duration-300">
@@ -288,21 +336,20 @@
         </div>
     </div>
 
-    <!-- Top Executive Header with Sticky Wrapper (Ultra-Compact 80px Height) -->
-    <header class="bg-slate-800 backdrop-blur-xl border-b border-slate-700 text-white shadow-xs sticky top-0 z-40">
-        <!-- Row 1: Executive Brand, Semantic Search & Key Actions (44px) -->
+    <!-- Top Executive Header (Mobile-First, Streamlined, Sticky) -->
+    <header class="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/90 text-white shadow-md sticky top-0 z-40">
+        <!-- Row 1: Executive Brand, Machine Learning Timer & Actions -->
         <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-5">
-            <div class="flex items-center justify-between h-11 sm:h-12 gap-2 sm:gap-3">
+            <div class="flex items-center justify-between h-12 sm:h-14 gap-2 sm:gap-3">
                 <!-- Left: Directorate Branding & Status -->
                 <div class="flex items-center space-x-2.5 shrink-0">
-                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center border border-emerald-400/40 shadow-sm shrink-0">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center border border-emerald-400/40 shadow-sm shrink-0 ring-2 ring-emerald-500/20">
                         <i data-lucide="shield-check" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
                     </div>
                     <div class="leading-tight">
-                        <div class="text-[10px] sm:text-[11px] font-black tracking-wider uppercase text-emerald-300 flex items-center gap-1.5 flex-wrap">
+                        <div class="text-[10px] sm:text-[11px] font-black tracking-wider uppercase text-emerald-400 flex items-center gap-1.5 flex-wrap">
                             <span>DARAH, ARD Dept.</span>
-                            <span class="text-[8px] bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 px-1 py-0.2 rounded font-mono uppercase">Official</span>
-                            <span class="text-[8px] bg-amber-950/90 text-amber-300 border border-amber-500/70 px-1 py-0.2 rounded font-mono uppercase font-bold">Beta Version</span>
+                            <span class="text-[8px] bg-emerald-950 text-emerald-300 border border-emerald-700/80 px-1 py-0.2 rounded font-mono uppercase font-bold">Official</span>
                         </div>
                         <h1 class="text-sm sm:text-base md:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
                             <span>Posting Decision Board</span>
@@ -310,202 +357,178 @@
                     </div>
                 </div>
 
-                <!-- Center: Organogram & 10-Agent Verification Matrix Buttons -->
-                <div class="flex-1 flex items-center justify-center px-1 sm:px-4 gap-2">
-                    <button id="btnHeaderOrganogram" data-tab="tab-organogram" class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-1.5 rounded-xl bg-slate-700/90 hover:bg-slate-655 text-white font-bold text-xs sm:text-sm border border-amber-400/60 hover:border-amber-300 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Departmental Organogram & Administrative Structure">
-                        <i data-lucide="network" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300 group-hover:scale-110 transition shrink-0"></i>
-                        <span class="tracking-wide hidden md:inline">Organogram</span>
-                        <span class="tracking-wide md:hidden text-[11px]">Organogram</span>
+                <!-- Center: Organogram & 10-Agent Verification Matrix Buttons (Desktop lg+ only) -->
+                <div class="hidden lg:flex flex-1 items-center justify-center px-2 gap-2">
+                    <button id="btnHeaderOrganogram" data-tab="tab-organogram" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-amber-400/50 hover:border-amber-300 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Departmental Organogram & Administrative Structure">
+                        <i data-lucide="network" class="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition shrink-0"></i>
+                        <span class="tracking-wide">Organogram</span>
                     </button>
-                    <button id="btnHeaderVerification" data-tab="tab-verification" class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 font-bold text-xs sm:text-sm border border-emerald-500/70 hover:border-emerald-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Concurrent 10-Agent Verification Matrix">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:scale-110 transition shrink-0"></i>
-                        <span class="tracking-wide hidden md:inline">10-Agent Audit (100% Sealed)</span>
-                        <span class="tracking-wide md:hidden text-[11px]">10/10 Audit</span>
+                    <button id="btnHeaderVerification" data-tab="tab-verification" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 font-bold text-xs border border-emerald-500/60 hover:border-emerald-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Concurrent 10-Agent Verification Matrix">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition shrink-0"></i>
+                        <span class="tracking-wide">10-Agent Audit</span>
                     </button>
-                    <a href="/review" target="_blank" class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 text-indigo-200 font-bold text-xs sm:text-sm border border-indigo-500/70 hover:border-indigo-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
-                        <i data-lucide="clipboard-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 group-hover:scale-110 transition shrink-0"></i>
-                        <span class="tracking-wide hidden lg:inline">Review Board (337)</span>
-                        <span class="tracking-wide lg:hidden text-[11px]">Review 337</span>
+                    <a href="/review" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 font-bold text-xs border border-indigo-500/60 hover:border-indigo-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
+                        <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition shrink-0"></i>
+                        <span class="tracking-wide">Review (337)</span>
                         <span class="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.2 rounded-full">AI</span>
                     </a>
                 </div>
 
-                <!-- Right: Header Actions (Search, Countdown, Menu) -->
-                <div class="flex items-center space-x-2 shrink-0">
+                <!-- Right: Header Actions (Machine Learning Countdown Timer, Search, User, Menu) -->
+                <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
 
                     <!-- Authenticated Officer Badge & Sign Out Button -->
                     <div id="authHeaderUserBadge" class="hidden items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-emerald-500/40 text-xs text-slate-200 shadow-xs">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                        <span id="authHeaderUserName" class="font-medium text-white text-xs truncate max-w-[130px] sm:max-w-[180px]">Officer</span>
+                        <span id="authHeaderUserName" class="font-medium text-white text-xs truncate max-w-[120px] sm:max-w-[160px]">Officer</span>
                         <button onclick="handleAuthLogout()" class="text-rose-400 hover:text-rose-300 text-[11px] font-bold hover:underline ml-1 cursor-pointer" title="Sign Out">Sign Out</button>
                     </div>
 
-                    <!-- Universal Spotlight Search Trigger -->
-                    <div id="btnOpenSpotlightHeader" class="hidden sm:inline-flex items-center gap-2 bg-slate-700/70 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 rounded-lg px-2.5 py-1.5 cursor-pointer transition shadow-xs">
+                    <!-- PROMINENT MACHINE LEARNING COUNTDOWN TIMER -->
+                    <div id="countdownCard" class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/50 hover:border-amber-400 text-amber-300 font-mono text-xs cursor-pointer shadow-sm ml-glow-pulse select-none transition group" title="Machine Learning & Data Sync Countdown · Click to toggle preview">
+                        <div class="relative flex items-center justify-center shrink-0">
+                            <i data-lucide="cpu" class="w-3.5 h-3.5 text-amber-400 group-hover:rotate-180 transition duration-700"></i>
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5"></span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-amber-400/90 hidden sm:inline">ML Sync:</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider text-amber-400/90 sm:hidden">ML:</span>
+                            <div class="font-bold tracking-tight text-amber-300 flex items-center">
+                                <span id="countdownHours">84</span><span class="text-amber-500/80 text-[10px]">h</span>:
+                                <span id="countdownMinutes">00</span><span class="text-amber-500/80 text-[10px]">m</span>:
+                                <span id="countdownSeconds">00</span><span class="text-amber-500/80 text-[10px]">s</span>
+                            </div>
+                        </div>
+                        <span id="countdownBadgeStatus" class="hidden xl:inline-flex text-[9px] font-bold text-amber-300 px-1.5 py-0.2 rounded bg-amber-900/60 border border-amber-500/30">
+                            Active 84h Lock
+                        </span>
+                    </div>
+
+                    <!-- Universal Spotlight Search Trigger (Desktop) -->
+                    <div id="btnOpenSpotlightHeader" class="hidden sm:inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-xl px-2.5 py-1.5 cursor-pointer transition shadow-xs">
                         <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
-                        <span class="text-xs">Search...</span>
-                        <kbd class="text-[9px] font-mono font-semibold text-slate-400 bg-slate-800 border border-slate-600 px-1.5 py-0.2 rounded">⌘K</kbd>
-                    </div>
-
-                    <!-- Complete Data Sync Estimated Time to Sync Pill -->
-                    <div id="countdownCard" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-amber-500/30 font-mono text-[11px] text-slate-200 cursor-pointer hover:border-amber-400 transition shadow-xs" title="Complete Data Sync — Estimated Time to Sync">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
-                        <span class="text-[10px] text-slate-400 font-sans hidden xl:inline">Estimated Sync:</span>
-                        <span id="countdownHours" class="font-bold text-amber-300">84</span>h:
-                        <span id="countdownMinutes" class="font-bold text-amber-300">00</span>m:
-                        <span id="countdownSeconds" class="font-bold text-amber-300">00</span>s
-                    </div>
-
-                    <!-- Hidden mobile counter to maintain JS binding -->
-                    <div id="countdownCardMobile" class="hidden">
-                        <span id="countdownHoursMobile">84</span>
-                        <span id="countdownMinutesMobile">00</span>
-                        <span id="countdownSecondsMobile">00</span>
+                        <span class="text-xs font-medium">Search...</span>
+                        <kbd class="text-[9px] font-mono font-semibold text-slate-400 bg-slate-900 border border-slate-700 px-1.5 py-0.2 rounded">⌘K</kbd>
                     </div>
 
                     <!-- Mobile Spotlight Search Trigger -->
-                    <button id="btnMobileSearchTrigger" class="sm:hidden p-2 rounded-lg bg-slate-700 text-slate-200 hover:text-white border border-slate-600 flex items-center justify-center" title="Search">
+                    <button id="btnMobileSearchTrigger" class="sm:hidden p-2 rounded-xl bg-slate-800 text-slate-200 hover:text-white border border-slate-700 flex items-center justify-center touch-target" title="Search">
                         <i data-lucide="search" class="w-4 h-4"></i>
                     </button>
 
                     <!-- Mobile Menu Hamburger -->
-                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-lg bg-slate-700 text-slate-200 flex items-center justify-center border border-slate-600" title="Open Menu">
+                    <button id="btnHeaderMobileMenu" class="md:hidden p-2 rounded-xl bg-slate-800 text-slate-200 flex items-center justify-center border border-slate-700 touch-target" title="Open Menu">
                         <i data-lucide="menu" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Row 2: Navigation Tabs & Pinned Universal Color Indicator Strip (Single Streamlined Row 36px) -->
-        <div class="bg-slate-900 border-t border-slate-700/80">
+        <!-- Row 2: Navigation Tabs & Policy Guide -->
+        <div class="bg-slate-950/80 border-t border-slate-800/80">
             <div class="w-full max-w-[1600px] mx-auto px-2 sm:px-5 flex items-center justify-between gap-2 h-9 sm:h-10">
                 <!-- Left: Scrollable Navigation Tabs -->
-                <nav class="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1 flex-1 min-w-0" id="navTabs">
-                    <button data-tab="tab-landing" class="tab-btn px-2.5 py-1 text-[11px] font-semibold rounded text-slate-900 bg-white flex items-center gap-1 transition shadow-xs shrink-0">
+                <nav class="flex items-center space-x-1 overflow-x-auto no-scrollbar py-1 flex-1 min-w-0 smooth-momentum-scroll mobile-scroll-fade" id="navTabs">
+                    <button data-tab="tab-landing" class="tab-btn px-2.5 py-1 text-[11px] font-semibold rounded-lg text-slate-900 bg-white flex items-center gap-1 transition shadow-xs shrink-0">
                         <i data-lucide="shield-alert" class="w-3 h-3 text-rose-600"></i>
                         <span>Executive Board</span>
                         <span class="text-[9px] bg-rose-600 text-white font-bold px-1 rounded animate-pulse">Red Zone & Map</span>
                     </button>
 
-                    <button data-tab="tab-roster" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
-                        <i data-lucide="list-ordered" class="w-3 h-3"></i>
+                    <button data-tab="tab-roster" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                        <i data-lucide="list-ordered" class="w-3 h-3 text-amber-400"></i>
                         <span>50-Pt Roster</span>
                         <span id="badgeRosterCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">242</span>
                     </button>
 
-                    <button data-tab="tab-master-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-master-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="award" class="w-3 h-3 text-emerald-400"></i>
                         <span>Master Sched</span>
-                        <span id="badgeMasterOrdersCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">328</span>
+                        <span id="badgeMasterOrdersCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">337</span>
                     </button>
 
-                    <button data-tab="tab-gradation" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-gradation" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="layers" class="w-3 h-3 text-cyan-400"></i>
                         <span>Gradation List</span>
                         <span id="badgeGradationCount" class="text-[9px] bg-cyan-950 text-cyan-300 font-bold px-1 rounded border border-cyan-800">1,219</span>
                     </button>
 
-                    <button data-tab="tab-obliterated" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-obliterated" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-400"></i>
                         <span>Obliterated</span>
                         <span id="badgeOblitCount" class="text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-bold px-1 rounded">106</span>
                     </button>
 
-                    <button data-tab="tab-cadre" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-cadre" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="layout-grid" class="w-3 h-3 text-emerald-400"></i>
                         <span>Cadre</span>
                         <span id="badgeCadreTotal" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">1,794</span>
                     </button>
 
-                    <button data-tab="tab-split-matrix" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 flex items-center gap-1.5 transition shrink-0 shadow-xs">
+                    <button data-tab="tab-split-matrix" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 flex items-center gap-1.5 transition shrink-0 shadow-xs">
                         <i data-lucide="git-pull-request" class="w-3 h-3 text-amber-400"></i>
                         <span>Split Board</span>
                         <span id="badgeSplitBoardCount" class="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">Dual-Pane</span>
                     </button>
 
-                    <a href="/review" target="_blank" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 flex items-center gap-1.5 transition shrink-0 shadow-xs" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
+                    <a href="/review" target="_blank" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 flex items-center gap-1.5 transition shrink-0 shadow-xs" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
                         <i data-lucide="clipboard-check" class="w-3 h-3 text-indigo-400"></i>
                         <span>Review Board (337)</span>
                         <span class="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.2 rounded-full">Bengali AI</span>
                     </a>
 
-                    <button data-tab="tab-map" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-map" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="map" class="w-3 h-3 text-emerald-400"></i>
                         <span>GIS Map</span>
                         <span class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-1 rounded border border-emerald-800">1,794</span>
                     </button>
 
-                    <button data-tab="tab-displaced" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-displaced" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="users" class="w-3 h-3 text-purple-400"></i>
                         <span>Displaced</span>
                         <span id="badgeDisplacedCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-cascade" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-cascade" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="git-merge" class="w-3 h-3 text-sky-400"></i>
                         <span>Cascades</span>
                         <span id="badgeSimCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">0</span>
                     </button>
 
-                    <button data-tab="tab-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-orders" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="file-text" class="w-3 h-3 text-slate-300"></i>
                         <span>Orders</span>
                         <span class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">470</span>
                     </button>
 
-                    <button data-tab="tab-visual-grid" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-visual-grid" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="grid" class="w-3 h-3 text-slate-300"></i>
                         <span>Visualizer</span>
                         <span id="badgeVisualGridCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">2,038</span>
                     </button>
 
-                    <button data-tab="tab-master-directory" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-master-directory" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="book-user" class="w-3 h-3 text-slate-300"></i>
                         <span>Directory</span>
                         <span id="badgeMasterCount" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">1,624</span>
                     </button>
 
-                    <button data-tab="tab-organogram" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-organogram" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="network" class="w-3 h-3 text-slate-300"></i>
                         <span>Organogram</span>
                         <span class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">7 Tiers</span>
                     </button>
 
-                    <button data-tab="tab-verification" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
+                    <button data-tab="tab-verification" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
                         <span>10-Agent Audit</span>
                         <span id="badgeAuditTabCount" class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-1 rounded border border-emerald-800">10/10</span>
                     </button>
                 </nav>
 
-                <!-- Right: Pinned Universal Color Indicator Strip & Policy Guide -->
+                <!-- Right: Compact Policy Guide & Legend Trigger -->
                 <div class="flex items-center gap-1.5 shrink-0 pl-2 border-l border-slate-800">
-                    <!-- Compact Color Pills (Visible on lg+) -->
-                    <div class="hidden lg:flex items-center gap-1 text-[10px]">
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-800/60 cursor-help" title="GREEN: OK · Complied · Finalized · Vacant">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                            <span>OK</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-950/70 text-rose-300 border border-rose-800/60 cursor-help" title="RED: Needs Attention · Policy Violation · Over-Tenure">
-                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
-                            <span>Alert</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-800/60 cursor-help" title="YELLOW: Draft · Pending Allotment · Advisory">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                            <span>Draft</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 cursor-help" title="GREY: Not Available · Abolished · Locked">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            <span>N/A</span>
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-950/70 text-sky-300 border border-sky-800/60 cursor-help" title="BLUE: Administrative · Substantive · Info">
-                            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                            <span>Info</span>
-                        </span>
-                    </div>
-
-                    <!-- Policy Criteria Button -->
-                    <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-0.5 rounded transition shrink-0" title="View Transfer Policy 219/2009 Statutory Norms & Criteria">
+                    <button id="btnOpenPolicyInfoModal" class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 rounded-lg transition shrink-0" title="View Transfer Policy 219/2009 Statutory Norms & Criteria">
                         <span>Policy 219</span>
                         <span class="text-xs">⚖</span>
                     </button>
@@ -513,71 +536,45 @@
             </div>
         </div>
 
-        <!-- Row 3: System Status & Complete Data Sync Estimated Time to Sync Banner -->
-        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border-t border-slate-700/80 text-slate-200 py-1.5 px-3 sm:px-5 shadow-inner">
-            <div class="w-full max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-                <!-- Left: Status Badges -->
-                <div class="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-extrabold uppercase tracking-wide">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-                        <span>Beta Version</span>
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold uppercase tracking-wide">
-                        <i data-lucide="wrench" class="w-3.5 h-3.5 text-rose-400"></i>
-                        <span>Under Development</span>
-                    </span>
-                    <span id="sotTimestampBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 text-[11px] font-mono shadow-xs" title="Master Source of Truth SQLite last modified timestamp (Read-Only)">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Master SOT:</span>
-                        <span id="sotMtimeDisplay" class="font-bold text-white">2026-09-14 12:17:41</span>
-                        <span class="text-[9px] bg-emerald-900 text-emerald-200 px-1 py-0.2 rounded border border-emerald-700 font-bold">RO</span>
-                    </span>
-                    <span class="hidden lg:inline text-slate-600 text-xs">|</span>
-                    <span class="hidden lg:inline text-slate-400 text-[11px]">Provisional administrative postings & cadre balance</span>
-                </div>
-
-                <!-- Right: Complete Data Sync Estimated Time with Live Timer -->
-                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center sm:justify-end text-xs">
-                    <div class="flex items-center gap-1.5 text-slate-300">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-amber-400 animate-spin" style="animation-duration: 8s;"></i>
-                        <span class="font-bold text-slate-100 text-[11px] sm:text-xs">Complete Data Sync</span>
-                        <span class="text-slate-400 text-[11px] sm:text-xs">Estimated Time to Sync:</span>
-                    </div>
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-950 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs shadow-xs">
-                        <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
-                        <span id="countdownHoursBanner" class="font-bold">84</span>h :
-                        <span id="countdownMinutesBanner" class="font-bold">00</span>m :
-                        <span id="countdownSecondsBanner" class="font-bold">00</span>s
-                    </div>
-                </div>
+        <!-- Hidden DOM elements to preserve JS bindings (prevents null references) -->
+        <div id="hiddenSyncBindings" class="hidden" aria-hidden="true">
+            <div id="countdownCardMobile">
+                <span id="countdownHoursMobile">84</span>
+                <span id="countdownMinutesMobile">00</span>
+                <span id="countdownSecondsMobile">00</span>
             </div>
+            <span id="countdownHoursBanner">84</span>
+            <span id="countdownMinutesBanner">00</span>
+            <span id="countdownSecondsBanner">00</span>
+            <span id="sotTimestampBadge"></span>
+            <span id="sotMtimeDisplay">2026-09-14 12:17:41</span>
         </div>
     </header>
 
-    <!-- Top KPI Status Cards (Compact 55px Height) -->
-    <section class="bg-white border-b border-slate-200 shadow-xs py-2 sm:py-2.5">
+    <!-- Top KPI Status Cards (Clean, Mobile-Swipeable Executive Grid) -->
+    <section class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs py-2 sm:py-2.5 sticky top-[84px] sm:top-[96px] z-30">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
             <!-- Mobile Swipe Hint -->
             <div class="md:hidden flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-1">
-                <span class="flex items-center gap-1"><i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-wbblue-600"></i>Cadre KPI Snapshot</span>
+                <span class="flex items-center gap-1"><i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-indigo-600"></i>Cadre KPI Snapshot</span>
                 <span class="text-[10px] text-slate-400 flex items-center gap-0.5">Swipe stats <i data-lucide="arrow-right" class="w-2.5 h-2.5"></i></span>
             </div>
 
             <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar mobile-scroll-fade smooth-momentum-scroll" id="kpiStatusCardsGrid">
                 <!-- 1. Total Posts -->
-                <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50 hover:bg-wbblue-50 border border-slate-200 hover:border-wbblue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-1809-CADRE) · Total 1,794 Department Cadre Posts in Notif. 1809">
-                    <div class="text-[10px] sm:text-[11px] text-slate-500 group-hover:text-wbblue-700 font-medium flex items-center justify-center gap-1">
+                <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50/90 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-1809-CADRE) · Total 1,794 Department Cadre Posts in Notif. 1809">
+                    <div class="text-[10px] sm:text-[11px] text-slate-500 group-hover:text-indigo-700 font-medium flex items-center justify-center gap-1">
                         <span>Total Sanctioned</span>
-                        <i data-lucide="layers" class="w-3 h-3 text-wbblue-600"></i>
+                        <i data-lucide="layers" class="w-3 h-3 text-indigo-600"></i>
                     </div>
-                    <div class="text-sm sm:text-base font-bold text-slate-800 group-hover:text-wbblue-800" id="kpiTotalPosts">1,794</div>
-                    <div class="text-[9px] sm:text-[10px] text-slate-400 group-hover:text-wbblue-600 font-medium flex items-center justify-center gap-0.5">
+                    <div class="text-sm sm:text-base font-bold text-slate-800 group-hover:text-indigo-900" id="kpiTotalPosts">1,794</div>
+                    <div class="text-[9px] sm:text-[10px] text-slate-400 group-hover:text-indigo-600 font-medium flex items-center justify-center gap-0.5">
                         <span class="px-1 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono text-[8px] font-bold">VERIFIED</span>
                     </div>
                 </div>
 
                 <!-- 2. Active Filled -->
-                <div id="kpiCardFilled" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/80 hover:bg-blue-100/70 border border-blue-200 hover:border-blue-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-FILLED) · Active Cadre Incumbents in Sanctioned Posts">
+                <div id="kpiCardFilled" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/70 hover:bg-blue-100/60 border border-blue-200/80 hover:border-blue-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-FILLED) · Active Cadre Incumbents in Sanctioned Posts">
                     <div class="text-[10px] sm:text-[11px] text-blue-700 font-medium flex items-center justify-center gap-1">
                         <span>Active Filled</span>
                         <i data-lucide="user-check" class="w-3 h-3 text-blue-600"></i>
@@ -588,20 +585,20 @@
                     </div>
                 </div>
 
-                <!-- 3. Clear Vacancies -->
-                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/80 hover:bg-emerald-100/70 border border-emerald-200 hover:border-emerald-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-VACANT) · Clear Verified Vacancies (Never adds NO_RETURN)">
+                <!-- 3. Actionable Vacancies Post-Moves -->
+                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/70 hover:bg-emerald-100/60 border border-emerald-200/80 hover:border-emerald-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Actionable Vacancies Post-Moves: 253 Baseline Clear + 100 Newly Vacated by Promotion/Transfer">
                     <div class="text-[10px] sm:text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
-                        <span>Clear Vacancies</span>
+                        <span>Actionable Vacancies</span>
                         <i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i>
                     </div>
-                    <div class="text-sm sm:text-base font-bold text-emerald-700" id="kpiTotalVacancies">253</div>
-                    <div class="text-[9px] sm:text-[10px] text-emerald-600 font-medium flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-emerald-200/80 text-emerald-800 font-mono text-[8px] font-bold">VERIFIED</span>
+                    <div class="text-sm sm:text-base font-bold text-emerald-700" id="kpiTotalVacancies">353</div>
+                    <div class="text-[9px] sm:text-[10px] text-emerald-600 font-medium flex items-center justify-center gap-0.5" id="kpiVacanciesSub">
+                        <span class="px-1 py-0.2 rounded bg-emerald-200/80 text-emerald-800 font-mono text-[8px] font-bold">253 CLR + 100 NEW</span>
                     </div>
                 </div>
 
                 <!-- 4. No Return Received -->
-                <div id="kpiCardNoReturn" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-amber-50/80 hover:bg-amber-100/70 border border-amber-200 hover:border-amber-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-HQ-NO-RETURN) · Posts with No Field Return Received (Not Vacancies)">
+                <div id="kpiCardNoReturn" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-amber-50/70 hover:bg-amber-100/60 border border-amber-200/80 hover:border-amber-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-HQ-NO-RETURN) · Posts with No Field Return Received (Not Vacancies)">
                     <div class="text-[10px] sm:text-[11px] text-amber-700 font-medium flex items-center justify-center gap-1">
                         <span>No Return</span>
                         <i data-lucide="help-circle" class="w-3 h-3 text-amber-600"></i>
@@ -613,7 +610,7 @@
                 </div>
 
                 <!-- 5. Not Established -->
-                <div id="kpiCardNotEstablished" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-100/80 hover:bg-slate-200/70 border border-slate-300 hover:border-slate-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-NOT-EST) · Sanctioned Posts in Non-established Facilities">
+                <div id="kpiCardNotEstablished" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-100/70 hover:bg-slate-200/60 border border-slate-300/80 hover:border-slate-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-NOT-EST) · Sanctioned Posts in Non-established Facilities">
                     <div class="text-[10px] sm:text-[11px] text-slate-600 font-medium flex items-center justify-center gap-1">
                         <span>Not Established</span>
                         <i data-lucide="slash" class="w-3 h-3 text-slate-500"></i>
@@ -625,7 +622,7 @@
                 </div>
 
                 <!-- 6. Abolished Post Leads -->
-                <div id="kpiCardObliterated" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-rose-50/80 hover:bg-rose-100/70 border border-rose-200 hover:border-rose-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: DERIVED (EV-1808-LEADS) · Posts in HQ returns with no line in Notif. 1809 (SSOT T3)">
+                <div id="kpiCardObliterated" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-rose-50/70 hover:bg-rose-100/60 border border-rose-200/80 hover:border-rose-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: DERIVED (EV-1808-LEADS) · Posts in HQ returns with no line in Notif. 1809 (SSOT T3)">
                     <div class="text-[10px] sm:text-[11px] text-rose-700 font-medium flex items-center justify-center gap-1">
                         <span>Abolished Leads</span>
                         <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i>
@@ -637,7 +634,7 @@
                 </div>
 
                 <!-- 7. 50-Point Roster -->
-                <div id="kpiCardRoster" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-purple-50/80 hover:bg-purple-100/70 border border-purple-200 hover:border-purple-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: 242/242 LINKED (100%) · SSOT T4_DD_PROMOTION_242 · Point 152 Linked to 1994003580">
+                <div id="kpiCardRoster" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-purple-50/70 hover:bg-purple-100/60 border border-purple-200/80 hover:border-purple-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: 242/242 LINKED (100%) · SSOT T4_DD_PROMOTION_242 · Point 152 Linked to 1994003580">
                     <div class="text-[10px] sm:text-[11px] text-purple-700 font-medium flex items-center justify-center gap-1">
                         <span>50-Pt Roster</span>
                         <i data-lucide="list-ordered" class="w-3 h-3 text-purple-600"></i>
@@ -649,7 +646,7 @@
                 </div>
 
                 <!-- 8. Available DD Posts (Schedule T5) -->
-                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-teal-50/80 hover:bg-teal-100/70 border border-teal-200 hover:border-teal-400 rounded-lg p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-T5-DD-244) · 244 DD Posts in Schedule T5">
+                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-teal-50/70 hover:bg-teal-100/60 border border-teal-200/80 hover:border-teal-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-T5-DD-244) · 244 DD Posts in Schedule T5">
                     <div class="text-[10px] sm:text-[11px] text-teal-700 font-medium flex items-center justify-center gap-1">
                         <span>DD Posts (T5)</span>
                         <i data-lucide="award" class="w-3 h-3 text-teal-600"></i>
@@ -772,8 +769,8 @@
                 </div>
 
                 <!-- Red Zone Dynamic Interactive Table -->
-                <div class="overflow-x-auto max-h-[440px] bg-slate-950/90 divide-y divide-slate-800/80 text-xs">
-                    <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto max-h-[440px] bg-slate-950/90 divide-y divide-slate-800/80 text-xs smooth-momentum-scroll">
+                    <table class="min-w-[820px] w-full text-left border-collapse">
                         <thead class="bg-slate-900 text-slate-400 text-[11px] font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-800">
                             <tr>
                                 <th class="py-2.5 px-3 w-12 text-center">#</th>
@@ -825,12 +822,15 @@
                             <span id="gisStatTotal" class="text-base font-extrabold text-white font-mono">1,794</span>
                         </div>
                         <div class="bg-emerald-950/80 border border-emerald-800/80 px-3 py-2 rounded-xl text-center">
-                            <span class="block text-xs text-emerald-400 font-medium">Vacancies</span>
-                            <span id="gisStatVacant" class="text-base font-extrabold text-emerald-300 font-mono">747</span>
+                            <span class="block text-xs text-emerald-400 font-medium">Actionable Vacancies</span>
+                            <div class="flex items-baseline justify-center gap-1">
+                                <span id="gisStatVacant" class="text-base font-extrabold text-emerald-300 font-mono">353</span>
+                                <span class="text-[10px] text-emerald-400/80 font-mono font-medium">(253+100)</span>
+                            </div>
                         </div>
                         <div class="bg-blue-950/80 border border-blue-800/80 px-3 py-2 rounded-xl text-center">
                             <span class="block text-xs text-blue-400 font-medium">Occupied</span>
-                            <span id="gisStatOccupied" class="text-base font-extrabold text-blue-300 font-mono">1,047</span>
+                            <span id="gisStatOccupied" class="text-base font-extrabold text-blue-300 font-mono">1,441</span>
                         </div>
                         <div class="bg-rose-950/80 border border-rose-800/80 px-3 py-2 rounded-xl text-center">
                             <span class="block text-xs text-rose-400 font-medium">Over-Tenure</span>
@@ -859,8 +859,11 @@
 
                         <select id="gisStatusFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
                             <option value="ALL">All Status (Occupied & Vacant)</option>
-                            <option value="vacant">🟢 Clear Vacancies Only</option>
-                            <option value="occupied">🔵 Occupied Posts Only</option>
+                            <option value="actionable">🟢 Actionable Vacancies (353: Clear + New)</option>
+                            <option value="newly_vacated">🔵 Newly Vacated on Move (100)</option>
+                            <option value="baseline">🟢 Baseline Clear Vacancies (253)</option>
+                            <option value="su_retained">🟡 Substantive Vacancy (Held on SU: 123)</option>
+                            <option value="occupied">⚪ Occupied Posts Only</option>
                         </select>
 
                         <select id="gisTenureFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
@@ -885,7 +888,9 @@
                     <div class="mt-2 pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between text-xs gap-2">
                         <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-600 font-medium">
                             <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Map Legend:</span>
-                            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-700 shadow-xs"></span> Clear Vacancy</span>
+                            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 border border-emerald-700 shadow-xs"></span> Baseline Clear Vacancy</span>
+                            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-700 shadow-xs"></span> Newly Vacated (Move)</span>
+                            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 border border-amber-600 shadow-xs"></span> Held on SU</span>
                             <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 border border-blue-800 shadow-xs"></span> Occupied (In-Tenure)</span>
                             <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 border border-rose-700 shadow-xs"></span> Over-Tenure Hotspot</span>
                             <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-600 border border-purple-800 shadow-xs"></span> Apex Cadre Post</span>
@@ -1001,21 +1006,21 @@
             </div>
         </div>
 
-        <!-- ==================== TAB: AUTHORITATIVE MASTER ORDERS (328) ==================== -->
+        <!-- ==================== TAB: AUTHORITATIVE MASTER ORDERS (337) ==================== -->
         <div id="tab-master-orders" class="tab-content hidden">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-600 text-white uppercase tracking-wider shadow-sm">Verified Authoritative Schedule</span>
-                            <span class="text-xs font-semibold text-slate-500">Government Notification Standard dt. 13-09-2026</span>
+                            <span class="text-xs font-semibold text-slate-500">Government Notification Standard dt. 14-09-2026</span>
                         </div>
                         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2 mt-1">
                             <i data-lucide="award" class="w-5 h-5 text-emerald-600"></i>
-                            <span>Authoritative Cadre Promotion & Transfer Master Schedule (328 Officers)</span>
+                            <span>Authoritative Cadre Promotion & Transfer Master Schedule (337 Officers)</span>
                         </h2>
                         <p class="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                            Verified against Official HRMS TSV & Posting Preferences. Preserves <strong>100% intact all 17 TPV orders</strong> (1112 PDF), <strong>242 50-Point Roster promotees</strong> to Deputy Director, and <strong>69 Chain Transfers</strong>.
+                            Verified against Official HRMS TSV, SOT Master Register, and Posting Preferences. Incorporates <strong>242 50-Point Roster promotees</strong> to Deputy Director, <strong>53 Post Abolition Redeployments</strong>, <strong>15 Promotee Accommodations</strong>, and <strong>27 Executive/Lateral Transfers</strong> (including 17 Principal-locked decisions).
                         </p>
                     </div>
                 </div>
@@ -1029,11 +1034,11 @@
 
                     <div>
                         <select id="masterOrdersBasisFilter" class="w-full h-10 text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white text-slate-700 font-medium focus:ring-2 focus:ring-emerald-600 shadow-xs touch-target">
-                            <option value="ALL">All Transfer Categories (328)</option>
+                            <option value="ALL">All Transfer Categories (337)</option>
                             <option value="Promotion to Deputy Director">Promotion to Deputy Director (242)</option>
-                            <option value="1112 PDF Intact">1112 TPV Transfer Order Intact (17)</option>
-                            <option value="Displacement">Displacement / Chain Accommodation</option>
-                            <option value="Transfer">Administrative Transfers</option>
+                            <option value="Displacement due to post abolition">Displacement due to post abolition (53)</option>
+                            <option value="Displacement due to promotee accommodation">Promotee Accommodation (15)</option>
+                            <option value="Transfer">Administrative / Lateral Transfers (27)</option>
                         </select>
                     </div>
 
@@ -1044,7 +1049,7 @@
                     </div>
 
                     <div class="flex items-center justify-between sm:justify-end text-xs text-slate-600 font-medium">
-                        <span id="masterOrdersShowingCount" class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 font-bold">Showing 328 orders</span>
+                        <span id="masterOrdersShowingCount" class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 font-bold">Showing 337 orders</span>
                     </div>
                 </div>
 
@@ -1165,8 +1170,8 @@
                 </div>
 
                 <!-- Desktop Table View -->
-                <div class="overflow-x-auto max-h-[650px] overflow-y-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                <div class="overflow-x-auto max-h-[650px] overflow-y-auto smooth-momentum-scroll">
+                    <table class="min-w-[840px] w-full divide-y divide-slate-200 text-left text-xs">
                         <thead class="bg-slate-100 text-slate-700 font-semibold sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th class="py-3 px-3 w-16 text-center">2026 Sl</th>
@@ -1383,17 +1388,17 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     <!-- Pane Header -->
                     <div class="p-4 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-slate-50 border-b border-slate-200">
-                        <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center justify-between gap-2 mb-2.5">
                             <div class="flex items-center gap-2">
                                 <span class="p-1.5 rounded-lg bg-emerald-600 text-white">
                                     <i data-lucide="map-pin" class="w-4 h-4"></i>
                                 </span>
                                 <div>
                                     <h3 class="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
-                                        <span>Sanctioned Clear Vacancies</span>
-                                        <span id="splitVacBadge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">253</span>
+                                        <span>Sanctioned Vacancies (Post-Moves)</span>
+                                        <span id="splitVacBadge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">353</span>
                                     </h3>
-                                    <p class="text-[11px] text-slate-500">Unblocked sanctioned substantive vacancies across 24 districts</p>
+                                    <p class="text-[11px] text-slate-500">253 Baseline Clear + 100 Newly Vacated by Promotion/Transfer</p>
                                 </div>
                             </div>
                             <button id="btnResetVacFilters" class="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold underline flex items-center gap-1 cursor-pointer">
@@ -1402,20 +1407,38 @@
                             </button>
                         </div>
 
+                        <!-- Vacancy Scope Selector Pills -->
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 text-xs no-scrollbar">
+                            <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider shrink-0">View:</span>
+                            <button type="button" onclick="window.setSplitVacScope('all')" id="btnScopeAll" class="vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-700 text-white shadow-xs transition shrink-0">
+                                All Actionable (353)
+                            </button>
+                            <button type="button" onclick="window.setSplitVacScope('baseline')" id="btnScopeBaseline" class="vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 shadow-xs transition shrink-0">
+                                Baseline Clear (253)
+                            </button>
+                            <button type="button" onclick="window.setSplitVacScope('newly_vacated')" id="btnScopeNewlyVacated" class="vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 shadow-xs transition shrink-0">
+                                Newly Vacated (100)
+                            </button>
+                            <button type="button" onclick="window.setSplitVacScope('su_retained')" id="btnScopeSuRetained" class="vac-scope-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white text-amber-700 border border-amber-200 hover:bg-amber-50 shadow-xs transition shrink-0">
+                                Held on SU (123)
+                            </button>
+                            <input type="hidden" id="splitVacScopeFilter" value="all">
+                        </div>
+
                         <!-- Vacancies Multi-Tier Filter Controls -->
                         <div class="space-y-2 text-xs">
                             <!-- Semantic Search Bar -->
                             <div class="relative">
-                                <input type="search" id="splitVacSearchInput" placeholder="🔍 Semantic Search: e.g. 'North 24 Pgs Deputy Director', 'SAHC Birbhum', 'Polyclinic'..." class="w-full h-10 border border-slate-300 rounded-xl pl-9 pr-3 py-2 bg-white text-slate-900 shadow-xs focus:ring-2 focus:ring-emerald-600">
+                                <input type="search" id="splitVacSearchInput" placeholder="🔍 Search e.g. 'North 24 Pgs', 'BLDO', 'Dr. Utpal', 'SAHC'..." class="w-full h-10 border border-slate-300 rounded-xl pl-9 pr-3 py-2 bg-white text-slate-900 shadow-xs focus:ring-2 focus:ring-emerald-600">
                                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
                             </div>
 
                             <!-- Filter Selects Grid -->
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <select id="splitVacCategoryFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-800 font-bold shadow-xs">
-                                    <option value="ALL">All Categories (253)</option>
-                                    <option value="dd">Deputy Director (242)</option>
-                                    <option value="other">Asst Director / VO / Field (11)</option>
+                                    <option value="ALL">All Categories</option>
+                                    <option value="dd">Deputy Director</option>
+                                    <option value="other">Asst Director / VO / Field</option>
                                 </select>
 
                                 <select id="splitVacDistrictFilter" class="h-9 border border-slate-300 rounded-xl px-2.5 py-1.5 bg-white text-slate-700 font-medium shadow-xs">
@@ -1706,8 +1729,8 @@
                     <span>Field posts (BLDO, BAHC, SAHC) vacated due to promotional or administrative outbound transfers with no incoming relief doctor. <strong>Immediate backfill required to prevent administrative breakdown.</strong></span>
                     <input type="text" id="cascadingSearchInput" placeholder="Filter district or block..." class="text-xs border border-rose-200 rounded px-2.5 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-rose-400 w-48">
                 </div>
-                <div class="overflow-x-auto max-h-[380px] overflow-y-auto">
-                    <table class="min-w-full divide-y divide-rose-100 text-left text-xs">
+                <div class="overflow-x-auto max-h-[380px] overflow-y-auto smooth-momentum-scroll">
+                    <table class="min-w-[680px] w-full divide-y divide-rose-100 text-left text-xs">
                         <thead class="bg-rose-100/70 text-rose-900 font-semibold sticky top-0 z-10">
                             <tr>
                                 <th class="py-2.5 px-3">Sl</th>
@@ -2199,8 +2222,8 @@
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
+                <div class="overflow-x-auto smooth-momentum-scroll">
+                    <table class="min-w-[960px] w-full text-left text-xs border-collapse">
                         <thead>
                             <tr class="bg-slate-100/90 text-slate-700 font-semibold border-b border-slate-200">
                                 <th class="py-2.5 px-3 w-12 text-center">#</th>
@@ -2266,7 +2289,7 @@
                 <div class="py-12 text-center text-slate-400 text-xs">
                     <i data-lucide="sparkles" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
                     <p class="font-semibold text-slate-700">Universal Semantic Search</p>
-                    <p class="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 328 master orders, 73 obliterated posts, and transfer policy rules.</p>
+                    <p class="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">Instant lookup across 1,794 sanctioned posts, 242 roster candidates, 337 master orders, 73 obliterated posts, and transfer policy rules.</p>
                 </div>
             </div>
 
@@ -2833,37 +2856,37 @@
 
 
 
-    <!-- ==================== GOOGLE MATERIAL 3 MOBILE BOTTOM NAVIGATION BAR (<md) ==================== -->
-    <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-2xl px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform duration-200">
+    <!-- ==================== MOBILE BOTTOM NAVIGATION BAR (<md) ==================== -->
+    <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform duration-200">
         <div class="grid grid-cols-5 items-center justify-around max-w-lg mx-auto">
-            <!-- 1. Roster -->
-            <button data-tab="tab-roster" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-wbblue-800 transition active:scale-95 touch-target">
+            <!-- 1. Executive Board (Landing) -->
+            <button data-tab="tab-landing" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-wbblue-800 transition active:scale-95 touch-target">
                 <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center bg-wbblue-100 text-wbblue-900 transition-colors">
-                    <i data-lucide="award" class="w-4 h-4"></i>
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i>
                 </span>
-                <span class="text-[10px] font-bold tracking-tight mt-0.5">Roster</span>
+                <span class="text-[10px] font-bold tracking-tight mt-0.5">Board</span>
             </button>
 
-            <!-- 2. Master Orders -->
+            <!-- 2. Roster -->
+            <button data-tab="tab-roster" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 touch-target">
+                <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center transition-colors">
+                    <i data-lucide="award" class="w-4 h-4 text-amber-500"></i>
+                </span>
+                <span class="text-[10px] font-medium tracking-tight mt-0.5">Roster</span>
+            </button>
+
+            <!-- 3. Master Orders -->
             <button data-tab="tab-master-orders" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 touch-target">
                 <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center transition-colors">
-                    <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                    <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-500"></i>
                 </span>
                 <span class="text-[10px] font-medium tracking-tight mt-0.5">Master</span>
-            </button>
-
-            <!-- 3. Organogram -->
-            <button data-tab="tab-organogram" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 touch-target">
-                <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center transition-colors">
-                    <i data-lucide="network" class="w-4 h-4"></i>
-                </span>
-                <span class="text-[10px] font-medium tracking-tight mt-0.5">Hierarchy</span>
             </button>
 
             <!-- 4. Cadre -->
             <button data-tab="tab-cadre" class="mobile-tab-btn flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 touch-target">
                 <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center transition-colors">
-                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <i data-lucide="layers" class="w-4 h-4 text-blue-500"></i>
                 </span>
                 <span class="text-[10px] font-medium tracking-tight mt-0.5">Cadre</span>
             </button>
@@ -2871,7 +2894,7 @@
             <!-- 5. More (All Modules Drawer) -->
             <button id="btnOpenMobileDrawer" class="flex flex-col items-center justify-center py-1 px-1 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 touch-target">
                 <span class="tab-pill w-11 h-7 rounded-full flex items-center justify-center bg-slate-100 text-slate-700 transition-colors">
-                    <i data-lucide="grid" class="w-4 h-4"></i>
+                    <i data-lucide="grid" class="w-4 h-4 text-slate-600"></i>
                 </span>
                 <span class="text-[10px] font-medium tracking-tight mt-0.5">More</span>
             </button>
@@ -2903,26 +2926,26 @@
             </div>
 
             <!-- Drawer Body -->
-            <div class="overflow-y-auto p-4 space-y-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
-                <!-- Mobile Status & Estimated Sync Banner -->
-                <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white border border-slate-800 shadow-md space-y-2.5">
+            <div class="overflow-y-auto p-4 space-y-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] smooth-momentum-scroll">
+                <!-- Mobile Machine Learning Timing & Estimated Sync Banner -->
+                <div class="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white border border-amber-500/40 shadow-lg space-y-2.5">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold uppercase">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider">
                             <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-                            <span>Beta Version</span>
+                            <span>Machine Learning Timing</span>
                         </span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold uppercase">
-                            <i data-lucide="wrench" class="w-3 h-3 text-rose-400"></i>
-                            <span>Under Development</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold uppercase">
+                            <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
+                            <span>84h Sync Lock</span>
                         </span>
                     </div>
                     <div class="space-y-1">
-                        <div class="text-[11px] font-medium text-slate-300 flex items-center gap-1">
-                            <i data-lucide="refresh-cw" class="w-3 h-3 text-amber-400 animate-spin" style="animation-duration: 8s;"></i>
-                            <span>Complete Data Sync · Estimated Time:</span>
+                        <div class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i data-lucide="cpu" class="w-3.5 h-3.5 text-amber-400"></i>
+                            <span>Complete Model & Data Sync Estimated Time:</span>
                         </div>
-                        <div class="flex items-center justify-center gap-1.5 py-1 px-3 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 font-mono font-bold text-xs shadow-inner">
-                            <i data-lucide="timer" class="w-3.5 h-3.5 text-amber-400"></i>
+                        <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-900/90 border border-amber-500/40 text-amber-300 font-mono font-bold text-sm shadow-inner">
+                            <i data-lucide="timer" class="w-4 h-4 text-amber-400 shrink-0"></i>
                             <span id="countdownHoursDrawer">84</span>h :
                             <span id="countdownMinutesDrawer">00</span>m :
                             <span id="countdownSecondsDrawer">00</span>s
@@ -2948,7 +2971,7 @@
                         <button data-tab="tab-master-orders" class="mobile-drawer-btn p-3 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 text-left flex flex-col gap-1 transition active:scale-95 touch-target">
                             <div class="flex items-center justify-between">
                                 <i data-lucide="file-check-2" class="w-5 h-5 text-emerald-600"></i>
-                                <span class="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-emerald-600 text-white">328</span>
+                                <span class="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-emerald-600 text-white">337</span>
                             </div>
                             <span class="text-xs font-bold text-slate-900">Master Orders</span>
                             <span class="text-[10px] text-slate-500 leading-tight">Authoritative schedule</span>
@@ -3220,8 +3243,8 @@
                     </div>
 
                     <!-- Desktop / Tablet Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs border-collapse">
+                    <div class="overflow-x-auto smooth-momentum-scroll">
+                        <table class="min-w-[760px] w-full text-left text-xs border-collapse">
                             <thead>
                                 <tr class="bg-slate-100/70 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                                     <th class="py-2.5 px-3">Status</th>
@@ -3247,6 +3270,7 @@
 
     <!-- Script file with cache buster -->
     <script src="/static/app.js?v=20260914_telemetry_debug_v4"></script>
+    <script src="/static/security-shield.js?v=20260914_sec1"></script>
     <script>
         if (window.lucide) lucide.createIcons();
         window.openVisitorAnalyticsModal = window.openVisitorAnalyticsModal || function() {
