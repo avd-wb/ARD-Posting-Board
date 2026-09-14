@@ -105,6 +105,15 @@ cur.execute("""
     WHERE hrms_id = '2001000684'
 """)
 
+# 6. Joypur, Bankura: Dr. Shampa Dey [HRMS 1995004636, Roster 136]
+cur.execute("""
+    UPDATE master_final_order_schedule
+    SET service_utilized_at = 'Block Livestock Development Officer, Sub-Divisional and Block Level Set up of Bankura District, Joypur, Bankura',
+        administrative_remarks = 'Promoted to Deputy Director, ARD, District Office, North 24 Parganas; service utilized as BLDO, Joypur, Bankura',
+        comments_directive = 'BLDO, Joypur, Bankura'
+    WHERE hrms_id = '1995004636'
+""")
+
 # Harmonize available_dd_posts
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '2000000755', allotted_name = 'Dr. Tapan Kumar Sur (SC)' WHERE dd_sl = 94")
 cur.execute("UPDATE available_dd_posts SET allotted_hrms = '1994005981', allotted_name = 'Dr. Debasish Dutta' WHERE dd_sl = 97")
@@ -1602,7 +1611,9 @@ rectifications = [
     (8, "Preservation of 17 TPV Displacement Orders", "Notification 1112 PDF displaced 17 officers due to post abolition.",
      "100% preserved all 17 TPV displaced officers with dedicated highlighted formatting and administrative remarks matching PDF.", "17 Officers", "100% PRESERVED"),
     (9, "District HQ Postwise Hierarchy & Designated DDARDs", "Leadership requested explicit postwise representation of substantive vs SU posts organized by administrative hierarchy (JD -> DD -> AD) and designated In-Charge JDs.",
-     "Designated Dr. Tapan Kumar Sur (Siliguri), Dr. Debasish Dutta (Jalpaiguri), Dr. Rabindra Nath Hansda (Jhargram), Dr. Raju Das (Malda), and Dr. Swapan Kumar Dass (Alipurduar) as DDARD & In-Charge Joint Directors.", "All 24 District Setups", "100% INTEGRATED")
+     "Designated Dr. Tapan Kumar Sur (Siliguri), Dr. Debasish Dutta (Jalpaiguri), Dr. Rabindra Nath Hansda (Jhargram), Dr. Raju Das (Malda), and Dr. Swapan Kumar Dass (Alipurduar) as DDARD & In-Charge Joint Directors.", "All 24 District Setups", "100% INTEGRATED"),
+    (10, "Executive Directive: BLDO Joypur (Bankura) Deployment", "Dr. Shampa Dey (HRMS 1995004636, Roster Sl 136) was tentatively slotted on Service Utilization at BLDO Uttardinajpur.",
+     "Assigned Service Utilization (SU) as Block Livestock Development Officer, Joypur, Bankura per explicit executive instruction, filling the block post vacated by Dr. Srimanta Sarkar's promotion.", "Dr. Shampa Dey (Sl 136)", "100% RESOLVED")
 ]
 
 for r_idx, (asl, dom, orig, corr, scope, stat) in enumerate(rectifications, 2):
