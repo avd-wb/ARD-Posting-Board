@@ -123,7 +123,7 @@ window.handleAuthLogin = async function(event) {
         } else {
             if (alert) alert.classList.remove('hidden');
             if (errMsg) {
-                errMsg.innerHTML = data.detail || 'Unauthorized HRMS ID. If you are allowed then type your HRMS ID. Otherwise send an email for approval to <a href="mailto:contact@avdwb.com" class="underline text-white font-semibold">contact@avdwb.com</a>.';
+                errMsg.innerHTML = data.detail || 'Invalid credentials. Access is restricted to authorized personnel only.';
             }
             if (input) {
                 input.classList.add('border-rose-500');

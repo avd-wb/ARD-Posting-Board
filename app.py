@@ -342,7 +342,7 @@ def auth_login(req: LoginRequest, response: Response):
         }
     raise HTTPException(
         status_code=401,
-        detail="Incorrect password. Please enter 'sonarbangla' or an authorized HRMS ID."
+        detail="Incorrect password or unauthorized HRMS ID."
     )
 
 @app.get("/api/auth/verify")
@@ -2553,10 +2553,8 @@ def get_review_data():
 def review_status(request: Request):
     return {
         "status": "active",
-        "current_password": "sonarbangla",
         "policy": "static_persistent",
-        "login_gate": "sonarbangla",
-        "recipient_email": "nirmalyaranjansarkar@gmail.com"
+        "auth_required": True
     }
 
 @app.get("/review", response_class=HTMLResponse)

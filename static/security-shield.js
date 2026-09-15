@@ -1,101 +1,28 @@
 /**
  * WB ARD Department - Administrative Data Protection & Security Shield Script
  * 
- * Features:
- * 1. Dynamic Forensic Watermarking (officer identity, live timestamp, session hash, anti-tamper observer)
- * 2. Mobile Touch Callout & Text Selection Suppression (anti-copy to WhatsApp / social apps)
- * 3. Print & PDF Export Lockdown (anti-print shield + Ctrl/Cmd+P interception)
- * 4. App-Switch Privacy Curtain (blurs content on multitasking/task switcher)
+ * Strict Privacy Protocols:
+ * 1. Watermark ONLY includes "CONFIDENTIAL" (no names, no personal information).
+ * 2. Universal touch callout & text selection suppression (anti-copy / anti-forwarding).
+ * 3. Print & PDF Export Lockdown (anti-print shield + shortcut blocking).
+ * 4. App-Switch Privacy Curtain (content blur on multitasking/screen capture).
  */
 
 (function () {
     'use strict';
 
     // =========================================================================
-    // 1. STATE & USER RESOLUTION
+    // 1. WATERMARK ENGINE (ONLY "CONFIDENTIAL")
     // =========================================================================
 
-    function getSessionId() {
-        try {
-            let id = localStorage.getItem('ard_visitor_session_id');
-            if (!id) {
-                id = 'sess_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-                localStorage.setItem('ard_visitor_session_id', id);
-            }
-            return id;
-        } catch (e) {
-            return 'sess_wb_ard';
-        }
-    }
-
-    function getOfficerIdentity() {
-        // 1. Check active session storage from index.html auth gate
-        const sessName = sessionStorage.getItem('avd_officer_name');
-        if (sessName && sessName.trim() && sessName.trim() !== 'Officer') {
-            return sessName.trim();
-        }
-
-        // 2. Check DOM user badge if already rendered
-        const badgeEl = document.getElementById('authHeaderUserName');
-        if (badgeEl && badgeEl.textContent && badgeEl.textContent.trim() && badgeEl.textContent.trim() !== 'Officer') {
-            return badgeEl.textContent.trim();
-        }
-
-        // 3. Check review page input #who
-        const whoEl = document.getElementById('who');
-        if (whoEl && whoEl.value && whoEl.value.trim()) {
-            return whoEl.value.trim();
-        }
-
-        // 4. Check localStorage fallback
-        const localName = localStorage.getItem('avd_officer_name');
-        if (localName && localName.trim()) {
-            return localName.trim();
-        }
-
-        return 'WB ARD OFFICIAL USER';
-    }
-
-    function formatTimestamp() {
-        const now = new Date();
-        const d = String(now.getDate()).padStart(2, '0');
-        const m = now.toLocaleString('en-US', { month: 'short' });
-        const y = now.getFullYear();
-        const hrs = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        const secs = String(now.getSeconds()).padStart(2, '0');
-        return `${d}-${m}-${y} ${hrs}:${mins}:${secs} IST`;
-    }
-
-    function escapeXml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
-    }
-
-    // =========================================================================
-    // 2. DYNAMIC FORENSIC WATERMARK ENGINE
-    // =========================================================================
-
-    function buildWatermarkSvg(officer, timestamp, session) {
-        const w = 420;
-        const h = 260;
-        const line1 = 'WB ARD GOVT RECORD • CONFIDENTIAL';
-        const line2 = `${officer} • [${session.slice(0, 14)}]`;
-        const line3 = `${timestamp} • STRICTLY CONFIDENTIAL`;
-        const line4 = 'UNAUTHORIZED SCREENSHOT / FORWARDING PROHIBITED';
-
-        // Dual-tone opacity renders clearly on both dark & light backgrounds
+    function buildWatermarkSvg() {
+        const w = 280;
+        const h = 160;
+        // The watermark strictly and exclusively contains "CONFIDENTIAL"
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-            <g transform="rotate(-24 210 130)">
-                <text x="210" y="65" fill="rgba(100, 116, 139, 0.14)" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.2" text-anchor="middle">${escapeXml(line1)}</text>
-                <text x="210" y="98" fill="rgba(15, 23, 42, 0.19)" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="800" letter-spacing="1.5" text-anchor="middle">${escapeXml(line2)}</text>
-                <text x="210" y="130" fill="rgba(2, 132, 199, 0.18)" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1" text-anchor="middle">${escapeXml(line3)}</text>
-                <text x="210" y="160" fill="rgba(220, 38, 38, 0.17)" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" letter-spacing="1" text-anchor="middle">${escapeXml(line4)}</text>
+            <g transform="rotate(-26 140 80)">
+                <text x="140" y="86" fill="rgba(148, 163, 184, 0.13)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" letter-spacing="4" text-anchor="middle">CONFIDENTIAL</text>
             </g>
         </svg>`.trim();
 
@@ -118,24 +45,11 @@
             }
         }
 
-        const officer = getOfficerIdentity();
-        const timestamp = formatTimestamp();
-        const session = getSessionId();
-        const svgUri = buildWatermarkSvg(officer, timestamp, session);
-
+        const svgUri = buildWatermarkSvg();
         watermarkEl.style.backgroundImage = `url("${svgUri}")`;
-
-        // Update meta in print shield as well
-        const shieldMeta = document.getElementById('ardPrintShieldMeta');
-        if (shieldMeta) {
-            shieldMeta.textContent = `Access Session: ${session} | Officer: ${officer} | Security Stamp: ${timestamp}`;
-        }
     }
 
     window.updateSecurityWatermark = applyWatermark;
-
-    // Refresh watermark timestamp every 30 seconds
-    setInterval(applyWatermark, 30000);
 
     // Anti-Tamper Observer: prevent removal of watermark
     function setupTamperProtection() {
@@ -162,7 +76,7 @@
     }
 
     // =========================================================================
-    // 3. SECURITY TOAST NOTIFICATION
+    // 2. SECURITY TOAST NOTIFICATION
     // =========================================================================
 
     let toastEl = null;
@@ -176,7 +90,7 @@
                 <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
-                <span id="ard-security-toast-text">${escapeXml(message)}</span>
+                <span id="ard-security-toast-text">${message}</span>
             `;
             document.body.appendChild(toastEl);
         } else {
@@ -192,7 +106,7 @@
     }
 
     // =========================================================================
-    // 4. PRINT & PDF EXPORT SHIELD SETUP
+    // 3. PRINT & PDF EXPORT SHIELD SETUP
     // =========================================================================
 
     function setupPrintShield() {
@@ -210,18 +124,18 @@
                 are strictly prohibited under state administrative data protection protocols.
             </p>
             <div class="shield-warning">
-                All records accessed on this system are tracked under official cyber audit regulations. 
-                Duplication or unauthorized dissemination will invite disciplinary action under the West Bengal Services (Classification, Control and Appeal) Rules.
+                All records accessed on this system are governed by official administrative confidentiality regulations. 
+                Duplication or unauthorized dissemination is strictly prohibited.
             </div>
-            <div class="shield-meta" id="ardPrintShieldMeta">
-                Security Stamp: ${formatTimestamp()} | Official Cadre Decision Board
+            <div class="shield-meta">
+                Official Cadre Decision Board • Restricted Administrative System
             </div>
         `;
         document.body.appendChild(shield);
     }
 
     // =========================================================================
-    // 5. PRIVACY CURTAIN SETUP (App Switcher / Inactive Tab Blur)
+    // 4. PRIVACY CURTAIN SETUP (App Switcher / Inactive Tab Blur)
     // =========================================================================
 
     function setupPrivacyCurtain() {
@@ -230,7 +144,7 @@
         const curtain = document.createElement('div');
         curtain.id = 'ard-privacy-curtain';
         curtain.innerHTML = `
-            <div style="max-width: 320px; padding: 24px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+            <div style="max-width: 320px; padding: 24px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center;">
                 <div style="font-size: 28px; margin-bottom: 8px;">🔒</div>
                 <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">Protected Screen</div>
                 <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">ARD confidential records are hidden while switching apps. Tap anywhere to resume.</div>
@@ -238,7 +152,6 @@
         `;
         document.body.appendChild(curtain);
 
-        // Visibility change handler
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 document.documentElement.classList.add('ard-privacy-blur');
@@ -247,7 +160,6 @@
             }
         });
 
-        // Window blur/focus handler
         window.addEventListener('blur', () => {
             document.documentElement.classList.add('ard-privacy-blur');
         });
@@ -255,14 +167,13 @@
             document.documentElement.classList.remove('ard-privacy-blur');
         });
 
-        // Tap curtain to resume
         curtain.addEventListener('click', () => {
             document.documentElement.classList.remove('ard-privacy-blur');
         });
     }
 
     // =========================================================================
-    // 6. EVENT INTERCEPTORS (Anti-Copy, Anti-Print, Anti-Context Menu)
+    // 5. EVENT INTERCEPTORS (Anti-Copy, Anti-Print, Anti-Context Menu)
     // =========================================================================
 
     function setupInterceptors() {
@@ -271,20 +182,20 @@
             const tag = e.target.tagName;
             if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
                 e.preventDefault();
-                showSecurityToast('Context menu and options are disabled for security.');
+                showSecurityToast('Context options are disabled for confidentiality.');
                 return false;
             }
         }, true);
 
-        // 2. Prevent Copy (anti-copying to WhatsApp / clipboard)
+        // 2. Prevent Copy (anti-copying to clipboard / messaging)
         document.addEventListener('copy', function (e) {
             const tag = e.target.tagName;
             if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
                 e.preventDefault();
                 if (e.clipboardData) {
-                    e.clipboardData.setData('text/plain', 'Confidential Government Record — Copying is strictly prohibited.');
+                    e.clipboardData.setData('text/plain', 'CONFIDENTIAL');
                 }
-                showSecurityToast('Copying data to clipboard is prohibited.');
+                showSecurityToast('Copying data is prohibited.');
                 return false;
             }
         }, true);
@@ -298,7 +209,7 @@
             }
         }, true);
 
-        // 4. Prevent Native Drag & Drop of Images / Tables
+        // 4. Prevent Drag & Drop of Images / Tables
         document.addEventListener('dragstart', function (e) {
             const tag = e.target.tagName;
             if (tag === 'IMG' || tag === 'A' || tag === 'TABLE' || tag === 'DIV') {
@@ -309,23 +220,20 @@
 
         // 5. Intercept Print & Save Shortcuts (Ctrl/Cmd + P, Ctrl/Cmd + S)
         window.addEventListener('keydown', function (e) {
-            // Print shortcut: Ctrl+P / Cmd+P
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
                 e.preventDefault();
                 e.stopPropagation();
-                showSecurityToast('Direct printing & PDF export are prohibited.');
+                showSecurityToast('Printing and PDF export are disabled.');
                 return false;
             }
 
-            // Save Page shortcut: Ctrl+S / Cmd+S
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 e.stopPropagation();
-                showSecurityToast('Saving offline copy is prohibited.');
+                showSecurityToast('Saving offline copy is disabled.');
                 return false;
             }
 
-            // View Source shortcut: Ctrl+U / Cmd+U
             if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -340,7 +248,7 @@
     }
 
     // =========================================================================
-    // 7. INITIALIZATION
+    // 6. INITIALIZATION
     // =========================================================================
 
     function initSecurityShield() {
