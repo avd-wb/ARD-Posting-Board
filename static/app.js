@@ -6475,7 +6475,7 @@ ${r.statutory_justification}
         // Update active UI styles on the 5 Red Zone category filter buttons
         document.querySelectorAll('#redZoneCategoryTabs .rz-cat-btn').forEach(btn => {
             const c = btn.getAttribute('data-cat');
-            if (c === cat) {
+            if (c === cat || (cat === 'tenure_over' && c === 'tenure_10y') || (cat === 'tenure_10y' && c === 'tenure_over')) {
                 btn.className = 'rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 text-white shadow-md flex items-center gap-1.5 shrink-0 transition cursor-pointer border border-rose-400/50';
             } else {
                 btn.className = 'rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700/80 flex items-center gap-1.5 shrink-0 transition cursor-pointer border border-slate-700/50';
@@ -6510,10 +6510,11 @@ ${r.statutory_justification}
                 const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = Number(v).toLocaleString(); };
                 setVal('redStatTotal', json.counts.total);
                 setVal('redStatPromo', json.counts.promotion);
-                setVal('redStatTenure10', json.counts.tenure_10y);
+                setVal('redStatTenure10', json.counts.tenure_over !== undefined ? json.counts.tenure_over : (json.counts.tenure_10y || 0));
                 setVal('redStatOblit', json.counts.post_abolition);
                 setVal('redStatPrayers', json.counts.personal_prayers);
                 setVal('redStatAdmin', json.counts.administrative_need);
+                setVal('redTabBadgeTenure', json.counts.tenure_over !== undefined ? json.counts.tenure_over : (json.counts.tenure_10y || 0));
             }
 
             // Populate District Dropdown with 23 Districts if not yet populated
@@ -6551,8 +6552,8 @@ ${r.statutory_justification}
                 let catBadge = '';
                 if (t.category === 'promotion') {
                     catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">50-Pt Roster Promotion</span>';
-                } else if (t.category === 'tenure_10y') {
-                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">10+ Years Station Tenure</span>';
+                } else if (t.category === 'tenure_over' || t.category === 'tenure_10y') {
+                    catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">⚠️ Order 291 Over-Tenure</span>';
                 } else if (t.category === 'post_abolition') {
                     catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">Post Abolition 1808</span>';
                 } else if (t.category === 'personal_prayers') {
@@ -6561,11 +6562,12 @@ ${r.statutory_justification}
                     catBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">Urgent Administrative Need</span>';
                 }
 
-                const tenureOverBadge = (t.tenure_years && t.tenure_years >= 10) 
-                    ? `<span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-600/30 text-rose-300 border border-rose-500/40 font-mono">⚠️ ${t.tenure_years} Years Station</span>` 
-                    : (t.tenure_text ? `<span class="block mt-0.5 text-[10px] text-slate-400 font-mono">${t.tenure_text}</span>` : '');
+                const tenureDisplay = t.tenure_str || (t.tenure_years ? `${t.tenure_years} Years` : (t.tenure_text || ''));
+                const tenureOverBadge = tenureDisplay 
+                    ? `<span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-600/30 text-rose-300 border border-rose-500/40 font-mono">⚠️ ${tenureDisplay}</span>` 
+                    : '';
 
-                const joinedDate = t.date_joined_current_station ? `<div class="text-[10px] text-slate-400 mt-0.5">Joined: ${t.date_joined_current_station}</div>` : '';
+                const joinedDate = (t.date_of_joining || t.date_joined_current_station) ? `<div class="text-[10px] text-slate-400 mt-0.5">Joined: ${t.date_of_joining || t.date_joined_current_station}</div>` : '';
 
                 const safeName = (t.officer_name || '').replace(/'/g, "\\'");
                 const safeDesig = (t.current_designation || '').replace(/'/g, "\\'");
@@ -6603,21 +6605,21 @@ ${r.statutory_justification}
 
                         <td class="py-3 px-3 max-w-[280px]">
                             <div class="mb-1">${catBadge}</div>
-                            <div class="text-[11px] text-slate-300 line-clamp-2" title="${t.basis_reason || ''}">${t.basis_reason || '-'}</div>
+                            <div class="text-[11px] text-slate-300 line-clamp-2" title="${t.transfer_reason || t.basis_reason || ''}">${t.transfer_reason || t.basis_reason || '-'}</div>
                             <div class="text-[10px] text-slate-400 font-mono mt-0.5">Priority Score: <strong class="text-rose-400">${t.priority_score || '80'}</strong></div>
                         </td>
 
                         <td class="py-3 px-3">
-                            <div class="font-bold text-emerald-400 text-xs">${t.proposed_designation || t.current_designation || 'Next Cadre Scale'}</div>
+                            <div class="font-bold text-emerald-400 text-xs">${t.proposed_designation || t.target_post || t.current_designation || 'Next Cadre Scale'}</div>
                             <div class="text-[11px] text-slate-300 mt-0.5">
-                                ${t.proposed_district ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-semibold">${t.proposed_district}</span>` : `<span class="text-slate-500 italic text-[10px]">Awaiting Station Allotment</span>`}
+                                ${(t.proposed_district || t.target_district) ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-semibold">${t.proposed_district || t.target_district}</span>` : `<span class="text-slate-500 italic text-[10px]">Awaiting Station Allotment</span>`}
                             </div>
-                            ${t.proposed_establishment ? `<div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">${t.proposed_establishment}</div>` : ''}
+                            ${(t.proposed_establishment || t.target_post) ? `<div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">${t.proposed_establishment || t.target_post}</div>` : ''}
                         </td>
 
                         <td class="py-3 px-3 text-center">
                             <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="window.pinpointRedZoneOfficerOnMap(${t.current_lat || 22.8875}, ${t.current_lng || 88.0195}, ${t.post_id || 'null'}, '${safeName}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Pinpoint officer station on Statewide GIS Geo-Map">
+                                <button onclick="window.pinpointRedZoneOfficerOnMap(${t.latitude || t.current_lat || 22.8875}, ${t.longitude || t.current_lng || 88.0195}, ${t.post_id || 'null'}, '${safeName}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 transition shadow-xs cursor-pointer" title="Pinpoint officer station on Statewide GIS Geo-Map">
                                     <i data-lucide="map-pin" class="w-3 h-3"></i>
                                     <span>Map</span>
                                 </button>
@@ -6697,14 +6699,14 @@ ${r.statutory_justification}
             `"${(t.current_establishment || '').replace(/"/g, '""')}"`,
             `"${t.current_district || ''}"`,
             `"${t.current_block || ''}"`,
-            `"${t.tenure_years || ''}"`,
+            `"${t.tenure_str || t.tenure_years || ''}"`,
             `"${t.category || ''}"`,
-            `"${(t.basis_reason || '').replace(/"/g, '""')}"`,
+            `"${(t.transfer_reason || t.basis_reason || '').replace(/"/g, '""')}"`,
             t.priority_score || '',
-            `"${(t.proposed_designation || '').replace(/"/g, '""')}"`,
-            `"${t.proposed_district || ''}"`,
-            t.current_lat || '',
-            t.current_lng || ''
+            `"${(t.proposed_designation || t.target_post || '').replace(/"/g, '""')}"`,
+            `"${t.proposed_district || t.target_district || ''}"`,
+            t.latitude || t.current_lat || '',
+            t.longitude || t.current_lng || ''
         ]);
 
         const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');

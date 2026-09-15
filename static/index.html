@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" href="/static/icon-192.png">
     <link rel="manifest" href="/static/manifest.json">
     <!-- Security Shield: Print & PDF Blocking, Text Selection Prevention, Forensic Watermark -->
-    <link rel="stylesheet" href="/static/security-shield.css?v=20260915_sec3">
+    <link rel="stylesheet" href="/static/security-shield.css?v=20260915_sec4">
     <!-- Leaflet GIS Map Assets -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -673,8 +673,8 @@
                                 <span class="w-2 h-2 rounded-full bg-white"></span>
                                 THE RED ZONE
                             </span>
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase tracking-wide">
-                                460 Pending Transfers Actionable
+                            <span id="redHeaderTotalBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase tracking-wide">
+                                773 Pending Transfers Actionable
                             </span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                                 Statutorily Actionable
@@ -684,7 +684,7 @@
                             <span>Pending Transfers & Rotational Action Queue</span>
                         </h2>
                         <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
-                            Official administrative transfer queue filtered by 5 distinct statutory & compassionate categories: 50-Point Roster Promotions, 10+ Years Station Over-Tenure, Notification 1808 Post Abolition Rehabilitation, Personal Reasons/Prayers, and Urgent Cadre Deficit Backfills.
+                            Official administrative transfer queue filtered by 5 distinct statutory & compassionate categories: 50-Point Roster Promotions, Order No. 291 of 2009 Zone/Block Over-Tenure (321 Officers), Notification 1808 Post Abolition Rehabilitation, Personal Reasons/Prayers, and Urgent Cadre Deficit Backfills.
                         </p>
                     </div>
 
@@ -692,15 +692,15 @@
                     <div class="grid grid-cols-3 sm:grid-cols-6 lg:flex items-center gap-2 shrink-0">
                         <div class="bg-slate-900/90 border border-rose-500/40 px-3 py-2 rounded-xl text-center">
                             <span class="block text-[10px] text-rose-300 font-bold uppercase">Total Red</span>
-                            <span id="redStatTotal" class="text-base sm:text-lg font-black text-white font-mono">460</span>
+                            <span id="redStatTotal" class="text-base sm:text-lg font-black text-white font-mono">773</span>
                         </div>
                         <div class="bg-amber-950/80 border border-amber-500/40 px-3 py-2 rounded-xl text-center cursor-pointer hover:border-amber-400 transition" onclick="window.switchRedZoneCategory('promotion')">
                             <span class="block text-[10px] text-amber-300 font-bold uppercase">Promotion</span>
                             <span id="redStatPromo" class="text-base sm:text-lg font-black text-amber-300 font-mono">243</span>
                         </div>
-                        <div class="bg-rose-950/80 border border-rose-500/40 px-3 py-2 rounded-xl text-center cursor-pointer hover:border-rose-400 transition" onclick="window.switchRedZoneCategory('tenure_10y')">
-                            <span class="block text-[10px] text-rose-300 font-bold uppercase">10y Tenure</span>
-                            <span id="redStatTenure10" class="text-base sm:text-lg font-black text-rose-300 font-mono">8</span>
+                        <div class="bg-rose-950/80 border border-rose-500/40 px-3 py-2 rounded-xl text-center cursor-pointer hover:border-rose-400 transition" onclick="window.switchRedZoneCategory('tenure_over')">
+                            <span class="block text-[10px] text-rose-300 font-bold uppercase">Order 291 Over</span>
+                            <span id="redStatTenure10" class="text-base sm:text-lg font-black text-rose-300 font-mono">321</span>
                         </div>
                         <div class="bg-purple-950/80 border border-purple-500/40 px-3 py-2 rounded-xl text-center cursor-pointer hover:border-purple-400 transition" onclick="window.switchRedZoneCategory('post_abolition')">
                             <span class="block text-[10px] text-purple-300 font-bold uppercase">Abolished</span>
@@ -725,10 +725,10 @@
                             <span>1. Transfer Due Promotion</span>
                             <span class="px-1.5 py-0.2 rounded-full bg-rose-800 text-white text-[10px] font-mono">243</span>
                         </button>
-                        <button data-cat="tenure_10y" class="rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700/80 flex items-center gap-1.5 shrink-0 transition cursor-pointer">
+                        <button data-cat="tenure_over" class="rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700/80 flex items-center gap-1.5 shrink-0 transition cursor-pointer">
                             <i data-lucide="clock" class="w-3.5 h-3.5 text-rose-400"></i>
-                            <span>2. Eligibility: 10+ Years Tenure</span>
-                            <span class="px-1.5 py-0.2 rounded-full bg-slate-900 text-slate-300 text-[10px] font-mono">8</span>
+                            <span>2. Over-Tenure (Order No. 291 of 2009)</span>
+                            <span id="redTabBadgeTenure" class="px-1.5 py-0.2 rounded-full bg-slate-900 text-slate-300 text-[10px] font-mono">321</span>
                         </button>
                         <button data-cat="post_abolition" class="rz-cat-btn px-3 py-2 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700/80 flex items-center gap-1.5 shrink-0 transition cursor-pointer">
                             <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-purple-400"></i>
@@ -3269,8 +3269,8 @@
     </div>
 
     <!-- Script file with cache buster -->
-    <script src="/static/app.js?v=20260915_sec3"></script>
-    <script src="/static/security-shield.js?v=20260915_sec3"></script>
+    <script src="/static/app.js?v=20260915_sec4"></script>
+    <script src="/static/security-shield.js?v=20260915_sec4"></script>
     <script>
         if (window.lucide) lucide.createIcons();
         window.openVisitorAnalyticsModal = window.openVisitorAnalyticsModal || function() {

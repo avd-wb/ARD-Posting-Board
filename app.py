@@ -608,6 +608,10 @@ def get_redzone_pending_transfers(
     counts = {r["category"]: r["cnt"] for r in cur.fetchall()}
     total_all = sum(counts.values())
     counts["total"] = total_all
+    # Backward compatibility: map both tenure_over and tenure_10y
+    tenure_cnt = counts.get("tenure_over") or counts.get("tenure_10y") or 0
+    counts["tenure_over"] = tenure_cnt
+    counts["tenure_10y"] = tenure_cnt
     
     query = """
         SELECT id, category, category_label, priority_score, officer_name, hrms_id, gender,
@@ -619,8 +623,11 @@ def get_redzone_pending_transfers(
     """
     params = []
     if category and category != "all":
-        query += " AND category = ?"
-        params.append(category)
+        if category in ("tenure_over", "tenure_10y"):
+            query += " AND category IN ('tenure_over', 'tenure_10y')"
+        else:
+            query += " AND category = ?"
+            params.append(category)
         
     if district and district != "ALL":
         query += " AND (current_district = ? OR target_district = ?)"

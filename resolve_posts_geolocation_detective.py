@@ -981,65 +981,84 @@ def run():
         ))
     print(f"  Added {len(roster_rows)} Promotion Pending records.")
 
-    # Category 2: Completion of 10 Years
-    print("Populating Category 2: Completion of 10 Years Tenure...")
+    # Category 2: Order No. 291 of 2009 Over-Tenure (Zone/Block Norm)
+    print("Populating Category 2: Over-Tenure as per Order No. 291 of 2009 (Memo 291)...")
     cur.execute("""
-        SELECT id, post_sl, district, block, establishment, designation, incumbent_name,
-               incumbent_hrms, incumbent_doj, incumbent_tenure, tenure_norm, tenure_over_flag,
-               latitude, longitude
-        FROM cadre_1794_posts
-        WHERE incumbent_hrms IS NOT NULL AND incumbent_hrms != ''
-        ORDER BY id;
+        SELECT post_id, post_sl, district, block, establishment, designation,
+               incumbent_name, incumbent_hrms, incumbent_doj, incumbent_tenure,
+               tenure_norm, tenure_over_flag, incumbent_dor, latitude, longitude, avd_member
+        FROM sacrosanct_cadre_posts
+        WHERE tenure_over_flag = 'Yes' AND incumbent_hrms IS NOT NULL AND incumbent_hrms != ''
+        ORDER BY post_id;
     """)
-    all_cadre = [dict(r) for r in cur.fetchall()]
-    ten_year_count = 0
-    for p in all_cadre:
+    over_cadre = [dict(r) for r in cur.fetchall()]
+    order291_count = 0
+    ref_date = datetime.datetime(2026, 9, 15)
+
+    for p in over_cadre:
         t_str = p.get("incumbent_tenure") or ""
         doj = p.get("incumbent_doj") or ""
-        m = re.search(r'(\d+)\s*y', t_str)
-        years = int(m.group(1)) if m else 0
-        is_ten_plus = (years >= 10)
+        norm = float(p.get("tenure_norm") or 5.0)
 
-        if not is_ten_plus and doj and len(doj) >= 4:
+        m = re.search(r'(\d+)\s*y', t_str)
+        years = float(m.group(1)) if m else 0.0
+        mm = re.search(r'(\d+)\s*m', t_str)
+        if mm:
+            years += round(float(mm.group(1)) / 12.0, 1)
+
+        if years == 0.0 and doj and len(doj) >= 10:
             try:
-                yr = int(doj[:4])
-                if yr <= 2016:
-                    is_ten_plus = True
-                    years = max(years, 2026 - yr)
-            except ValueError:
+                doj_dt = datetime.datetime.strptime(doj[:10], "%Y-%m-%d")
+                years = round((ref_date - doj_dt).days / 365.25, 1)
+                t_str = f"{years:.1f} years"
+            except Exception:
                 pass
 
-        if is_ten_plus:
-            ten_year_count += 1
-            cur.execute("""
-                INSERT INTO pending_transfers_redzone (
-                    category, category_label, priority_score, officer_name, hrms_id, gender,
-                    current_designation, current_establishment, current_block, current_district,
-                    tenure_years, tenure_str, date_of_joining, date_of_retirement, transfer_reason,
-                    target_post, target_district, ground_type, post_id, latitude, longitude, status
-                ) VALUES (
-                    'tenure_10y', 'Transfer Eligibility: 10+ Years', 9, ?, ?, 'Male',
-                    ?, ?, ?, ?,
-                    ?, ?, ?, '—', ?,
-                    'Routine Cadre Rotation / Transferable Station', ?, 'Statutory Long Tenure (>10y)', ?, ?, ?, 'Pending Rotation Order'
-                );
-            """, (
-                p["incumbent_name"],
-                p["incumbent_hrms"],
-                p["designation"],
-                p["establishment"],
-                p["block"] or "HQ",
-                p["district"],
-                float(years),
-                t_str or f"{years} years",
-                doj or "—",
-                f"Officer has completed {years} years in the same post/station (tenure norm is {p.get('tenure_norm', 3.0)} years). Mandatory rotational transfer eligible under Service Rules.",
-                p["district"],
-                p["id"],
-                p["latitude"],
-                p["longitude"]
-            ))
-    print(f"  Added {ten_year_count} 10+ Years Tenure records.")
+        excess = max(0.0, years - norm)
+        priority_score = min(98, int(85 + excess * 1.5))
+        is_difficult = (norm <= 4.0)
+        zone_type = "Difficult / Hill / Sundarbans / Jungle Mahal (4-year norm)" if is_difficult else "General Area (5-year norm)"
+        block_label = f" / {p['block']}" if p.get("block") and p["block"] != "Under verification" else ""
+
+        reason = (
+            f"Officer has completed {t_str or f'{years:.1f} years'} in station (norm: {int(norm)} years under Order No. 291 of 2009 for {p['district']}{block_label} — {zone_type}). "
+            f"Mandatory rotational transfer due."
+        )
+
+        cur.execute("""
+            INSERT INTO pending_transfers_redzone (
+                category, category_label, priority_score, officer_name, hrms_id, gender,
+                current_designation, current_establishment, current_block, current_district,
+                tenure_years, tenure_str, date_of_joining, date_of_retirement, transfer_reason,
+                target_post, target_district, ground_type, post_id, latitude, longitude, status, avd_member
+            ) VALUES (
+                'tenure_over', 'Order 291 Over-Tenure', ?, ?, ?, 'Male',
+                ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                'Routine Cadre Rotation / Transferable Station', ?, ?, ?, ?, ?, 'Pending Rotation Order', ?
+            );
+        """, (
+            priority_score,
+            p["incumbent_name"],
+            p["incumbent_hrms"],
+            p["designation"],
+            p["establishment"],
+            p["block"] or "HQ",
+            p["district"],
+            float(years),
+            t_str or f"{years:.1f} years",
+            doj or "—",
+            p.get("incumbent_dor") or "—",
+            reason,
+            p["district"],
+            f"Order 291 Over-Tenure (>{int(norm)}y)",
+            p["post_id"],
+            p["latitude"],
+            p["longitude"],
+            p.get("avd_member") or "No"
+        ))
+        order291_count += 1
+    print(f"  Added {order291_count} Order No. 291 of 2009 Over-Tenure records.")
 
     # Category 3: Displacement of Post Abolition
     print("Populating Category 3: Displacement of Post Abolition...")
