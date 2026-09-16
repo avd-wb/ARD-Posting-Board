@@ -1,0 +1,19 @@
+backups/
+*.bak
+*.bak.*
+scratch/
+04_LISTS_FROM_SOT/
+00_Read Me/
+file_manifest.json
+*.log
+*.xlsx
+*.csv
+downloaded_1116_ag/
+orders_repository/
+pdf_text_dump.txt
+latest_gdrive_download/
+ard_analytics.db
+ard_database.db
+ard_posting_master.db
+avd_database.db
+.git
