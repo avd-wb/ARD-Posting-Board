@@ -1692,7 +1692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span>•</span>
                                         <span>DOR: ${p.incumbent_dor || '-'}</span>
                                     </div>
-                                `))}
+                                `)}
                             </div>
 
                             <!-- Action Buttons -->

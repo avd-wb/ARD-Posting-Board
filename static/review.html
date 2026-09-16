@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARD Promotion & Transfer — Review Board</title>
-<link rel="stylesheet" href="/static/security-shield.css?v=20260916_inactivity">
+<link rel="stylesheet" href="/static/security-shield.css?v=20260916_v5_prod">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1c1f24;--mut:#5b6472;--line:#dfe3e8;--acc:#1f4e78;--ok:#2e7d32;--warn:#b26a00;--bad:#b3261e;--chip:#eef2f7}
 html{scroll-behavior:smooth}
@@ -217,5 +217,5 @@ function shareWA(){window.open("https://wa.me/?text="+encodeURIComponent(ansText
 async function copyAns(){try{await navigator.clipboard.writeText(ansText());alert("কপি হয়েছে")}catch(e){alert("কপি করা গেল না — টেক্সট সিলেক্ট করে কপি করুন")}}
 function dlAns(){const b=new Blob([ansText()],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="ARD_review_answers.txt";a.click()}
 </script>
-<script src="/static/security-shield.js?v=20260916_inactivity"></script>
+<script src="/static/security-shield.js?v=20260916_v5_prod"></script>
 </body></html>
