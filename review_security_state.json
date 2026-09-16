@@ -1,6 +1,6 @@
 {
-  "current_password": "sonarbangla",
-  "current_hash": "2db381eb7bfb765c7defc0f117a9b64847b11f4c09b81ab117f2a4a78a9be888",
+  "current_password": "sonarbangla2",
+  "current_hash": "f874e75c55ac52d998b7745992092a97a710f4339fc3268ccd1bd2d05cfea10e",
   "policy": "static_persistent",
   "auto_rotate": false,
   "recipient_email": "nirmalyaranjansarkar@gmail.com"

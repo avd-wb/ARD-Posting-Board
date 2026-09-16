@@ -276,7 +276,7 @@
             </div>
 
             <!-- Instruction & Notice Box -->
-            <div class="mb-6 p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-sm text-slate-300 leading-relaxed space-y-2">
+            <div class="mb-4 p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 text-sm text-slate-300 leading-relaxed space-y-2">
                 <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                     <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
                     <span>Restricted Executive System</span>
@@ -284,6 +284,15 @@
                 <p class="text-xs text-slate-300">
                     This system contains confidential departmental records. Please enter your authorized access credentials to continue.
                 </p>
+            </div>
+
+            <!-- Inactivity Session Timeout Alert Box -->
+            <div id="authTimeoutNotice" class="hidden mb-4 p-3.5 rounded-2xl bg-amber-950/90 border border-amber-600/80 text-amber-200 text-xs flex items-start gap-2.5 shadow-lg">
+                <i data-lucide="clock" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                <div class="leading-relaxed">
+                    <span class="font-semibold text-amber-300 block mb-0.5">Session Expired due to Inactivity</span>
+                    You have been automatically logged out after 1 hour of inactivity. Please enter your password to resume.
+                </div>
             </div>
 
             <!-- Login Form -->
@@ -357,21 +366,12 @@
                     </div>
                 </div>
 
-                <!-- Center: Organogram & 10-Agent Verification Matrix Buttons (Desktop lg+ only) -->
+                <!-- Center: Organogram Button (Desktop lg+ only) -->
                 <div class="hidden lg:flex flex-1 items-center justify-center px-2 gap-2">
                     <button id="btnHeaderOrganogram" data-tab="tab-organogram" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-amber-400/50 hover:border-amber-300 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Departmental Organogram & Administrative Structure">
                         <i data-lucide="network" class="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition shrink-0"></i>
                         <span class="tracking-wide">Organogram</span>
                     </button>
-                    <button id="btnHeaderVerification" data-tab="tab-verification" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 font-bold text-xs border border-emerald-500/60 hover:border-emerald-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open Concurrent 10-Agent Verification Matrix">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition shrink-0"></i>
-                        <span class="tracking-wide">10-Agent Audit</span>
-                    </button>
-                    <a href="/review" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 font-bold text-xs border border-indigo-500/60 hover:border-indigo-400 shadow-sm transition active:scale-95 group text-center shrink-0" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
-                        <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition shrink-0"></i>
-                        <span class="tracking-wide">Review (337)</span>
-                        <span class="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.2 rounded-full">AI</span>
-                    </a>
                 </div>
 
                 <!-- Right: Header Actions (Machine Learning Countdown Timer, Search, User, Menu) -->
@@ -471,12 +471,6 @@
                         <span id="badgeSplitBoardCount" class="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded-full">Dual-Pane</span>
                     </button>
 
-                    <a href="/review" target="_blank" class="tab-btn px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/50 flex items-center gap-1.5 transition shrink-0 shadow-xs" title="Open ARD Promotion & Transfer Review Board (337 Officers + Bengali AI Observations)">
-                        <i data-lucide="clipboard-check" class="w-3 h-3 text-indigo-400"></i>
-                        <span>Review Board (337)</span>
-                        <span class="text-[9px] bg-indigo-500 text-white font-black px-1.5 py-0.2 rounded-full">Bengali AI</span>
-                    </a>
-
                     <button data-tab="tab-map" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
                         <i data-lucide="map" class="w-3 h-3 text-emerald-400"></i>
                         <span>GIS Map</span>
@@ -519,11 +513,6 @@
                         <span class="text-[9px] bg-slate-800 text-slate-300 font-bold px-1 rounded border border-slate-700">7 Tiers</span>
                     </button>
 
-                    <button data-tab="tab-verification" class="tab-btn px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-1 transition shrink-0">
-                        <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
-                        <span>10-Agent Audit</span>
-                        <span id="badgeAuditTabCount" class="text-[9px] bg-emerald-950 text-emerald-300 font-bold px-1 rounded border border-emerald-800">10/10</span>
-                    </button>
                 </nav>
 
                 <!-- Right: Compact Policy Guide & Legend Trigger -->
@@ -562,98 +551,98 @@
 
             <div class="flex md:grid md:grid-cols-4 lg:grid-cols-8 overflow-x-auto snap-x snap-mandatory gap-2 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar mobile-scroll-fade smooth-momentum-scroll" id="kpiStatusCardsGrid">
                 <!-- 1. Total Posts -->
-                <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50/90 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-1809-CADRE) · Total 1,794 Department Cadre Posts in Notif. 1809">
+                <div id="kpiCardTotalPosts" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-50/90 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Total 1,794 Sanctioned Department Cadre Posts">
                     <div class="text-[10px] sm:text-[11px] text-slate-500 group-hover:text-indigo-700 font-medium flex items-center justify-center gap-1">
                         <span>Total Sanctioned</span>
                         <i data-lucide="layers" class="w-3 h-3 text-indigo-600"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-slate-800 group-hover:text-indigo-900" id="kpiTotalPosts">1,794</div>
                     <div class="text-[9px] sm:text-[10px] text-slate-400 group-hover:text-indigo-600 font-medium flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono text-[8px] font-bold">VERIFIED</span>
+                        <span class="px-1 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono text-[8px] font-bold">SANCTIONED</span>
                     </div>
                 </div>
 
                 <!-- 2. Active Filled -->
-                <div id="kpiCardFilled" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/70 hover:bg-blue-100/60 border border-blue-200/80 hover:border-blue-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-FILLED) · Active Cadre Incumbents in Sanctioned Posts">
+                <div id="kpiCardFilled" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-blue-50/70 hover:bg-blue-100/60 border border-blue-200/80 hover:border-blue-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Active Cadre Incumbents in Sanctioned Posts">
                     <div class="text-[10px] sm:text-[11px] text-blue-700 font-medium flex items-center justify-center gap-1">
                         <span>Active Filled</span>
                         <i data-lucide="user-check" class="w-3 h-3 text-blue-600"></i>
                     </div>
-                    <div class="text-sm sm:text-base font-bold text-blue-800" id="kpiFilledPosts">936</div>
+                    <div class="text-sm sm:text-base font-bold text-blue-800" id="kpiFilledPosts">932</div>
                     <div class="text-[9px] sm:text-[10px] text-blue-600 font-medium flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-blue-200/80 text-blue-800 font-mono text-[8px] font-bold">VERIFIED</span>
+                        <span class="px-1 py-0.2 rounded bg-blue-200/80 text-blue-800 font-mono text-[8px] font-bold">ACTIVE</span>
                     </div>
                 </div>
 
-                <!-- 3. Actionable Vacancies Post-Moves -->
-                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/70 hover:bg-emerald-100/60 border border-emerald-200/80 hover:border-emerald-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Actionable Vacancies Post-Moves: 253 Baseline Clear + 100 Newly Vacated by Promotion/Transfer">
+                <!-- 3. Cadre Vacancies -->
+                <div id="kpiCardCadreVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-amber-50/70 hover:bg-amber-100/60 border border-amber-200/80 hover:border-amber-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Total Vacancies in Sanctioned Cadre">
+                    <div class="text-[10px] sm:text-[11px] text-amber-700 font-medium flex items-center justify-center gap-1">
+                        <span>Cadre Vacancies</span>
+                        <i data-lucide="alert-circle" class="w-3 h-3 text-amber-600"></i>
+                    </div>
+                    <div class="text-sm sm:text-base font-bold text-amber-800" id="kpiCadreVacancies">852</div>
+                    <div class="text-[9px] sm:text-[10px] text-amber-600 font-medium flex items-center justify-center gap-0.5">
+                        <span class="px-1 py-0.2 rounded bg-amber-200/80 text-amber-800 font-mono text-[8px] font-bold">VACANT</span>
+                    </div>
+                </div>
+
+                <!-- 4. Actionable Vacancies Post-Moves -->
+                <div id="kpiCardTotalVacancies" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-emerald-50/70 hover:bg-emerald-100/60 border border-emerald-200/80 hover:border-emerald-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Actionable Vacancies Post-Moves: Baseline + Newly Vacated">
                     <div class="text-[10px] sm:text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
                         <span>Actionable Vacancies</span>
                         <i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-emerald-700" id="kpiTotalVacancies">353</div>
                     <div class="text-[9px] sm:text-[10px] text-emerald-600 font-medium flex items-center justify-center gap-0.5" id="kpiVacanciesSub">
-                        <span class="px-1 py-0.2 rounded bg-emerald-200/80 text-emerald-800 font-mono text-[8px] font-bold">253 CLR + 100 NEW</span>
-                    </div>
-                </div>
-
-                <!-- 4. No Return Received -->
-                <div id="kpiCardNoReturn" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-amber-50/70 hover:bg-amber-100/60 border border-amber-200/80 hover:border-amber-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-HQ-NO-RETURN) · Posts with No Field Return Received (Not Vacancies)">
-                    <div class="text-[10px] sm:text-[11px] text-amber-700 font-medium flex items-center justify-center gap-1">
-                        <span>No Return</span>
-                        <i data-lucide="help-circle" class="w-3 h-3 text-amber-600"></i>
-                    </div>
-                    <div class="text-sm sm:text-base font-bold text-amber-800" id="kpiNoReturn">595</div>
-                    <div class="text-[9px] sm:text-[10px] text-amber-600 font-medium flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-amber-200/80 text-amber-800 font-mono text-[8px] font-bold">UNDER VERIF</span>
+                        <span class="px-1 py-0.2 rounded bg-emerald-200/80 text-emerald-800 font-mono text-[8px] font-bold">ACTIONABLE</span>
                     </div>
                 </div>
 
                 <!-- 5. Not Established -->
-                <div id="kpiCardNotEstablished" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-100/70 hover:bg-slate-200/60 border border-slate-300/80 hover:border-slate-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: VERIFIED (EV-OCC-NOT-EST) · Sanctioned Posts in Non-established Facilities">
+                <div id="kpiCardNotEstablished" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-slate-100/70 hover:bg-slate-200/60 border border-slate-300/80 hover:border-slate-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Sanctioned Posts in Non-established Facilities">
                     <div class="text-[10px] sm:text-[11px] text-slate-600 font-medium flex items-center justify-center gap-1">
                         <span>Not Established</span>
                         <i data-lucide="slash" class="w-3 h-3 text-slate-500"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-slate-700" id="kpiNotEstablished">10</div>
                     <div class="text-[9px] sm:text-[10px] text-slate-500 font-medium flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-slate-200 text-slate-700 font-mono text-[8px] font-bold">VERIFIED</span>
+                        <span class="px-1 py-0.2 rounded bg-slate-200 text-slate-700 font-mono text-[8px] font-bold">PENDING</span>
                     </div>
                 </div>
 
                 <!-- 6. Abolished Post Leads -->
-                <div id="kpiCardObliterated" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-rose-50/70 hover:bg-rose-100/60 border border-rose-200/80 hover:border-rose-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: DERIVED (EV-1808-LEADS) · Posts in HQ returns with no line in Notif. 1809 (SSOT T3)">
+                <div id="kpiCardObliterated" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-rose-50/70 hover:bg-rose-100/60 border border-rose-200/80 hover:border-rose-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Cadre Reorganization Pool · Abolished Posts">
                     <div class="text-[10px] sm:text-[11px] text-rose-700 font-medium flex items-center justify-center gap-1">
-                        <span>Abolished Leads</span>
+                        <span>Abolished Pool</span>
                         <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-rose-700" id="kpiObliterated">383</div>
                     <div class="text-[9px] sm:text-[10px] text-rose-600 flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-rose-200/80 text-rose-800 font-mono text-[8px] font-bold">DERIVED (T3)</span>
+                        <span class="px-1 py-0.2 rounded bg-rose-200/80 text-rose-800 font-mono text-[8px] font-bold">REORGANIZED</span>
                     </div>
                 </div>
 
                 <!-- 7. 50-Point Roster -->
-                <div id="kpiCardRoster" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-purple-50/70 hover:bg-purple-100/60 border border-purple-200/80 hover:border-purple-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: 242/242 LINKED (100%) · SSOT T4_DD_PROMOTION_242 · Point 152 Linked to 1994003580">
+                <div id="kpiCardRoster" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-purple-50/70 hover:bg-purple-100/60 border border-purple-200/80 hover:border-purple-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Promotion Roster Candidates">
                     <div class="text-[10px] sm:text-[11px] text-purple-700 font-medium flex items-center justify-center gap-1">
                         <span>50-Pt Roster</span>
                         <i data-lucide="list-ordered" class="w-3 h-3 text-purple-600"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-purple-700" id="kpiRoster">242</div>
                     <div class="text-[9px] sm:text-[10px] text-purple-600 flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-purple-200/80 text-purple-800 font-mono text-[8px] font-bold">242/242 LINKED</span>
+                        <span class="px-1 py-0.2 rounded bg-purple-200/80 text-purple-800 font-mono text-[8px] font-bold">242 LINKED</span>
                     </div>
                 </div>
 
-                <!-- 8. Available DD Posts (Schedule T5) -->
-                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-teal-50/70 hover:bg-teal-100/60 border border-teal-200/80 hover:border-teal-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="State: UNDER VERIFICATION (EV-T5-DD-244) · 244 DD Posts in Schedule T5">
+                <!-- 8. Available DD Posts -->
+                <div id="kpiCardVacantDD" class="kpi-card min-w-[125px] sm:min-w-0 shrink-0 snap-start bg-teal-50/70 hover:bg-teal-100/60 border border-teal-200/80 hover:border-teal-400 rounded-xl p-2 sm:p-2.5 text-center cursor-pointer transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-xs active:scale-95 select-none group relative" title="Available Deputy Director Posts">
                     <div class="text-[10px] sm:text-[11px] text-teal-700 font-medium flex items-center justify-center gap-1">
-                        <span>DD Posts (T5)</span>
+                        <span>DD Posts</span>
                         <i data-lucide="award" class="w-3 h-3 text-teal-600"></i>
                     </div>
                     <div class="text-sm sm:text-base font-bold text-teal-700" id="kpiVacantDD">244 Posts</div>
                     <div class="text-[9px] sm:text-[10px] text-teal-600 flex items-center justify-center gap-0.5">
-                        <span class="px-1 py-0.2 rounded bg-teal-200/80 text-teal-800 font-mono text-[8px] font-bold">UNDER VERIF</span>
+                        <span class="px-1 py-0.2 rounded bg-teal-200/80 text-teal-800 font-mono text-[8px] font-bold">SANCTIONED</span>
                     </div>
                 </div>
             </div>
@@ -684,7 +673,7 @@
                             <span>Pending Transfers & Rotational Action Queue</span>
                         </h2>
                         <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
-                            Official administrative transfer queue filtered by 5 distinct statutory & compassionate categories: 50-Point Roster Promotions, Order No. 291 of 2009 Zone/Block Over-Tenure (321 Officers), Notification 1808 Post Abolition Rehabilitation, Personal Reasons/Prayers, and Urgent Cadre Deficit Backfills.
+                            Official administrative transfer queue filtered by 5 distinct administrative & compassionate categories: 50-Point Roster Promotions, Zone/Block Over-Tenure (321 Officers), Reorganization Rehabilitation, Personal Reasons/Prayers, and Urgent Cadre Deficit Backfills.
                         </p>
                     </div>
 
@@ -1218,7 +1207,7 @@
                             <span class="md:hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-bold text-xs">106 Posts</span>
                         </div>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            Notification No. 1808 (106 Abolished Posts). Active serving officers protected with seamless rehabilitation.
+                            Cadre Reorganization Pool (Abolished Posts). Active serving officers protected with seamless rehabilitation.
                         </p>
                     </div>
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 text-xs">
@@ -1526,10 +1515,10 @@
                         <div>
                             <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <i data-lucide="layout-grid" class="w-5 h-5 text-emerald-600"></i>
-                                <span>Active Department Cadre (1,794 Sanctioned Posts under Notification No. 1809)</span>
+                                <span>Active Department Cadre (1,794 Sanctioned Posts)</span>
                             </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">
-                                Verified Single Source of Truth: 1,794 Sanctioned (936 Filled, 253 Clear Vacancies, 595 No Return Received, 10 Not Established).
+                            <p class="text-xs text-slate-500 mt-0.5" id="cadreSubtitleInfo">
+                                Total Sanctioned Cadre: 1,794 Posts across all districts, directorate headquarters, and field establishments.
                             </p>
                         </div>
                         <div class="text-xs text-slate-500 font-medium" id="cadrePaginationInfo">
@@ -1537,12 +1526,12 @@
                         </div>
                     </div>
 
-                    <!-- Informational Callout: Sanctioned Posts vs Physical Deployments -->
+                    <!-- Informational Callout: Master Cadre Directory Guide -->
                     <div class="bg-blue-50/90 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 flex items-start gap-2.5">
                         <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"></i>
                         <div class="space-y-0.5">
-                            <span class="font-semibold text-blue-950">Directorate Headquarters & Statewide Cadre Census Note:</span>
-                            <span class="text-slate-700">Notification No. 1809 sanctions 21 Assistant Director posts at Directorate HQ. However, official returns confirm <strong>37 officers physically deployed</strong> at Directorate HQ & Salt Lake units, plus 135 excess district postings. To search all <strong>1,617 statewide officers</strong>, switch to the <button onclick="document.querySelector('[data-tab=tab-master-directory]').click()" class="text-blue-700 underline font-semibold hover:text-blue-950">Master Cadre Directory</button>.</span>
+                            <span class="font-semibold text-blue-950">Master Cadre Directory:</span>
+                            <span class="text-slate-700">To search, filter, and view detailed service profiles for all statewide officers, switch to the <button onclick="document.querySelector('[data-tab=tab-master-directory]').click()" class="text-blue-700 underline font-semibold hover:text-blue-950">Master Cadre Directory</button>.</span>
                         </div>
                     </div>
 
@@ -1558,10 +1547,9 @@
 
                         <select id="cadreStatusFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
                             <option value="ALL">All Status</option>
-                            <option value="occupied">Filled (936)</option>
-                            <option value="vacant">Clear Vacancy (253)</option>
-                            <option value="no_return">No Return Received (595)</option>
-                            <option value="not_established">Not Established (10)</option>
+                            <option value="occupied">Filled</option>
+                            <option value="vacant">Vacancy</option>
+                            <option value="not_established">Not Established</option>
                         </select>
 
                         <select id="cadreTenureFilter" class="w-full h-10 border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-slate-700 font-medium shadow-xs touch-target">
@@ -2009,10 +1997,10 @@
                             Official Statutory Framework
                         </span>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-wbblue-800 text-blue-200 border border-wbblue-600">
-                            WBAH&VS Reconstituted Cadre (Notification 1808 & 1809)
+                            WBAH&VS Reconstituted Cadre
                         </span>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-700 text-emerald-100 border border-emerald-500">
-                            Head of Offices (Order No. 575-AR&AH dt. 27.02.2026)
+                            Head of Offices Structure
                         </span>
                     </div>
                     <div>
@@ -2453,7 +2441,7 @@
                             This application is a <strong>Beta Version currently in the active development and data-synchronization stage</strong>. All cadre statistics, 50-Point Roster assignments, career posting histories, and simulation projections are strictly provisional and intended solely for internal administrative review and preference reconciliation within the Animal Resources Development Department, Government of West Bengal.
                         </p>
                         <p class="text-slate-400 text-[11px]">
-                            <strong>Database Connection:</strong> Master Source of Truth (<span class="font-mono text-cyan-300">20260913_AVD_SOT_Master_Register.sqlite</span>) connected strictly in <strong>Read-Only mode (<code class="text-emerald-400 font-mono">?mode=ro</code>)</strong> with automated query-layer PII stripping. Final placements, promotions, and transfers are governed by statutory notifications, WBAH&VS Service Rules, and formal orders issued under the authority of the Governor of West Bengal.
+                            <strong>Database Connection:</strong> Department Personnel Register connected strictly in <strong>Read-Only mode (<code class="text-emerald-400 font-mono">?mode=ro</code>)</strong> with automated query-layer PII protection.
                         </p>
                     </div>
                 </div>
@@ -2570,8 +2558,8 @@
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Posting Reason / Administrative Authority</label>
                     <select id="modalReasonSelect" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-800">
                         <option value="Promotion (50-Point Roster)">Promotion under 50-Point Roster (to Deputy Director)</option>
-                        <option value="Notification 1808 Rehabilitation">Notification No. 1808 Rehabilitation (from Abolished Post)</option>
-                        <option value="Rotational Transfer (Memo 291)">Rotational Transfer on Tenure Completion (Memo 291)</option>
+                        <option value="Reorganization Rehabilitation">Reorganization Rehabilitation (from Abolished Post)</option>
+                        <option value="Rotational Transfer">Rotational Transfer on Tenure Completion</option>
                         <option value="Administrative Grounds">Administrative Grounds</option>
                     </select>
                 </div>
@@ -2597,7 +2585,7 @@
                         <i data-lucide="layers" class="w-5 h-5 text-amber-300"></i>
                         <span>Cadre Post Waterfall Hierarchy (1,794 Sanctioned Posts)</span>
                     </h3>
-                    <p class="text-xs text-blue-200 mt-0.5">Notification No. 1809-AR&AH/3A-08/23 dt. 18.06.2025 | Establishment & Rank Structure</p>
+                    <p class="text-xs text-blue-200 mt-0.5">Approved Cadre | Establishment & Rank Structure</p>
                 </div>
                 <button id="btnCloseWaterfallModal" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -3027,15 +3015,6 @@
                             <span class="text-[10px] text-slate-600 leading-tight">Candidates vs Vacancies Match</span>
                         </button>
 
-                        <!-- Promotion Review Board 337 -->
-                        <a href="/review" target="_blank" class="p-3 rounded-2xl border border-indigo-300 bg-indigo-50/80 hover:bg-indigo-100 text-left flex flex-col gap-1 transition active:scale-95 touch-target">
-                            <div class="flex items-center justify-between">
-                                <i data-lucide="clipboard-check" class="w-5 h-5 text-indigo-600"></i>
-                                <span class="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-indigo-600 text-white">337 AI</span>
-                            </div>
-                            <span class="text-xs font-bold text-slate-900">Review Board (337)</span>
-                            <span class="text-[10px] text-slate-600 leading-tight">Bengali AI & Vacancy Finder</span>
-                        </a>
                     </div>
                 </div>
 
@@ -3269,8 +3248,8 @@
     </div>
 
     <!-- Script file with cache buster -->
-    <script src="/static/app.js?v=20260915_sec4"></script>
-    <script src="/static/security-shield.js?v=20260915_sec4"></script>
+    <script src="/static/app.js?v=20260916_clean2"></script>
+    <script src="/static/security-shield.js?v=20260916_clean2"></script>
     <script>
         if (window.lucide) lucide.createIcons();
         window.openVisitorAnalyticsModal = window.openVisitorAnalyticsModal || function() {

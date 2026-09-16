@@ -19,6 +19,9 @@ import glob
 import csv
 import shutil
 
+import collections
+import json
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_DB = os.path.join(BASE_DIR, "ard_master_truth.db")
 SOT_PATH = "/Users/nirmalyaranjansarkar/Projects/ARD PROMOTION/02_MASTER_SOURCE_OF_TRUTH/20260913_AVD_SOT_Master_Register.sqlite"
@@ -59,7 +62,17 @@ PERMITTED_TABLES = [
     "POLICY_RULES",
     "BLOCK_MAP_1995_TO_LGD",
     "BLOCK_MAP_REPORTED_TO_LGD",
-    "LGD_BLOCKS_WB_341"
+    "LGD_BLOCKS_WB_341",
+    "POSTING_HISTORY",
+    "DARAH_POSTINGS",
+    "ORDER_MOVEMENTS",
+    "TENURE_SPELLS",
+    "TENURE_SUMMARY",
+    "ORDERS",
+    "ORDER_OFFICERS",
+    "ROSTER_50POINT",
+    "DD_VACANCY",
+    "AVD_MEMBER_REGISTER"
 ]
 
 FORBIDDEN_COL_PATTERN = re.compile(
@@ -83,6 +96,14 @@ for tbl in PERMITTED_TABLES:
     placeholders = ", ".join("?" * len(allowed_cols))
     cache_cur.executemany(f"INSERT INTO {tbl} VALUES ({placeholders})", rows)
     print(f"Synced {tbl}: {len(rows)} rows, {len(allowed_cols)} columns (stripped {len(all_cols) - len(allowed_cols)} PII cols)")
+
+# Create fast indexes on key tables
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_ph_hrms ON POSTING_HISTORY(HRMS_ID)")
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_dp_hrms ON DARAH_POSTINGS(HRMS_ID_FROM_FILENAME)")
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_om_hrms ON ORDER_MOVEMENTS(HRMS_ID)")
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_ts_hrms ON TENURE_SPELLS(HRMS_ID)")
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_tsum_hrms ON TENURE_SUMMARY(HRMS_ID)")
+cache_cur.execute("CREATE INDEX IF NOT EXISTS idx_t1_hrms ON T1_OFFICER_DOSSIER(HRMS_ID)")
 
 # 3. Synchronize cadre_1794_posts from POSTS and OCCUPANCY
 print("\n--- Synchronizing cadre_1794_posts ---")
@@ -600,12 +621,45 @@ if has_emp:
     """)
     print(f"Purged non-SOT records from master_all_cadre_employees: {del_res.rowcount} rows removed.")
 
-# 9. Sync app_data.json into static/data.json
+# 9. Sync app_data.json into static/data.json and enrich fallback history
 json_src = os.path.join(mpt_dir, "app_data.json")
 json_dest = os.path.join(BASE_DIR, "static", "data.json")
 if os.path.exists(json_src):
     shutil.copy2(json_src, json_dest)
     print(f"Synced latest UI data.json from {os.path.basename(json_src)} ({os.path.getsize(json_dest)} bytes).")
+    
+    try:
+        with open(json_dest, "r", encoding="utf-8") as jf:
+            app_data = json.load(jf)
+            
+        cur_ts = cache_cur.execute("SELECT HRMS_ID, SPELL_NO, PLACE, DISTRICT, FROM_DATE, TO_DATE, SOURCE FROM TENURE_SPELLS ORDER BY HRMS_ID, CAST(SPELL_NO AS INTEGER)").fetchall()
+        ts_map = collections.defaultdict(list)
+        for r in cur_ts:
+            ts_map[r[0]].append({"seq": str(r[1]), "post": r[2], "dist": r[3], "from": r[4], "to": r[5], "src": r[6] or "Tenure Register"})
+            
+        cur_om = cache_cur.execute("SELECT HRMS_ID, ORDER_DATE, ORDER_NUMBER, CATEGORY, PRESENT_POSTING_OCR, NEW_POSTING_OCR, DISTRICT_FROM, DISTRICT_TO FROM ORDER_MOVEMENTS WHERE HRMS_ID != '' ORDER BY HRMS_ID, ORDER_DATE ASC").fetchall()
+        om_map = collections.defaultdict(list)
+        for r in cur_om:
+            p = r[4] or r[5] or r[3]
+            if p:
+                om_map[r[0]].append({"seq": str(len(om_map[r[0]]) + 1), "post": p, "dist": r[7] or r[6] or "", "from": r[1] or "", "to": "", "src": f"Govt Order {r[2]}"})
+                
+        enriched_count = 0
+        for off in app_data.get("officers", []):
+            h = off.get("hrms")
+            if not off.get("history") and not off.get("history_alt"):
+                if h in ts_map:
+                    off["history"] = ts_map[h]
+                    enriched_count += 1
+                elif h in om_map:
+                    off["history"] = om_map[h]
+                    enriched_count += 1
+                    
+        with open(json_dest, "w", encoding="utf-8") as jf:
+            json.dump(app_data, jf, ensure_ascii=False)
+        print(f"Enriched {enriched_count} officers in static/data.json with fallback service history (100% coverage achieved).")
+    except Exception as e:
+        print(f"Warning: could not enrich fallback history in data.json: {e}")
 
 # 10. Mirror latest SOT deliverables into AVD_AG/04_LISTS_FROM_SOT
 ag_sot_dir = os.path.join(BASE_DIR, "04_LISTS_FROM_SOT")

@@ -248,7 +248,209 @@
     }
 
     // =========================================================================
-    // 6. INITIALIZATION
+    // 6. INACTIVITY MONITOR & AUTO-LOGOUT ENGINE (1-Hour Inactivity Timeout)
+    // =========================================================================
+
+    const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour = 3,600,000 ms
+    const THROTTLE_INTERVAL_MS = 3000; // Throttle activity writes to 3 seconds
+    let lastActivityTime = Date.now();
+    let lastThrottleWrite = 0;
+    let checkIntervalId = null;
+
+    function getStoredLastActivity() {
+        try {
+            const val = localStorage.getItem('ard_last_user_activity');
+            if (val) {
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed) && parsed > 0) return parsed;
+            }
+        } catch (e) {}
+        return lastActivityTime;
+    }
+
+    function setStoredLastActivity(timestamp) {
+        lastActivityTime = timestamp;
+        try {
+            localStorage.setItem('ard_last_user_activity', timestamp.toString());
+            localStorage.removeItem('ard_inactivity_timed_out');
+        } catch (e) {}
+    }
+
+    function isUserLoggedIn() {
+        try {
+            // Check Decision Board auth state
+            if (sessionStorage.getItem('avd_auth_token')) return true;
+            const gateOverlay = document.getElementById('authGateOverlay');
+            if (gateOverlay && gateOverlay.classList.contains('hidden')) return true;
+
+            // Check Review Board auth state
+            if (sessionStorage.getItem('ard_ok') === '1') return true;
+            const reviewGate = document.getElementById('gate');
+            if (reviewGate && reviewGate.style.display === 'none') return true;
+        } catch (e) {}
+        return false;
+    }
+
+    function performClientLogout(fromOtherTab) {
+        try {
+            localStorage.setItem('ard_inactivity_timed_out', '1');
+        } catch (e) {}
+
+        let didLogout = false;
+
+        // 1. Handle Decision Board (index.html / app.js)
+        if (typeof window.handleAuthLogout === 'function') {
+            try {
+                window.handleAuthLogout('inactivity');
+                didLogout = true;
+            } catch (e) {}
+        } else {
+            try {
+                fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            } catch (e) {}
+            try {
+                sessionStorage.removeItem('avd_auth_token');
+                sessionStorage.removeItem('avd_officer_name');
+            } catch (e) {}
+            if (typeof window.showAuthModal === 'function') {
+                try {
+                    window.showAuthModal('inactivity');
+                    didLogout = true;
+                } catch (e) {}
+            }
+        }
+
+        // 2. Handle Review Board (review.html)
+        if (typeof window.handleReviewLogout === 'function') {
+            try {
+                window.handleReviewLogout('inactivity');
+                didLogout = true;
+            } catch (e) {}
+        } else {
+            try {
+                sessionStorage.removeItem('ard_ok');
+            } catch (e) {}
+            const reviewGate = document.getElementById('gate');
+            if (reviewGate) {
+                reviewGate.style.display = 'flex';
+                const notice = document.getElementById('sessionExpiredNotice');
+                if (notice) notice.style.display = 'block';
+                didLogout = true;
+            }
+        }
+
+        // 3. Security Toast Notification
+        showSecurityToast('🔒 Session expired: Logged out due to 1 hour of inactivity.');
+        return didLogout;
+    }
+
+    function checkInactivity() {
+        const now = Date.now();
+        const lastActive = getStoredLastActivity();
+        const elapsed = now - lastActive;
+
+        if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+            if (isUserLoggedIn()) {
+                console.warn('[SecurityShield] 1 hour inactivity timeout reached. Executing auto-logout.');
+                performClientLogout(false);
+            }
+            return true; // timed out
+        }
+        return false; // active
+    }
+
+    function recordUserActivity(e) {
+        const now = Date.now();
+        const lastActive = getStoredLastActivity();
+        const elapsed = now - lastActive;
+
+        // If inactivity period already expired before this event, trigger immediate logout
+        if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+            if (isUserLoggedIn()) {
+                if (e && typeof e.preventDefault === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                checkInactivity();
+                return;
+            }
+        }
+
+        // Throttle localStorage writes
+        if (now - lastThrottleWrite >= THROTTLE_INTERVAL_MS) {
+            lastThrottleWrite = now;
+            setStoredLastActivity(now);
+        } else {
+            lastActivityTime = now;
+        }
+    }
+
+    function resetInactivity() {
+        const now = Date.now();
+        lastActivityTime = now;
+        lastThrottleWrite = now;
+        setStoredLastActivity(now);
+    }
+
+    function setupInactivityMonitor() {
+        // Initialize timestamp if none exists
+        if (!localStorage.getItem('ard_last_user_activity')) {
+            setStoredLastActivity(Date.now());
+        }
+
+        // User interaction event listeners
+        const activityEvents = [
+            'mousedown', 'mouseup', 'click', 'dblclick',
+            'keydown', 'keyup',
+            'touchstart', 'touchend', 'touchmove',
+            'mousemove', 'scroll', 'wheel'
+        ];
+
+        activityEvents.forEach(evt => {
+            window.addEventListener(evt, recordUserActivity, { passive: true, capture: true });
+        });
+
+        // Tab focus & visibility change checks (vital for laptop sleep / app-switch wake)
+        window.addEventListener('focus', checkInactivity);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                checkInactivity();
+            }
+        });
+
+        // Cross-tab synchronization via storage event
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'ard_inactivity_timed_out' && e.newValue === '1') {
+                if (isUserLoggedIn()) {
+                    performClientLogout(true);
+                }
+            } else if (e.key === 'ard_last_user_activity') {
+                const parsed = parseInt(e.newValue, 10);
+                if (!isNaN(parsed)) {
+                    lastActivityTime = parsed;
+                }
+            }
+        });
+
+        // Periodic heartbeat check every 10 seconds
+        if (checkIntervalId) clearInterval(checkIntervalId);
+        checkIntervalId = setInterval(checkInactivity, 10000);
+
+        // Immediate initial check on script load
+        checkInactivity();
+    }
+
+    // Expose security helper API
+    window.ARD_Security = {
+        resetInactivity: resetInactivity,
+        checkInactivity: checkInactivity,
+        getStoredLastActivity: getStoredLastActivity,
+        INACTIVITY_TIMEOUT_MS: INACTIVITY_TIMEOUT_MS,
+        performLogout: performClientLogout
+    };
+
+    // =========================================================================
+    // 7. INITIALIZATION
     // =========================================================================
 
     function initSecurityShield() {
@@ -257,6 +459,7 @@
         applyWatermark();
         setupTamperProtection();
         setupInterceptors();
+        setupInactivityMonitor();
     }
 
     if (document.readyState === 'loading') {

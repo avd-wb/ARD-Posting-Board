@@ -1205,6 +1205,127 @@ class PostingEngine:
         mf_row = cur.fetchone()
         master_final_order = dict(mf_row) if mf_row else None
 
+        # Authoritative Posting History lookup from POSTING_HISTORY
+        history_list = []
+        cur.execute("""
+            SELECT SEQ, PLACE_WITH_DESIGNATION, DISTRICT_UNIT_OF_POSTING, FROM_DATE, FROM_AS_WRITTEN, TO_DATE, TO_AS_WRITTEN, DIVISION, CHARGE_TYPE, RECORD_SOURCE
+            FROM POSTING_HISTORY
+            WHERE HRMS_ID = ?
+            ORDER BY CAST(SEQ AS INTEGER), FROM_DATE ASC
+        """, (hrms_id,))
+        ph_rows = cur.fetchall()
+
+        seq_map = {}
+        for r in ph_rows:
+            rd = dict(r)
+            seq = str(rd.get("SEQ") or len(seq_map) + 1)
+            dist = rd.get("DISTRICT_UNIT_OF_POSTING") or ""
+            charge = rd.get("CHARGE_TYPE") or "Main charge"
+            if charge == "Under verification":
+                charge = "Main charge"
+            
+            item = {
+                "posting_sl": seq,
+                "post": rd.get("PLACE_WITH_DESIGNATION") or "Cadre Post",
+                "establishment": rd.get("PLACE_WITH_DESIGNATION") or "",
+                "district": dist if dist != "Under verification" else "",
+                "division": rd.get("DIVISION") or "",
+                "from": rd.get("FROM_DATE") or rd.get("FROM_AS_WRITTEN") or "",
+                "to": rd.get("TO_DATE") or rd.get("TO_AS_WRITTEN") or "Till date",
+                "charge_type": charge,
+                "source": rd.get("RECORD_SOURCE") or "HQ Status Report / Service Record"
+            }
+            if seq in seq_map:
+                existing = seq_map[seq]
+                if not existing.get("district") and item.get("district"):
+                    existing["district"] = item["district"]
+                if existing.get("charge_type") == "Main charge" and item.get("charge_type") != "Main charge":
+                    existing["charge_type"] = item["charge_type"]
+                if not existing.get("from") and item.get("from"):
+                    existing["from"] = item["from"]
+                if not existing.get("to") and item.get("to"):
+                    existing["to"] = item["to"]
+            else:
+                seq_map[seq] = item
+
+        if seq_map:
+            history_list = [seq_map[k] for k in sorted(seq_map.keys(), key=lambda x: int(x) if x.isdigit() else 999)]
+
+        # Fallback 1: DARAH_POSTINGS if POSTING_HISTORY has no entries
+        if not history_list:
+            cur.execute("""
+                SELECT SL, DIVISION, DISTRICT_RAW, DESIGNATION_AND_PLACE_RAW, FROM_DATE_RAW, TO_DATE_RAW, SOURCE_FILE
+                FROM DARAH_POSTINGS
+                WHERE HRMS_ID_FROM_FILENAME = ?
+                ORDER BY CAST(SL AS INTEGER)
+            """, (hrms_id,))
+            dp_rows = cur.fetchall()
+            for r in dp_rows:
+                rd = dict(r)
+                history_list.append({
+                    "posting_sl": rd.get("SL") or len(history_list) + 1,
+                    "post": rd.get("DESIGNATION_AND_PLACE_RAW") or "Cadre Post",
+                    "establishment": rd.get("DESIGNATION_AND_PLACE_RAW") or "",
+                    "district": rd.get("DISTRICT_RAW") or "",
+                    "division": rd.get("DIVISION") or "",
+                    "from": rd.get("FROM_DATE_RAW") or "",
+                    "to": rd.get("TO_DATE_RAW") or "Till date",
+                    "charge_type": "Substantive charge",
+                    "source": "DARAH Portal Profile"
+                })
+
+        # Fallback 2: TENURE_SPELLS if still empty
+        if not history_list:
+            cur.execute("""
+                SELECT SPELL_NO, PLACE, DISTRICT, FROM_DATE, TO_DATE, SOURCE, EVIDENCE
+                FROM TENURE_SPELLS
+                WHERE HRMS_ID = ?
+                ORDER BY CAST(SPELL_NO AS INTEGER)
+            """, (hrms_id,))
+            ts_rows = cur.fetchall()
+            for r in ts_rows:
+                rd = dict(r)
+                history_list.append({
+                    "posting_sl": rd.get("SPELL_NO") or len(history_list) + 1,
+                    "post": rd.get("PLACE") or "Cadre Post",
+                    "establishment": rd.get("PLACE") or "",
+                    "district": rd.get("DISTRICT") or "",
+                    "division": "",
+                    "from": rd.get("FROM_DATE") or "",
+                    "to": rd.get("TO_DATE") or "Till date",
+                    "charge_type": "Tenure record",
+                    "source": rd.get("SOURCE") or "Tenure Register"
+                })
+
+        # Fallback 3: ORDER_MOVEMENTS if still empty
+        if not history_list:
+            cur.execute("""
+                SELECT ORDER_DATE, ORDER_NUMBER, CATEGORY, PRESENT_POSTING_OCR, NEW_POSTING_OCR, DISTRICT_FROM, DISTRICT_TO
+                FROM ORDER_MOVEMENTS
+                WHERE HRMS_ID = ? AND (PRESENT_POSTING_OCR != '' OR NEW_POSTING_OCR != '')
+                ORDER BY ORDER_DATE ASC
+            """, (hrms_id,))
+            om_rows = cur.fetchall()
+            for idx, r in enumerate(om_rows):
+                rd = dict(r)
+                p_text = rd.get("PRESENT_POSTING_OCR") or rd.get("NEW_POSTING_OCR") or "Order Movement"
+                history_list.append({
+                    "posting_sl": idx + 1,
+                    "post": p_text,
+                    "establishment": p_text,
+                    "district": rd.get("DISTRICT_TO") or rd.get("DISTRICT_FROM") or "",
+                    "division": "",
+                    "from": rd.get("ORDER_DATE") or "",
+                    "to": "",
+                    "charge_type": rd.get("CATEGORY") or "Order Movement",
+                    "source": f"Govt Order {rd.get('ORDER_NUMBER', '')}"
+                })
+
+        # Tenure summary metrics lookup
+        cur.execute("SELECT * FROM TENURE_SUMMARY WHERE HRMS_ID = ?", (hrms_id,))
+        tsum_row = cur.fetchone()
+        tenure_summary_dict = dict(tsum_row) if tsum_row else {}
+
         conn.close()
 
         if not officer:
@@ -1218,12 +1339,11 @@ class PostingEngine:
             except Exception:
                 prefs_list = []
 
-        history_list = []
-        if officer.get("posting_history_json"):
+        if not history_list and officer.get("posting_history_json"):
             try:
                 history_list = json.loads(officer["posting_history_json"])
             except Exception:
-                history_list = []
+                pass
 
         # Parse self-reported promotional preferences and data
         dd_prefs = {}
@@ -1297,10 +1417,19 @@ class PostingEngine:
             "tenure_norm_status": officer.get("tenure_over_flag") or "Within Norm",
             "home_district": officer.get("home_district") or "—",
             "academic_details": officer.get("academic_details") or officer.get("qualification") or "B.V.Sc. & A.H.",
-            "qualifications": officer.get("qualifications") or "B.V.Sc. & A.H.",
             "mvsc_specialization": officer.get("mvsc_specialization") or "",
-            "posting_history": officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings.",
+            "posting_history": (
+                " | ".join(
+                    f"{item.get('posting_sl')}) {item.get('post')}" +
+                    (f" ({item.get('district')})" if item.get('district') else "") +
+                    (f" [{item.get('from') or 'Entry'} to {item.get('to') or 'Present'}]" if (item.get('from') or item.get('to')) else "")
+                    for item in history_list
+                ) if history_list else (
+                    officer.get("posting_history") or officer.get("last_transfer_order") or "Standard tenure completed across postings."
+                )
+            ),
             "posting_history_list": history_list,
+            "tenure_summary": tenure_summary_dict,
             "preferences_list": prefs_list,
             "dd_preferences": dd_prefs,
             "jd_preferences": jd_prefs,

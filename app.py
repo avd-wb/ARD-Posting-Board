@@ -35,7 +35,8 @@ from data_exporter import data_exporter
 
 logger = logging.getLogger("analytics")
 
-AUTH_SECRET_KEY = os.environ.get("AVD_AUTH_SECRET", "avd-executive-posting-board-secret-2026")
+AUTH_SECRET_KEY = os.environ.get("AVD_AUTH_SECRET", "avd-executive-posting-board-secret-2026-v4-revoked")
+AUTH_TOKEN_MIN_TIMESTAMP = 1789575700  # Invalidate all sessions generated before this cutoff
 
 ALLOWED_OFFICERS = {
     "2000004209": "Dr. Pradip Pati",
@@ -46,6 +47,7 @@ ALLOWED_OFFICERS = {
     "2012002908": "Dr. Sukanta Roy",
     "ADMIN_LEHALWA": "Executive Administrator",
     "ADMIN_SONARBANGLA": "Executive Administrator",
+    "ADMIN_SONARBANGLA2": "Executive Administrator",
 }
 
 def generate_auth_token(hrms_id: str) -> str:
@@ -68,8 +70,12 @@ def verify_auth_token(token: Optional[str]) -> Optional[Dict[str, str]]:
     if not hmac.compare_digest(sig, expected_sig):
         return None
     try:
-        # Token valid for 7 days
-        if int(time.time()) - int(ts) > 7 * 86400:
+        token_ts = int(ts)
+        # Immediately reject all tokens issued before the force-logout revocation timestamp
+        if token_ts < AUTH_TOKEN_MIN_TIMESTAMP:
+            return None
+        # Inactivity timeout: valid for 1 hour (3600 seconds)
+        if int(time.time()) - token_ts > 3600:
             return None
     except ValueError:
         return None
@@ -114,15 +120,27 @@ class AuthCheckMiddleware(BaseHTTPMiddleware):
 
         user = verify_auth_token(token)
         if not user:
-            return JSONResponse(
+            err_resp = JSONResponse(
                 status_code=401,
                 content={
-                    "detail": "Authentication required. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
+                    "detail": "Authentication required. Please enter the authorized password to continue."
                 }
             )
+            if "avd_session" in request.cookies:
+                err_resp.delete_cookie("avd_session")
+            return err_resp
 
         request.state.user = user
-        return await call_next(request)
+        response = await call_next(request)
+        if token:
+            response.set_cookie(
+                key="avd_session",
+                value=token,
+                httponly=True,
+                samesite="lax",
+                max_age=3600
+            )
+        return response
 
 app.add_middleware(AuthCheckMiddleware)
 app.add_middleware(VercelPathRestoreMiddleware)
@@ -308,7 +326,7 @@ class ExportQueryRequest(BaseModel):
 @app.post("/api/auth/login")
 def auth_login(req: LoginRequest, response: Response):
     hid = req.hrms_id.strip()
-    if hid.lower() in ("sonarbangla", "lehalwa"):
+    if hid.lower() in ("sonarbangla2", "lehalwa"):
         officer_name = "Executive Administrator"
         token = generate_auth_token("ADMIN_SONARBANGLA")
         response.set_cookie(
@@ -316,7 +334,7 @@ def auth_login(req: LoginRequest, response: Response):
             value=token,
             httponly=True,
             samesite="lax",
-            max_age=30 * 86400
+            max_age=3600
         )
         return {
             "success": True,
@@ -324,29 +342,13 @@ def auth_login(req: LoginRequest, response: Response):
             "hrms_id": "ADMIN_SONARBANGLA",
             "token": token
         }
-    elif hid in ALLOWED_OFFICERS:
-        token = generate_auth_token(hid)
-        officer_name = ALLOWED_OFFICERS[hid]
-        response.set_cookie(
-            key="avd_session",
-            value=token,
-            httponly=True,
-            samesite="lax",
-            max_age=30 * 86400
-        )
-        return {
-            "success": True,
-            "officer_name": officer_name,
-            "hrms_id": hid,
-            "token": token
-        }
     raise HTTPException(
         status_code=401,
-        detail="Incorrect password or unauthorized HRMS ID."
+        detail="Incorrect password. Login with HRMS ID is disabled. Access requires the administrative password."
     )
 
 @app.get("/api/auth/verify")
-def auth_verify(request: Request):
+def auth_verify(request: Request, response: Response):
     auth_header = request.headers.get("Authorization", "")
     token = None
     if auth_header.startswith("Bearer "):
@@ -360,6 +362,15 @@ def auth_verify(request: Request):
             status_code=401,
             detail="Authentication required. If you are allowed then type your HRMS ID. Otherwise send email for approval to contact@avdwb.com."
         )
+    # Refresh session cookie on active verification
+    if token:
+        response.set_cookie(
+            key="avd_session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            max_age=3600
+        )
     return {
         "authenticated": True,
         "officer_name": user["officer_name"],
@@ -369,7 +380,7 @@ def auth_verify(request: Request):
 @app.post("/api/auth/logout")
 def auth_logout(response: Response):
     response.delete_cookie("avd_session")
-    return {"success": True}
+    return {"success": True, "message": "Logged out successfully"}
 
 
 # --- API ENDPOINTS ---

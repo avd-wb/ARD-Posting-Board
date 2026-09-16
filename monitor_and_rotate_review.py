@@ -47,8 +47,8 @@ def load_state() -> dict:
         except Exception:
             pass
     return {
-        "current_password": "sonarbangla",
-        "current_hash": hashlib.sha256("sonarbangla".encode("utf-8")).hexdigest(),
+        "current_password": "sonarbangla2",
+        "current_hash": hashlib.sha256("sonarbangla2".encode("utf-8")).hexdigest(),
         "policy": "static_persistent",
         "auto_rotate": False,
         "created_at": START_TIME_STR,

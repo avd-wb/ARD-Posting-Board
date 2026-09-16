@@ -13,6 +13,19 @@
  */
 
 // --- AUTHENTICATION INTERCEPTOR & GATE CONTROLLER ---
+const CURRENT_AUTH_EPOCH = '20260916_rev_logout_all_v4';
+try {
+    if (localStorage.getItem('ard_auth_epoch') !== CURRENT_AUTH_EPOCH) {
+        localStorage.setItem('ard_auth_epoch', CURRENT_AUTH_EPOCH);
+        sessionStorage.removeItem('avd_auth_token');
+        sessionStorage.removeItem('avd_officer_name');
+        sessionStorage.removeItem('ard_ok');
+        localStorage.removeItem('ard_inactivity_timed_out');
+        localStorage.removeItem('ard_last_user_activity');
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    }
+} catch (e) {}
+
 const originalFetch = window.fetch;
 window.fetch = async function(...args) {
     let [resource, config] = args;
@@ -35,9 +48,10 @@ window.fetch = async function(...args) {
     return response;
 };
 
-function showAuthModal() {
+function showAuthModal(reason) {
     const overlay = document.getElementById('authGateOverlay');
     const badge = document.getElementById('authHeaderUserBadge');
+    const timeoutNotice = document.getElementById('authTimeoutNotice');
     if (overlay) {
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
@@ -45,6 +59,14 @@ function showAuthModal() {
     if (badge) {
         badge.classList.add('hidden');
         badge.classList.remove('inline-flex');
+    }
+    if (timeoutNotice) {
+        const isTimeout = (reason === 'inactivity') || (localStorage.getItem('ard_inactivity_timed_out') === '1');
+        if (isTimeout) {
+            timeoutNotice.classList.remove('hidden');
+        } else {
+            timeoutNotice.classList.add('hidden');
+        }
     }
     const input = document.getElementById('authHrmsInput');
     if (input) {
@@ -57,6 +79,7 @@ function hideAuthModal(officerName) {
     const overlay = document.getElementById('authGateOverlay');
     const badge = document.getElementById('authHeaderUserBadge');
     const nameEl = document.getElementById('authHeaderUserName');
+    const timeoutNotice = document.getElementById('authTimeoutNotice');
     if (overlay) {
         overlay.classList.add('hidden');
         overlay.classList.remove('flex');
@@ -64,6 +87,9 @@ function hideAuthModal(officerName) {
     if (badge) {
         badge.classList.remove('hidden');
         badge.classList.add('inline-flex');
+    }
+    if (timeoutNotice) {
+        timeoutNotice.classList.add('hidden');
     }
     if (nameEl && officerName) {
         nameEl.textContent = officerName;
@@ -96,11 +122,13 @@ window.handleAuthLogin = async function(event) {
     const btnText = document.getElementById('authBtnText');
     const alert = document.getElementById('authErrorAlert');
     const errMsg = document.getElementById('authErrorMessage');
+    const timeoutNotice = document.getElementById('authTimeoutNotice');
 
     const hrmsId = (input ? input.value : '').trim();
     if (!hrmsId) return;
 
     if (alert) alert.classList.add('hidden');
+    if (timeoutNotice) timeoutNotice.classList.add('hidden');
     if (btn) btn.disabled = true;
     if (btnText) btnText.textContent = 'Verifying...';
 
@@ -115,6 +143,12 @@ window.handleAuthLogin = async function(event) {
         if (res.ok && data.success) {
             sessionStorage.setItem('avd_auth_token', data.token);
             sessionStorage.setItem('avd_officer_name', data.officer_name);
+            try {
+                localStorage.removeItem('ard_inactivity_timed_out');
+            } catch (e) {}
+            if (window.ARD_Security && window.ARD_Security.resetInactivity) {
+                window.ARD_Security.resetInactivity();
+            }
             hideAuthModal(data.officer_name);
             if (alert) alert.classList.add('hidden');
             if (typeof window.startAppLoading === 'function') {
@@ -140,7 +174,7 @@ window.handleAuthLogin = async function(event) {
     }
 };
 
-window.handleAuthLogout = async function() {
+window.handleAuthLogout = async function(reason) {
     try {
         await fetch('/api/auth/logout', { method: 'POST' });
     } catch (e) {}
@@ -151,8 +185,23 @@ window.handleAuthLogout = async function() {
     }
     const input = document.getElementById('authHrmsInput');
     if (input) input.value = '';
-    showAuthModal();
+    showAuthModal(reason);
 };
+
+// Active Session Keep-Alive: Ping server every 10 minutes ONLY if user has been active
+setInterval(async () => {
+    if (!sessionStorage.getItem('avd_auth_token')) return;
+    if (window.ARD_Security && window.ARD_Security.getStoredLastActivity) {
+        const lastActive = window.ARD_Security.getStoredLastActivity();
+        const tenMins = 10 * 60 * 1000;
+        // Only ping if active within the last 10 minutes
+        if (Date.now() - lastActive < tenMins) {
+            try {
+                await fetch('/api/auth/verify');
+            } catch (e) {}
+        }
+    }
+}, 10 * 60 * 1000);
 
 // --- SAFFRON STETHOSCOPE HELPER FOR VERIFIED AVD MEMBERS ---
 function renderAvdStethoscope(isAvd, size = 14) {
@@ -478,9 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const totalActionable = data.total_actionable_vacancies != null ? data.total_actionable_vacancies : (data.total_vacancies != null ? data.total_vacancies : 353);
                 document.getElementById('kpiTotalVacancies').innerText = Number(totalActionable).toLocaleString();
             }
+            if (document.getElementById('kpiCadreVacancies')) {
+                const cadreVac = data.total_vacancies != null ? data.total_vacancies : 852;
+                document.getElementById('kpiCadreVacancies').innerText = Number(cadreVac).toLocaleString();
+            }
             if (document.getElementById('kpiNoReturn')) {
                 const noRetVal = data.post_states ? data.post_states.NO_RETURN : data.no_return_posts;
-                document.getElementById('kpiNoReturn').innerText = Number(noRetVal).toLocaleString();
+                document.getElementById('kpiNoReturn').innerText = Number(noRetVal || 0).toLocaleString();
             }
             if (document.getElementById('kpiNotEstablished')) {
                 const notEstVal = data.post_states ? data.post_states.NOT_ESTABLISHED : data.not_established_posts;
@@ -1503,7 +1556,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = json.data.map(p => {
                 const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
                 const isVacant = statusUpper === 'VACANT' || statusUpper === 'CLEAR VACANCY' || statusUpper === 'AVAILABLE';
-                const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
                 const isNotEstablished = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
                 const isTenureOver = p.tenure_over_flag === 'Yes';
 
@@ -1511,11 +1563,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 let occupantHtml = '';
 
                 if (isVacant) {
-                    occBadge = `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Clear Vacancy</span>`;
-                    occupantHtml = `<span class="text-emerald-700 font-semibold italic text-xs">Clear Vacancy</span>`;
-                } else if (isNoReturn) {
-                    occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">No Return</span>`;
-                    occupantHtml = `<span class="text-amber-700 font-medium italic text-xs">No Return Received</span>`;
+                    occBadge = `<span class="badge-vacant px-2 py-0.5 rounded text-[10px] font-bold">Vacancy</span>`;
+                    occupantHtml = `<span class="text-emerald-700 font-semibold italic text-xs">Vacancy</span>`;
                 } else if (isNotEstablished) {
                     occBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Not Established</span>`;
                     occupantHtml = `<span class="text-rose-700 font-medium italic text-xs">Post Not Established</span>`;
@@ -1576,15 +1625,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 cardsEl.innerHTML = json.data.map(p => {
                     const statusUpper = (p.occupancy_status || '').trim().toUpperCase();
                     const isVacant = statusUpper === 'VACANT' || statusUpper === 'CLEAR VACANCY' || statusUpper === 'AVAILABLE';
-                    const isNoReturn = statusUpper === 'NO_RETURN' || statusUpper === 'NO RETURN';
                     const isNotEstablished = statusUpper === 'NOT_ESTABLISHED' || statusUpper === 'NOT ESTABLISHED';
                     const isTenureOver = p.tenure_over_flag === 'Yes';
 
                     let occBadge = '';
                     if (isVacant) {
-                        occBadge = `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Clear Vacancy</span>`;
-                    } else if (isNoReturn) {
-                        occBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">No Return</span>`;
+                        occBadge = `<span class="badge-vacant px-2.5 py-1 rounded-full text-[10px] font-bold">Vacancy</span>`;
                     } else if (isNotEstablished) {
                         occBadge = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Not Established</span>`;
                     } else {
@@ -1595,15 +1641,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `<span class="badge-tenure-over px-1.5 py-0.5 rounded-md text-[10px] font-bold ml-1">Over-Tenure</span>`
                         : '';
 
-                    const isApexLocked = !isVacant && !isNoReturn && !isNotEstablished && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
-                    const initials = isVacant ? 'VAC' : (isNoReturn ? 'N/R' : (isNotEstablished ? 'N/E' : getMonogram(p.incumbent_name)));
+                    const isApexLocked = !isVacant && !isNotEstablished && (p.incumbent_hrms === '1992005664' || p.id === 1 || p.pay_level === 'Level-22' || p.pay_level === 'Level-21' || (p.designation && p.designation.toLowerCase().includes('director of ah')));
+                    const initials = isVacant ? 'VAC' : (isNotEstablished ? 'N/E' : getMonogram(p.incumbent_name));
 
                     return `
                         <div class="rounded-2xl bg-white border border-slate-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-4 space-y-3.5 mobile-card-interactive ${isVacant ? 'border-l-4 border-emerald-400 pl-3.5' : ''}">
                             <!-- Header: Designation & Post Info -->
                             <div class="flex items-start justify-between gap-3">
                                 <div class="flex items-center gap-2.5 min-w-0">
-                                    <div class="w-10 h-10 rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : (isNoReturn ? 'bg-amber-100 text-amber-800' : (isNotEstablished ? 'bg-rose-100 text-rose-800' : 'bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white'))} font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
+                                    <div class="w-10 h-10 rounded-full ${isVacant ? 'bg-emerald-100 text-emerald-800' : (isNotEstablished ? 'bg-rose-100 text-rose-800' : 'bg-gradient-to-br from-wbblue-700 to-indigo-800 text-white')} font-bold flex items-center justify-center text-xs shadow-xs shrink-0 tracking-tight">
                                         ${isVacant ? '<i data-lucide="check" class="w-4 h-4"></i>' : initials}
                                     </div>
                                     <div class="min-w-0">
@@ -1621,18 +1667,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
 
                             <!-- Incumbent or Vacancy Box -->
-                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : (isNoReturn ? 'bg-amber-50/80 border border-amber-200' : (isNotEstablished ? 'bg-rose-50/80 border border-rose-200' : 'bg-slate-50/90 border border-slate-200/80'))} text-xs space-y-1">
-                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : (isNoReturn ? 'text-amber-800' : (isNotEstablished ? 'text-rose-800' : 'text-slate-400'))} flex items-center gap-1">
-                                    <i data-lucide="${isVacant ? 'check-circle' : (isNoReturn ? 'help-circle' : (isNotEstablished ? 'alert-octagon' : 'user'))}" class="w-3 h-3 ${isVacant ? 'text-emerald-600' : (isNoReturn ? 'text-amber-600' : (isNotEstablished ? 'text-rose-600' : 'text-slate-400'))}"></i>
-                                    <span>${isVacant ? 'Vacancy Information' : (isNoReturn ? 'No Return Status' : (isNotEstablished ? 'Establishment Status' : 'Serving Incumbent'))}</span>
+                            <div class="p-2.5 rounded-xl ${isVacant ? 'bg-emerald-50/80 border border-emerald-200' : (isNotEstablished ? 'bg-rose-50/80 border border-rose-200' : 'bg-slate-50/90 border border-slate-200/80')} text-xs space-y-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider ${isVacant ? 'text-emerald-800' : (isNotEstablished ? 'text-rose-800' : 'text-slate-400')} flex items-center gap-1">
+                                    <i data-lucide="${isVacant ? 'check-circle' : (isNotEstablished ? 'alert-octagon' : 'user')}" class="w-3 h-3 ${isVacant ? 'text-emerald-600' : (isNotEstablished ? 'text-rose-600' : 'text-slate-400')}"></i>
+                                    <span>${isVacant ? 'Vacancy Information' : (isNotEstablished ? 'Establishment Status' : 'Serving Incumbent')}</span>
                                 </div>
                                 ${isVacant ? `
                                     <div class="text-emerald-900 font-bold text-xs flex items-center gap-1.5">
                                         <span>Available for Substantive / SU Cadre Absorption</span>
-                                    </div>
-                                ` : (isNoReturn ? `
-                                    <div class="text-amber-900 font-medium text-xs">
-                                        Official field returns have not yet reported an incumbent for this sanctioned post.
                                     </div>
                                 ` : (isNotEstablished ? `
                                     <div class="text-rose-900 font-medium text-xs">
@@ -2569,8 +2611,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     let statusBadge = '';
                     if (isVacant) {
                         statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 Vacant</span>`;
-                    } else if (isNoReturn) {
-                        statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">🟡 No Return</span>`;
                     } else if (isNotEstablished) {
                         statusBadge = `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300">🔴 Not Established</span>`;
                     } else {
@@ -3120,18 +3160,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // 4. No Return Received -> Department Cadre (No Return: 595)
-        const cardNoReturn = document.getElementById('kpiCardNoReturn');
-        if (cardNoReturn) {
-            cardNoReturn.addEventListener('click', () => {
-                window.setActiveKPICard('kpiCardNoReturn');
+        // 4. Cadre Vacancies -> Department Cadre (Vacancies)
+        const cardCadreVacancies = document.getElementById('kpiCardCadreVacancies') || document.getElementById('kpiCardNoReturn');
+        if (cardCadreVacancies) {
+            cardCadreVacancies.addEventListener('click', () => {
+                window.setActiveKPICard(cardCadreVacancies.id);
                 triggerTab('tab-cadre');
                 const statusF = document.getElementById('cadreStatusFilter');
                 const desigF = document.getElementById('cadreDesigFilter');
                 const distF = document.getElementById('cadreDistrictFilter');
                 const tenureF = document.getElementById('cadreTenureFilter');
                 const searchF = document.getElementById('cadreSearchInput');
-                if (statusF) statusF.value = 'no_return';
+                if (statusF) statusF.value = 'vacant';
                 if (desigF) desigF.value = 'ALL';
                 if (distF) distF.value = 'ALL';
                 if (tenureF) tenureF.value = 'ALL';
@@ -3513,10 +3553,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         const sl = item.posting_sl || idx + 1;
                         const post = item.post || item.designation || 'Cadre Post';
                         const est = item.establishment || item.office || '';
-                        const div = item.division || item.district || '';
+                        const div = item.division || '';
+                        const dist = item.district || '';
                         const fromDate = item.from || '';
                         const toDate = item.to || '';
                         const charge = item.charge_type || 'Main charge';
+                        const src = item.source || '';
+                        const locText = [dist, div].filter(Boolean).join(' • ');
                         return `
                             <div class="flex items-start gap-3 p-3 rounded-xl bg-white border border-slate-200 shadow-xs hover:border-wbblue-300 transition">
                                 <div class="w-7 h-7 rounded-full bg-wbblue-100 text-wbblue-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
@@ -3525,10 +3568,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="flex-1 space-y-1">
                                     <div class="flex items-center justify-between flex-wrap gap-1">
                                         <span class="font-bold text-slate-900 text-xs">${post}</span>
-                                        ${charge ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${charge.includes('SU') || charge.includes('deputation') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${charge}</span>` : ''}
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            ${charge ? `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${charge.includes('SU') || charge.includes('deputation') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">${charge}</span>` : ''}
+                                            ${src ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-500 border border-slate-200">${src}</span>` : ''}
+                                        </div>
                                     </div>
                                     ${est && est !== post ? `<div class="text-xs text-slate-700"><strong>Station / Office:</strong> ${est}</div>` : ''}
-                                    ${div ? `<div class="text-xs text-slate-600"><strong>Division / Zone:</strong> ${div}</div>` : ''}
+                                    ${locText ? `<div class="text-xs text-slate-600"><strong>District / Zone:</strong> ${locText}</div>` : ''}
                                     <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 pt-0.5">
                                         <i data-lucide="calendar" class="w-3 h-3 text-slate-400"></i>
                                         <span>Tenure: <strong class="text-slate-700">${fromDate || 'Entry'}</strong> to <strong class="text-slate-700">${toDate || 'Present'}</strong></span>
@@ -3604,7 +3650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ${d.verification_summary ? `
                                             <span class="px-2 py-0.5 rounded-full ${d.verification_summary.consensus_status.includes('PASS') ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-amber-100 text-amber-900 border border-amber-300'} font-semibold inline-flex items-center gap-1 text-[11px]" title="Audited across 10 independent administrative benchmarks">
                                                 <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-700"></i>
-                                                <span>${d.verification_summary.consensus_status === '10/10_UNANIMOUS_PASS' ? '10/10 Verified' : '10-Agent Audited'}</span>
+                                                <span>${d.verification_summary.consensus_status === '10/10_UNANIMOUS_PASS' ? '10/10 Verified' : 'Verified'}</span>
                                             </span>
                                         ` : ''}
                                     </div>
@@ -3769,9 +3815,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <!-- TAB 3: POSTING HISTORY TIMELINE -->
                 <div id="dossierSecHistory" class="dossier-sec hidden space-y-3">
+                    <!-- Tenure summary metrics if available -->
+                    ${d.tenure_summary && d.tenure_summary.SERVICE_YEARS_TO_13_09_2026 && d.tenure_summary.SERVICE_YEARS_TO_13_09_2026 !== 'Under verification' ? `
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs">
+                            <div class="p-1">
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Total Service</div>
+                                <div class="font-bold text-slate-900 font-mono">${d.tenure_summary.SERVICE_YEARS_TO_13_09_2026} yrs</div>
+                            </div>
+                            <div class="p-1">
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Districts Served</div>
+                                <div class="font-bold text-slate-900 font-mono">${d.tenure_summary.DISTRICT_COUNT || '—'}</div>
+                            </div>
+                            <div class="p-1">
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Mean Tenure</div>
+                                <div class="font-bold text-slate-900 font-mono">${d.tenure_summary.MEAN_TENURE_YEARS || '—'} yrs</div>
+                            </div>
+                            <div class="p-1">
+                                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Govt Orders</div>
+                                <div class="font-bold text-slate-900 font-mono">${d.tenure_summary.ORDERS_NAMING_THIS_OFFICER || '—'}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div class="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center justify-between">
                         <div>
-                            <strong>Complete Career Posting Record:</strong> Chronological record of all 8 postings, transfers, and station tenures from verified departmental files.
+                            <strong>Complete Career Posting Record:</strong> Chronological record of postings, transfers, and station tenures from verified departmental service records.
                         </div>
                         <span class="px-2 py-0.5 rounded bg-blue-200 text-blue-950 font-bold text-[10px] shrink-0">
                             ${rawHistory.length} Postings Recorded
@@ -3876,6 +3944,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
+            const histBtn = document.getElementById('dossierSubTabHistory');
+            if (histBtn) {
+                histBtn.innerHTML = `<i data-lucide="history" class="w-3.5 h-3.5 text-blue-600"></i><span>Posting History (${rawHistory.length})</span>`;
+            }
             lucide.createIcons();
             window.switchDossierSubTab('profile');
         } catch (err) {
@@ -6267,12 +6339,7 @@ ${r.statutory_justification}
                 statusBadgeColor = '#dcfce7';
                 statusTextColor = '#166534';
                 statusBorderColor = '#bbf7d0';
-                displayBadgeText = 'Clear Vacancy';
-            } else if (isNoReturn) {
-                statusBadgeColor = '#fef3c7';
-                statusTextColor = '#92400e';
-                statusBorderColor = '#fde68a';
-                displayBadgeText = 'No Return';
+                displayBadgeText = 'Vacancy';
             } else if (isNotEst) {
                 statusBadgeColor = '#ffe4e6';
                 statusTextColor = '#9f1239';

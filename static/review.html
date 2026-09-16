@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARD Promotion & Transfer — Review Board</title>
-<link rel="stylesheet" href="/static/security-shield.css?v=20260915_sec3">
+<link rel="stylesheet" href="/static/security-shield.css?v=20260916_inactivity">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1c1f24;--mut:#5b6472;--line:#dfe3e8;--acc:#1f4e78;--ok:#2e7d32;--warn:#b26a00;--bad:#b3261e;--chip:#eef2f7}
 html{scroll-behavior:smooth}
@@ -40,7 +40,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 </style>
 </head>
 <body>
-<div id="gate"><div class="card"><h2 style="margin-top:0">ARD Promotion & Transfer — Review Board</h2><p class="muted small">প্রবেশের জন্য পাসওয়ার্ড দিন।</p><input id="pw" type="password" placeholder="পাসওয়ার্ড" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font:inherit"><p id="pwerr" style="color:var(--bad);display:none">ভুল পাসওয়ার্ড</p><button class="b" style="width:100%;margin-top:8px" onclick="login()">ঢুকুন</button></div></div>
+<div id="gate"><div class="card"><h2 style="margin-top:0">ARD Promotion & Transfer — Review Board</h2><div id="sessionExpiredNotice" style="display:none;background:#fdecea;color:var(--bad);border:1px solid #fad2cf;padding:8px 10px;border-radius:8px;font-size:13px;margin-bottom:10px;"><b>🔒 সেশন সমাপ্ত (Session Expired):</b><br>১ ঘণ্টা নিষ্ক্রিয় থাকার কারণে স্বয়ংক্রিয়ভাবে লগআউট করা হয়েছে। পুনরায় পাসওয়ার্ড দিয়ে প্রবেশ করুন।<br><span style="font-size:11px;opacity:0.9;">(Logged out automatically after 1 hour of inactivity. Please enter password.)</span></div><p class="muted small">প্রবেশের জন্য পাসওয়ার্ড দিন।</p><input id="pw" type="password" placeholder="পাসওয়ার্ড" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font:inherit"><p id="pwerr" style="color:var(--bad);display:none">ভুল পাসওয়ার্ড</p><button class="b" style="width:100%;margin-top:8px" onclick="login()">ঢুকুন</button></div></div>
 
 <header><h1>ARD Promotion & Transfer</h1>
 <div class="tabs"><button class="on" data-t="list">অফিসার তালিকা</button><button data-t="vac">শূন্যপদ খুঁজুন</button><button data-t="dd">জেলা-হিসেব</button><button data-t="mine">আমার উত্তর</button></div>
@@ -71,7 +71,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px
 <div id="modal" onclick="if(event.target.id==='modal')this.style.display='none'"><div class="card" id="mbody"></div></div>
 
 <script>
-const HASH="2db381eb7bfb765c7defc0f117a9b64847b11f4c09b81ab117f2a4a78a9be888";
+const HASH="f874e75c55ac52d998b7745992092a97a710f4339fc3268ccd1bd2d05cfea10e";
 const ALT_HASH="b7786dab6bc03f4101c46eca32e365a573160213d9b3e33123da1708d99b8116";
 let D=null, ANS={};
 try{ANS=JSON.parse(localStorage.getItem("ard_answers")||"{}")}catch(e){ANS={}}
@@ -94,10 +94,59 @@ function pingTelemetry(action="pageview"){
 pingTelemetry("pageview");
 setInterval(()=>pingTelemetry("heartbeat"), 40000);
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
-async function login(){const v=document.getElementById("pw").value.trim();const h=await sha(v);if(h===HASH||h===ALT_HASH){try{sessionStorage.setItem("ard_ok","1")}catch(e){}document.getElementById("gate").style.display="none";pingTelemetry("login_success");if(window.updateSecurityWatermark)window.updateSecurityWatermark();boot()}else document.getElementById("pwerr").style.display="block"}
+
+window.handleReviewLogout = function(reason) {
+  try{sessionStorage.removeItem("ard_ok")}catch(e){}
+  const gate = document.getElementById("gate");
+  if(gate) gate.style.display = "flex";
+  const notice = document.getElementById("sessionExpiredNotice");
+  if(notice) {
+    if(reason === "inactivity") notice.style.display = "block";
+    else notice.style.display = "none";
+  }
+  const pw = document.getElementById("pw");
+  if(pw) { pw.value = ""; }
+  pingTelemetry("logout_" + (reason || "manual"));
+  if(window.updateSecurityWatermark) window.updateSecurityWatermark();
+};
+
+async function login(){
+  const v=document.getElementById("pw").value.trim();
+  const h=await sha(v);
+  if(h===HASH||h===ALT_HASH){
+    try{sessionStorage.setItem("ard_ok","1")}catch(e){}
+    document.getElementById("gate").style.display="none";
+    const notice = document.getElementById("sessionExpiredNotice");
+    if(notice) notice.style.display = "none";
+    document.getElementById("pwerr").style.display="none";
+    if(window.ARD_Security && window.ARD_Security.resetInactivity) {
+      window.ARD_Security.resetInactivity();
+    }
+    pingTelemetry("login_success");
+    if(window.updateSecurityWatermark)window.updateSecurityWatermark();
+    boot();
+  } else {
+    document.getElementById("pwerr").style.display="block";
+  }
+}
 document.getElementById("pw").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 document.getElementById("who")?.addEventListener("input",()=>{if(window.updateSecurityWatermark)window.updateSecurityWatermark()});
-try{if(sessionStorage.getItem("ard_ok")==="1"){document.getElementById("gate").style.display="none";boot()}}catch(e){}
+try{
+  const CURRENT_AUTH_EPOCH = '20260916_rev_logout_all_v4';
+  if (localStorage.getItem('ard_auth_epoch') !== CURRENT_AUTH_EPOCH) {
+    localStorage.setItem('ard_auth_epoch', CURRENT_AUTH_EPOCH);
+    sessionStorage.removeItem('ard_ok');
+  }
+  const isTimedOut = localStorage.getItem("ard_inactivity_timed_out") === "1";
+  if(!isTimedOut && sessionStorage.getItem("ard_ok")==="1"){
+    document.getElementById("gate").style.display="none";
+    boot();
+  } else if (isTimedOut && sessionStorage.getItem("ard_ok")==="1") {
+    sessionStorage.removeItem("ard_ok");
+    const notice = document.getElementById("sessionExpiredNotice");
+    if(notice) notice.style.display = "block";
+  }
+}catch(e){}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function save(){try{localStorage.setItem("ard_answers",JSON.stringify(ANS))}catch(e){}}
 async function boot(){
@@ -168,5 +217,5 @@ function shareWA(){window.open("https://wa.me/?text="+encodeURIComponent(ansText
 async function copyAns(){try{await navigator.clipboard.writeText(ansText());alert("কপি হয়েছে")}catch(e){alert("কপি করা গেল না — টেক্সট সিলেক্ট করে কপি করুন")}}
 function dlAns(){const b=new Blob([ansText()],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="ARD_review_answers.txt";a.click()}
 </script>
-<script src="/static/security-shield.js?v=20260915_sec3"></script>
+<script src="/static/security-shield.js?v=20260916_inactivity"></script>
 </body></html>
